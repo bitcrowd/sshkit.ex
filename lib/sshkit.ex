@@ -1,0 +1,2 @@
+defmodule SSHKit do
+end
