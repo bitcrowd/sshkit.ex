@@ -42,7 +42,7 @@ defmodule SSHKit.SSH.Channel do
     id = channel.id
 
     message = receive do
-      {:ssh_cm, ^raw, msg} -> msg
+      {:ssh_cm, ^raw, msg} when elem(msg, 1) == id -> msg
     after
       timeout -> {:error, :timeout}
     end
