@@ -11,7 +11,7 @@ defmodule SSHKit.Mixfile do
   end
 
   def application do
-    [applications: [:logger]]
+    [applications: [:logger, :ssh]]
   end
 
   defp deps do
