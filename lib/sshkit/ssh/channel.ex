@@ -4,7 +4,16 @@ defmodule SSHKit.SSH.Channel do
   alias SSHKit.SSH.Channel
 
   @doc """
-  http://erlang.org/doc/man/ssh_connection.html#session_channel-4
+  Opens a channel on an SSH connection.
+
+  ## Options
+
+  * `:type` - the type of the channel, defaults to `:session`
+  * `:timeout` - defaults to `:infinity`
+  * `:initial_window_size` - defaults to 128 KiB
+  * `:max_packet_size` - defaults to 32 KiB
+
+  See http://erlang.org/doc/man/ssh_connection.html#session_channel-4
   """
   def open(connection, options \\ []) do
     type = Keyword.get(options, :type, :session)
@@ -19,14 +28,20 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
-  http://erlang.org/doc/man/ssh_connection.html#close-2
+  Closes an SSH channel.
+
+  See http://erlang.org/doc/man/ssh_connection.html#close-2
+
+  Returns `:ok` on success.
   """
   def close(channel) do
     :ssh_connection.close(channel.connection.raw, channel.id)
   end
 
   @doc """
-  http://erlang.org/doc/man/ssh_connection.html#exec-4
+  Execute a command on the remote host.
+
+  See http://erlang.org/doc/man/ssh_connection.html#exec-4
   """
   def exec(channel, command, handler, ini \\ nil, timeout \\ :infinity) do
     case :ssh_connection.exec(channel.connection.raw, channel.id, command, timeout) do
@@ -52,6 +67,7 @@ defmodule SSHKit.SSH.Channel do
       _ -> :ok
     end
 
+    # TODO: filter message elem 1
     state = fun.(channel, message, state)
 
     case message do
