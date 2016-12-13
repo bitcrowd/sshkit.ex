@@ -57,21 +57,20 @@ defmodule SSHKit.SSH.Channel do
     id = channel.id
 
     message = receive do
-      {:ssh_cm, ^raw, msg} when elem(msg, 1) == id -> msg
+      {:ssh_cm, ^raw, msg} when elem(msg, 1) == id -> Tuple.delete_at(msg, 1)
     after
       timeout -> {:error, :timeout}
     end
 
     case message do
-      {:data, ^id, _, data} -> :ssh_connection.adjust_window(raw, id, byte_size(data))
+      {:data, _, data} -> :ssh_connection.adjust_window(raw, id, byte_size(data))
       _ -> :ok
     end
 
-    # TODO: filter message elem 1
     state = fun.(channel, message, state)
 
     case message do
-      {:closed, ^id} -> state
+      {:closed} -> state
       _ -> handle(channel, fun, state, timeout)
     end
   end

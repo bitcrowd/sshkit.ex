@@ -76,12 +76,10 @@ defmodule SSHKit.SSH do
   end
 
   defp capture(channel, message, state = {:ok, buffer, status}) do
-    id = channel.id
-
     case message do
-      {:data, ^id, 0, data} -> {:ok, [{:normal, data} | buffer], status}
-      {:data, ^id, 1, data} -> {:ok, [{:stderr, data} | buffer], status}
-      {:exit_status, ^id, stat} -> {:ok, Enum.reverse(buffer), stat}
+      {:data, 0, data} -> {:ok, [{:normal, data} | buffer], status}
+      {:data, 1, data} -> {:ok, [{:stderr, data} | buffer], status}
+      {:exit_status, stat} -> {:ok, Enum.reverse(buffer), stat}
       _ -> state
     end
   end
