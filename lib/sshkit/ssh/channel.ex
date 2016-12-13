@@ -43,15 +43,15 @@ defmodule SSHKit.SSH.Channel do
 
   See http://erlang.org/doc/man/ssh_connection.html#exec-4
   """
-  def exec(channel, command, handler, ini \\ nil, timeout \\ :infinity) do
+  def exec(channel, command, timeout \\ :infinity, ini \\ nil, handler) do
     case :ssh_connection.exec(channel.connection.raw, channel.id, command, timeout) do
-      :success -> handle(channel, handler, ini, timeout)
+      :success -> loop(channel, handler, ini, timeout)
       :failure -> {:error, :failure}
       other -> other
     end
   end
 
-  defp handle(channel, fun, state, timeout) do
+  defp loop(channel, fun, state, timeout) do
     connection = channel.connection
     raw = connection.raw
     id = channel.id
@@ -71,7 +71,7 @@ defmodule SSHKit.SSH.Channel do
 
     case message do
       {:closed} -> state
-      _ -> handle(channel, fun, state, timeout)
+      _ -> loop(channel, fun, state, timeout)
     end
   end
 end

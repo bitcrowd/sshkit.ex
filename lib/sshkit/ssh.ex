@@ -56,11 +56,11 @@ defmodule SSHKit.SSH do
   @doc """
   Executes a command on the remote.
 
-  By default, captures command output into a list of tuples of the form
-  `{:normal, data}` or `{:stderr, data}`.
-
   Using the default handler, returns `{:ok, output, status}` or
   `{:error, reason}`.
+
+  By default, command output is captured into a list of tuples of the form
+  `{:normal, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
 
@@ -68,14 +68,14 @@ defmodule SSHKit.SSH do
   {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
   ```
   """
-  def run(connection, command, timeout \\ :infinity, handler \\ &capture/3) do
+  def run(connection, command, timeout \\ :infinity, ini \\ {:ok, [], nil}, handler \\ &capture/3) do
     case Channel.open(connection, timeout: timeout) do
-      {:ok, channel} -> Channel.exec(channel, command, handler, {:ok, [], nil}, timeout)
+      {:ok, channel} -> Channel.exec(channel, command, timeout, ini, handler)
       other -> other
     end
   end
 
-  defp capture(channel, message, state = {:ok, buffer, status}) do
+  defp capture(_channel, message, state = {:ok, buffer, status}) do
     case message do
       {:data, 0, data} -> {:ok, [{:normal, data} | buffer], status}
       {:data, 1, data} -> {:ok, [{:stderr, data} | buffer], status}
