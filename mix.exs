@@ -9,6 +9,7 @@ defmodule SSHKit.Mixfile do
      name: "sshkit",
      version: @version,
      elixir: "~> 1.3",
+     elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      source_url: @source,
@@ -37,4 +38,7 @@ defmodule SSHKit.Mixfile do
      licenses: ["MIT"],
      links: %{"GitHub" => @source}]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_),     do: ["lib"]
 end

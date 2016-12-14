@@ -1,5 +1,5 @@
 defmodule SSHKitTest do
-  use ExUnit.Case
+  use SSHKit.FunctionalCase
   # doctest SSHKit
 
   @tag :skip
