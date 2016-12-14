@@ -1,7 +1,7 @@
 defmodule SSHKit.SSH.Connection do
-  defstruct [:host, :port, :options, :ref]
-
   alias SSHKit.SSH.Connection
+
+  defstruct [:host, :port, :options, :ref]
 
   @doc """
   Opens a connection to an SSH server.

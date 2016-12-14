@@ -1,7 +1,7 @@
 defmodule SSHKit.SSH.Channel do
-  defstruct [:connection, :type, :id]
-
   alias SSHKit.SSH.Channel
+
+  defstruct [:connection, :type, :id]
 
   @doc """
   Opens a channel on an SSH connection.
