@@ -39,19 +39,39 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
-  Execute a command on the remote host.
+  Executes a command on the remote host.
 
   See http://erlang.org/doc/man/ssh_connection.html#exec-4
   """
-  def exec(channel, command, timeout \\ :infinity, ini \\ nil, handler) do
-    case :ssh_connection.exec(channel.connection.raw, channel.id, command, timeout) do
+  def exec(channel, command, timeout \\ :infinity) do
+    :ssh_connection.exec(channel.connection.raw, channel.id, command, timeout)
+  end
+
+  @doc """
+  Executes a command on the remote host and loops until the channel is closed.
+
+  Uses the `handler` function for handling received message, `ini` as the
+  initial state.
+
+  See `loop/4` for details on how to process channel messages.
+  """
+  def execl(channel, command, timeout \\ :infinity, ini \\ nil, handler) do
+    case exec(channel, command, timeout) do
       :success -> loop(channel, handler, ini, timeout)
       :failure -> {:error, :failure}
       other -> other
     end
   end
 
-  defp loop(channel, fun, state, timeout) do
+  @doc """
+  Loops over channel messages until the channel is closed.
+
+  Invokes `fun` for each channel message, passing the channel, message and
+  `state` as arguments. `fun`'s return value is stored in state.
+
+  Returns the state after the channel is closed.
+  """
+  def loop(channel, fun, state \\ nil, timeout \\ :infinity) do
     connection = channel.connection
     raw = connection.raw
     id = channel.id
