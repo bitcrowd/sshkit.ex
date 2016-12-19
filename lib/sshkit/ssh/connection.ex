@@ -1,5 +1,5 @@
 defmodule SSHKit.SSH.Connection do
-  defstruct [:host, :port, :options, :raw]
+  defstruct [:host, :port, :options, :ref]
 
   alias SSHKit.SSH.Connection
 
@@ -16,7 +16,7 @@ defmodule SSHKit.SSH.Connection do
   The `:user_interaction` option is set to false by default.
 
   For a complete list of options see:
-  http://erlang.org/doc/man/ssh.html#connect-4
+  [`:ssh.connect/4`](http://erlang.org/doc/man/ssh.html#connect-4).
 
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
   """
@@ -32,7 +32,7 @@ defmodule SSHKit.SSH.Connection do
       |> Keyword.drop([:port, :timeout])
 
     case :ssh.connect(host, port, options, timeout) do
-      {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, raw: ref}}
+      {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref}}
       other -> other
     end
   end
@@ -40,19 +40,19 @@ defmodule SSHKit.SSH.Connection do
   @doc """
   Closes an SSH connection.
 
-  See http://erlang.org/doc/man/ssh_connection.html#close-2
+  Returns `:ok`.
 
-  Returns `:ok` on success.
+  For details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
   """
   def close(connection) do
-    :ssh.close(connection.raw)
+    :ssh.close(connection.ref)
   end
 
   @doc """
   Opens a new connection, based on the parameters of an existing one.
 
   The timeout value of the original connection is discarded.
-  Other connection options may be overriden.
+  Other connection options are reused and may be overriden.
 
   Uses `SSHKit.SSH.open/2`.
   """

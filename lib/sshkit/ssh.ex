@@ -70,7 +70,7 @@ defmodule SSHKit.SSH do
   """
   def run(connection, command, timeout \\ :infinity, ini \\ {:ok, [], nil}, handler \\ &capture/3) do
     case Channel.open(connection, timeout: timeout) do
-      {:ok, channel} -> Channel.execl(channel, command, timeout, ini, handler)
+      {:ok, channel} -> Channel.run(channel, command, timeout, ini, handler)
       other -> other
     end
   end
