@@ -1,7 +1,5 @@
 defmodule SSHKit.SSH do
   @moduledoc ~S"""
-  SSH utilities.
-
   Provides convenience functions for working with SSH connections
   and executing commands on remote hosts.
 
@@ -32,6 +30,8 @@ defmodule SSHKit.SSH do
 
   Uses `SSHKit.SSH.Connection.open/2` to open a connection.
 
+  ## Example
+
   ```
   {:ok, conn} = SSHKit.SSH.connect('eg.io', port: 2222, user: 'me', timeout: 1000)
   ```
@@ -44,6 +44,8 @@ defmodule SSHKit.SSH do
   Closes an SSH connection.
 
   Uses `SSHKit.SSH.Connection.close/1` to close the connection.
+
+  ## Example
 
   ```
   :ok = SSHKit.SSH.close(conn)
@@ -63,6 +65,8 @@ defmodule SSHKit.SSH do
   `{:normal, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
+
+  ## Example
 
   ```
   {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
