@@ -15,6 +15,7 @@ defmodule SSHKit.Mixfile do
   end
 
   defp deps do
-    []
+    [{:ex_doc, "~> 0.14", only: :docs},
+     {:inch_ex, ">= 0.0.0", only: :docs}]
   end
 end
