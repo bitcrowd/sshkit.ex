@@ -67,7 +67,7 @@ defmodule SSHKit.SSH.Channel do
 
   Returns `state` after the channel is closed.
   """
-  def loop(channel, fun, state \\ nil, timeout \\ :infinity) do
+  def loop(channel, timeout \\ :infinity, state \\ nil, fun) do
     connection = channel.connection
     ref = connection.ref
     id = channel.id
@@ -87,23 +87,7 @@ defmodule SSHKit.SSH.Channel do
 
     case message do
       {:closed} -> state
-      _ -> loop(channel, fun, state, timeout)
-    end
-  end
-
-  @doc """
-  Executes a command on the remote host and loops until the channel is closed.
-
-  Uses the `handler` function for handling received messages, `ini` as the
-  initial state for processing channel messages via `loop/4`.
-
-  Returns the final state returned by the `handler` function.
-  """
-  def run(channel, command, timeout \\ :infinity, ini \\ nil, handler) do
-    case exec(channel, command, timeout) do
-      :success -> loop(channel, handler, ini, timeout)
-      :failure -> {:error, :failure}
-      other -> other
+      _ -> loop(channel, timeout, state, fun)
     end
   end
 end
