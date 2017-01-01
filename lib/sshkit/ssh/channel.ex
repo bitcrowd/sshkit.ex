@@ -58,6 +58,28 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
+  Sends data across an open SSH channel.
+
+  Returns `:ok`, `{:error, :timeout}` or `{:error, :closed}`.
+
+  For more details, see [`:ssh_connection.send/5`](http://erlang.org/doc/man/ssh_connection.html#send-5).
+  """
+  def send(channel, type \\ 0, data, timeout \\ :infinity) do
+    :ssh_connection.send(channel.connection.ref, channel.id, type, data, timeout)
+  end
+
+  @doc """
+  Sends an EOF message on an open SSH channel.
+
+  Returns `:ok` or `{:error, :closed}`.
+
+  For more details, see [`:ssh_connection.send_eof/2`](http://erlang.org/doc/man/ssh_connection.html#send_eof-2).
+  """
+  def eof(channel) do
+    :ssh_connection.send_eof(channel.connection.ref, channel.id)
+  end
+
+  @doc """
   Loops over channel messages until the channel is closed.
 
   Invokes `fun` for each channel message, passing the channel, message and
