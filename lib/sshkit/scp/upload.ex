@@ -23,7 +23,7 @@ defmodule SSHKit.SCP.Upload do
   def transfer(connection, local, remote, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
 
-    cmd = Command.build(:upload, remote, options)
+    command = Command.build(:upload, remote, options)
 
     ini = {:next, ".", [[local]]}
 
@@ -53,7 +53,7 @@ defmodule SSHKit.SCP.Upload do
       end
     end
 
-    SSHKit.SSH.run(connection, cmd, timeout, ini, handler)
+    SSHKit.SSH.run(connection, command, timeout, ini, handler)
   end
 
   defp next(channel, _, ".", []) do
