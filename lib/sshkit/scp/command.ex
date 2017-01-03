@@ -3,22 +3,29 @@ defmodule SSHKit.SCP.Command do
 
   import SSHKit.Utils
 
-  def build(mode, path, options) do
-    scp = case mode do
-      :upload -> 'scp -t'
-      :download -> 'scp -f'
-    end
+  @flags [verbose: '-v', preserve: '-p', recursive: '-r']
 
-    flags = [verbose: '-v', preserve: '-p', recursive: '-r']
+  def build(:upload, path, options) do
+    scp('-t', path, options)
+  end
 
-    build = fn {key, flag}, cmd ->
-      if Keyword.get(options, key, false) do
-        '#{cmd} #{flag}'
-      else
-        cmd
-      end
-    end
+  def build(:download, path, options) do
+    scp('-f', path, options)
+  end
 
-    '#{Enum.reduce(flags, scp, build)} #{shellescape(path)}'
+  defp scp(mode, path, options) do
+    'scp #{mode}' |> flag(options) |> at(path)
+  end
+
+  defp flag(command, options) do
+    @flags
+    |> Enum.filter(fn {key, _} -> Keyword.get(options, key, false) end)
+    |> Enum.map(fn {_, flag} -> flag end)
+    |> Enum.into([command])
+    |> Enum.join(" ")
+  end
+
+  defp at(command, path) do
+    '#{command} #{shellescape(path)}'
   end
 end
