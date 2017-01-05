@@ -53,7 +53,7 @@ defmodule SSHKit.SCP do
   ## Example
 
   ```
-  :ok = SSHKit.SCP.download(conn, '/var/backups', 'backups', recursive: true)
+  :ok = SSHKit.SCP.download(conn, '/home/code/sshkit', 'downloads', recursive: true)
   ```
   """
   def download(connection, remote, local, options \\ []) do

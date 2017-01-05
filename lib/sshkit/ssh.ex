@@ -58,6 +58,33 @@ defmodule SSHKit.SSH do
   @doc """
   Executes a command on the remote.
 
+  Returns `{:ok, chan}` or `{:error, reason}`.
+
+  The returned channel will be closed once the command has exited.
+
+  ## Example
+
+  ```
+  {:ok, chan} = SSHKit.SSH.start(conn, 'scp -f /home/code/sshkit/README.md')
+  :ok = SSHKit.SSH.Channel.send(chan, <<0>>)
+  SSHKit.SSH.Channel.loop(chan, :infinity, :open, …)
+  ```
+  """
+  def start(connection, command, timeout \\ :infinity) do
+    case Channel.open(connection, timeout: timeout) do
+      {:ok, channel} ->
+        case Channel.exec(channel, command, timeout) do
+          :success -> {:ok, channel}
+          :failure -> {:error, :failure}
+          other -> other
+        end
+      other -> other
+    end
+  end
+
+  @doc """
+  Executes a command on the remote and listens to incoming messages.
+
   Using the default handler, returns `{:ok, output, status}` or
   `{:error, reason}`.
 
@@ -65,21 +92,26 @@ defmodule SSHKit.SSH do
   `{:normal, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
+  For further details on handling incoming messages,
+  see `SSHKit.SSH.Channel.loop/4`.
+
+  If the remote process expects you to send a first message before sending any
+  data itself, use:
+
+  1. `SSHKit.SSH.start/3` to start the command,
+  2. `SSHKit.SSH.Channel.send/4` to send your initial message, and then
+  3. `SSHKit.SSH.Channel.loop/4` for the remaining communication.
 
   ## Example
 
   ```
   {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
+  IO.inspect(output)
   ```
   """
   def run(connection, command, timeout \\ :infinity, ini \\ {:ok, [], nil}, handler \\ &capture/3) do
-    case Channel.open(connection, timeout: timeout) do
-      {:ok, channel} ->
-        case Channel.exec(channel, command, timeout) do
-          :success -> Channel.loop(channel, timeout, ini, handler)
-          :failure -> {:error, :failure}
-          other -> other
-        end
+    case start(connection, command, timeout) do
+      {:ok, channel} -> Channel.loop(channel, timeout, ini, handler)
       other -> other
     end
   end
