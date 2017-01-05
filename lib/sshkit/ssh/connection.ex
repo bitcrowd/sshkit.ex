@@ -42,7 +42,7 @@ defmodule SSHKit.SSH.Connection do
 
   Returns `:ok`.
 
-  For details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
+  For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
   def close(connection) do
     :ssh.close(connection.ref)
