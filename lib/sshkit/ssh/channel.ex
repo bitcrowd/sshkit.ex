@@ -80,6 +80,38 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
+  Receive the next message on an open SSH channel.
+
+  Returns `{:ok, message}` or `{:error, :timeout}`.
+
+  For more details, see [`:ssh_connection`](http://erlang.org/doc/man/ssh_connection.html).
+
+  ## Messages
+
+  The message tuples returned by `recv/3` correspond to the underlying Erlang
+  channel messages with the channel id stripped. `recv` only listens to
+  messages from the channel specified as the first argument.
+
+  * `{:data, type, data}` - data has arrived, `type` is 0 "normal" or 1 "stderr"
+  * `{:eof}` - indicates that no more data is to be sent by the remote process
+  * `{:exit_signal, signal, msg, lang}` - remote execution terminated by `signal`
+  * `{:exit_status, status}` - remote command terminated with exit code `status`
+  * `{:closed}` - indicates that the channel has now been shut down
+  """
+  def recv(channel, timeout \\ :infinity) do
+    ref = channel.connection.ref
+    id = channel.id
+
+    receive do
+      {:ssh_cm, ^ref, msg} when elem(msg, 1) == id ->
+        {:ok, Tuple.delete_at(msg, 1)}
+    after
+      timeout ->
+        {:error, :timeout}
+    end
+  end
+
+  @doc """
   Loops over channel messages until the channel is closed.
 
   Invokes `fun` for each channel message, passing the channel, message and
@@ -87,29 +119,26 @@ defmodule SSHKit.SSH.Channel do
 
   `timeout` specifies the maximum delay between two subsequent messages.
 
-  Returns `state` after the channel is closed.
+  Returns `state` after the channel is closed, or `{:error, :timeout}`.
   """
   def loop(channel, timeout \\ :infinity, state \\ nil, fun) do
-    connection = channel.connection
-    ref = connection.ref
-    id = channel.id
+    case recv(channel, timeout) do
+      {:ok, message} ->
+        ref = channel.connection.ref
+        id = channel.id
 
-    message = receive do
-      {:ssh_cm, ^ref, msg} when elem(msg, 1) == id -> Tuple.delete_at(msg, 1)
-    after
-      timeout -> {:error, :timeout}
-    end
+        case message do
+          {:data, _, data} -> :ssh_connection.adjust_window(ref, id, byte_size(data))
+          _ -> :ok
+        end
 
-    case message do
-      {:data, _, data} -> :ssh_connection.adjust_window(ref, id, byte_size(data))
-      _ -> :ok
-    end
+        state = fun.(channel, message, state)
 
-    state = fun.(channel, message, state)
-
-    case message do
-      {:closed} -> state
-      _ -> loop(channel, timeout, state, fun)
+        case message do
+          {:closed} -> state # we are done looping
+          _ -> loop(channel, timeout, state, fun)
+        end
+      {:error, :timeout} -> {:error, :timeout}
     end
   end
 end

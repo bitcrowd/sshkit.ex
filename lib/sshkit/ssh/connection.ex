@@ -15,7 +15,7 @@ defmodule SSHKit.SSH.Connection do
 
   The `:user_interaction` option is set to false by default.
 
-  For a complete list of options see:
+  For a complete list of options and their default values, see:
   [`:ssh.connect/4`](http://erlang.org/doc/man/ssh.html#connect-4).
 
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
@@ -55,6 +55,8 @@ defmodule SSHKit.SSH.Connection do
   Other connection options are reused and may be overriden.
 
   Uses `SSHKit.SSH.open/2`.
+
+  Returns `{:ok, conn}` or `{:error, reason}`.
   """
   def reopen(connection, options \\ []) do
     options =
