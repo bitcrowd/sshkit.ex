@@ -8,14 +8,14 @@ defmodule SSHKit do
 
   context =
     SSHKit.context(hosts)
-    |> SSHKit.cd("/var/www/phx")
+    |> SSHKit.pwd("/var/www/phx")
     |> SSHKit.user("deploy")
     |> SSHKit.group("deploy")
-    |> SSHKit.umask("007")
-    |> SSHKit.env("NODE_ENV", "production")
+    |> SSHKit.umask("022")
+    |> SSHKit.env(%{"NODE_ENV" => "production"})
 
-  context |> SSHKit.upload(".", recursive: true)
-  context |> SSHKit.run("yarn install", mode: :parallel)
+  :ok = SSHKit.upload(context, ".", recursive: true)
+  :ok = SSHKit.run(context, "yarn install", mode: :parallel)
   ```
   """
 
@@ -27,7 +27,7 @@ defmodule SSHKit do
 
   def context(hosts) do
     hosts = List.wrap(hosts) |> Enum.map(&host/1)
-    %Context{hosts: hosts, stack: []}
+    %Context{hosts: hosts}
   end
 
   def host(%{name: name, options: options}) do
@@ -42,24 +42,24 @@ defmodule SSHKit do
     %Host{name: name, options: options}
   end
 
-  def cd(context, path) do
-    Context.push(context, {:cd, path})
-  end
-
-  def user(context, name) do
-    Context.push(context, {:user, name})
-  end
-
-  def group(context, name) do
-    Context.push(context, {:group, name})
+  def pwd(context, path) do
+    %Context{context | pwd: path)}
   end
 
   def umask(context, mask) do
-    Context.push(context, {:umask, mask})
+    %Context{context | umask: mask}
   end
 
-  def env(context, name, value) do
-    Context.push(context, {:env, {name, value}})
+  def user(context, name) do
+    %Context{context | user: name}
+  end
+
+  def group(context, name) do
+    %Context{context | group: name}
+  end
+
+  def env(context, map) do
+    %Context{context | env: map}
   end
 
   def run(context, command) do
