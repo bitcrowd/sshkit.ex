@@ -2,17 +2,13 @@ defmodule SSHKit.FunctionalCase do
   use ExUnit.CaseTemplate
 
   setup tags do
-    IO.inspect(Map.get(tags, :servers, 1))
+    # IO.inspect(Map.get(tags, :servers, 1))
 
-    # use docker remote API?
-    # https://docs.docker.com/engine/reference/api/docker_remote_api/
-    # https://docs.docker.com/engine/reference/api/docker_remote_api_v1.24/
-
-    # ensure docker image is built
-    # start docker container
+    # start docker container(s)
+    # set up container(s) with user(s) & key(s)
 
     on_exit fn ->
-      # ensure docker container is killed and removed
+      :ok # ensure containers are killed and removed
     end
 
     :ok
