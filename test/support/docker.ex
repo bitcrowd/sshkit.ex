@@ -1,12 +1,42 @@
 defmodule Docker do
-  def build!(tag, path) do
-    {_, 0} = System.cmd("docker", ["build", "--tag", tag, path])
-  end
-
   def ready? do
-    case System.cmd("docker", ["info"], stderr_to_stdout: true) do
+    case cmd("info", [], stderr_to_stdout: true) do
       {_, 0} -> true
       _ -> false
+    end
+  end
+
+  def build!(tag, path) do
+    output = cmd!("build", ["--tag", tag, path])
+    Regex.run(~r{([0-9a-f]+)$}, output) |> List.last
+  end
+
+  def run!(options \\ [], image, command \\ nil, args \\ [])
+
+  def run!(options, image, nil, args) do
+    cmd!("run", options ++ [image] ++ args)
+  end
+
+  def run!(options, image, command, args) do
+    cmd!("run", options ++ [image, command] ++ args)
+  end
+
+  def exec!(options \\ [], container, command, args \\ []) do
+    cmd!("exec", options ++ [container, command] ++ args)
+  end
+
+  def kill!(options \\ [], containers) do
+    cmd!("kill", options ++ containers) |> String.split("\n")
+  end
+
+  def cmd(command, args \\ [], options \\ []) do
+    System.cmd("docker", [command | args], options)
+  end
+
+  def cmd!(command, args \\ [], options \\ []) do
+    case cmd(command, args, options) do
+      {output, 0} -> String.trim(output)
+      {_, status} -> raise("Failed on docker #{command} #{inspect(args)} (#{status})")
     end
   end
 end
