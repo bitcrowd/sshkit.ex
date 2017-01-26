@@ -29,7 +29,7 @@ defmodule SSHKit.Mixfile do
 
   defp description do
     """
-    A wrapper around erlangs ssh app
+    A wrapper around Erlangs ssh app
     """
   end
 
