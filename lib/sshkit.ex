@@ -43,7 +43,7 @@ defmodule SSHKit do
   end
 
   def pwd(context, path) do
-    %Context{context | pwd: path)}
+    %Context{context | pwd: path}
   end
 
   def umask(context, mask) do
