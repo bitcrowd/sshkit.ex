@@ -28,9 +28,7 @@ defmodule SSHKit.Mixfile do
   end
 
   defp description do
-    """
-    A wrapper around Erlangs ssh app
-    """
+    "A toolkit for performing tasks on one or more servers, built on top of Erlang’s SSH application"
   end
 
   defp package do
