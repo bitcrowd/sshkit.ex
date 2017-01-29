@@ -77,7 +77,7 @@ defmodule SSHKit.SCP.Upload do
   end
 
   defp time(channel, _, type, name, stat, cwd, stack) do
-    :ok = Channel.send(channel, 'T#{mtime} 0 #{atime} 0\n')
+    :ok = Channel.send(channel, 'T#{stat.mtime} 0 #{stat.atime} 0\n')
     {type, name, stat, cwd, stack}
   end
 
@@ -91,7 +91,7 @@ defmodule SSHKit.SCP.Upload do
     {:data, name, stat, cwd, stack}
   end
 
-  defp data(channel, _, name, stat, cwd, stack) do
+  defp data(channel, _, name, _, cwd, stack) do
     File.stream!(Path.join(cwd, name), [], 16_384)
     |> Enum.each(fn data -> :ok = Channel.send(channel, data) end)
 
