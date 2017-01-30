@@ -112,14 +112,20 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
-  Loops over channel messages until the channel is closed.
+  Loops over channel messages until the channel is closed, or looping is
+  stopped explicitly.
 
   Invokes `fun` for each channel message, passing the channel, message and
-  `state` as arguments. `fun`'s return value is stored in `state`.
+  `state` as arguments. `fun`'s return value must be a tagged tuple:
+
+  - `{:cont, term}` - stores `term` in `state` for the next call to `fun`
+  - `{:stop, term}` - stops the loop, which will return `{:stopped, term}`
 
   `timeout` specifies the maximum delay between two subsequent messages.
 
-  Returns `state` after the channel is closed, or `{:error, :timeout}`.
+  Returns `{:done, state}` after the channel is closed and the close message
+  has been handled. Returns `{:stopped, state}` if the loop was stopped early.
+  Returns `{:error, :timeout}` if a message was not received in time.
   """
   def loop(channel, timeout \\ :infinity, state \\ nil, fun) do
     case recv(channel, timeout) do
@@ -132,11 +138,14 @@ defmodule SSHKit.SSH.Channel do
           _ -> :ok
         end
 
-        state = fun.(channel, message, state)
-
-        case message do
-          {:closed} -> state # we are done looping
-          _ -> loop(channel, timeout, state, fun)
+        case fun.(channel, message, state) do
+          {:cont, state} ->
+            if message == {:closed} do
+              {:done, state}
+            else
+              loop(channel, timeout, state, fun)
+            end
+          {:stop, state} -> {:stopped, state}
         end
       {:error, :timeout} -> {:error, :timeout}
     end

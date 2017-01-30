@@ -109,19 +109,22 @@ defmodule SSHKit.SSH do
   IO.inspect(output)
   ```
   """
-  def run(connection, command, timeout \\ :infinity, ini \\ {:ok, [], nil}, handler \\ &capture/3) do
+  def run(connection, command, timeout \\ :infinity, ini \\ {[], nil}, handler \\ &capture/3) do
     case start(connection, command, timeout) do
-      {:ok, channel} -> Channel.loop(channel, timeout, ini, handler)
+      {:ok, channel} -> Channel.loop(channel, timeout, ini, handler) |> elem(1)
       other -> other
     end
   end
 
-  defp capture(_, message, state = {:ok, buffer, status}) do
-    case message do
-      {:data, 0, data} -> {:ok, [{:normal, data} | buffer], status}
-      {:data, 1, data} -> {:ok, [{:stderr, data} | buffer], status}
-      {:exit_status, code} -> {:ok, Enum.reverse(buffer), code}
+  defp capture(_, message, state = {buffer, status}) do
+    next = case message do
+      {:data, 0, data} -> {[{:normal, data} | buffer], status}
+      {:data, 1, data} -> {[{:stderr, data} | buffer], status}
+      {:exit_status, code} -> {buffer, code}
+      {:closed} -> {:ok, Enum.reverse(buffer), status}
       _ -> state
     end
+
+    {:cont, next}
   end
 end

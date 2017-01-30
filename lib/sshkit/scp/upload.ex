@@ -30,24 +30,21 @@ defmodule SSHKit.SCP.Upload do
     handler = fn channel, message, state ->
       case message do
         {:data, 0, <<0>>} ->
-          # name = elem(state, 0)
-          #
-          # args =
-          #   state
-          #   |> Tuple.delete_at(0)
-          #   |> Tuple.to_list
-          #   |> Enum.into([channel, options])
-          #
-          # apply(__MODULE__, name, args)
-
           case state do
             {:next, cwd, stack} -> next(channel, options, cwd, stack)
             {:directory, name, stat, cwd, stack} -> directory(channel, options, name, stat, cwd, stack)
             {:file, name, stat, cwd, stack} -> file(channel, options, name, stat, cwd, stack)
             {:data, name, stat, cwd, stack} -> data(channel, options, name, stat, cwd, stack)
-            {:done, 0} -> done(channel, options, 0)
+            {:done, status} -> done(channel, options, status)
           end
-        {:exit_status, status} -> {:done, status}
+        {:data, 0, <<1, msg :: binary>>} -> warning(channel, options, state, msg)
+        {:data, 0, <<2, msg :: binary>>} -> fatal(channel, options, state, msg)
+        {:data, 0, msg} ->
+          case state do
+            {:warning, state, buffer} -> warning(channel, options, state, buffer <> msg)
+            {:fatal, state, buffer} -> fatal(channel, options, state, buffer <> msg)
+          end
+        {:exit_status, status} -> exited(channel, options, status)
         {:eof} -> state
         {:closed} -> state
       end
@@ -58,12 +55,12 @@ defmodule SSHKit.SCP.Upload do
 
   defp next(channel, _, ".", []) do
     :ok = Channel.eof(channel)
-    {:done, nil}
+    {:cont, {:done, nil}}
   end
 
   defp next(channel, _, cwd, [[] | dirs]) do
     :ok = Channel.send(channel, 'E\n')
-    {:next, Path.dirname(cwd), dirs}
+    {:cont, {:next, Path.dirname(cwd), dirs}}
   end
 
   defp next(channel, options, cwd, [[name | rest] | dirs]) do
@@ -78,17 +75,17 @@ defmodule SSHKit.SCP.Upload do
 
   defp time(channel, _, type, name, stat, cwd, stack) do
     :ok = Channel.send(channel, 'T#{stat.mtime} 0 #{stat.atime} 0\n')
-    {type, name, stat, cwd, stack}
+    {:cont, {type, name, stat, cwd, stack}}
   end
 
   defp directory(channel, _, name, stat, cwd, stack) do
     :ok = Channel.send(channel, 'D#{modefmt(stat.mode)} 0 #{name}\n')
-    {:next, Path.join(cwd, name), stack}
+    {:cont, {:next, Path.join(cwd, name), stack}}
   end
 
   defp file(channel, _, name, stat, cwd, stack) do
     :ok = Channel.send(channel, 'C#{modefmt(stat.mode)} #{stat.size} #{name}\n')
-    {:data, name, stat, cwd, stack}
+    {:cont, {:data, name, stat, cwd, stack}}
   end
 
   defp data(channel, _, name, _, cwd, stack) do
@@ -97,11 +94,35 @@ defmodule SSHKit.SCP.Upload do
 
     :ok = Channel.send(channel, <<0>>)
 
-    {:next, cwd, stack}
+    {:cont, {:next, cwd, stack}}
+  end
+
+  defp exited(_, _, status) do
+    {:cont, {:done, status}}
   end
 
   defp done(_, _, 0) do
-    :ok
+    {:cont, :ok}
+  end
+
+  defp done(_, _, status) do
+    {:cont, {:error, "SCP exited with a non-zero exit code (#{status})"}}
+  end
+
+  defp warning(channel, options, state, buffer) do
+    error(channel, options, :warning, state, buffer)
+  end
+
+  defp fatal(channel, options, state, buffer) do
+    error(channel, options, :fatal, state, buffer)
+  end
+
+  defp error(_, _, type, state, buffer) do
+    if String.last(buffer) == "\n" do
+      {:stop, {:error, String.trim(buffer)}}
+    else
+      {:cont, {type, state, buffer}}
+    end
   end
 
   defp modefmt(value) do
