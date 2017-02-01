@@ -2,10 +2,15 @@ defmodule SSHKitTest do
   use SSHKit.FunctionalCase
   # doctest SSHKit
 
+  @defaults [silently_accept_hosts: true]
+
+  def options(overrides) do
+    Keyword.merge(@defaults, overrides)
+  end
+
   @tag boot: 1
   test "connects", %{hosts: [host]} do
-    IO.inspect(hosts)
-    # context = SSHKit.context({"192.168.99.100", port: host.port})
+    # context = SSHKit.context({host.ip, options(port: host.port)})
     # {:ok, output} = SSHKit.run(context, "whoami")
     # Docker.exec!(host.id, "ls")
   end

@@ -5,7 +5,7 @@ defmodule SSHKit.FunctionalCase do
     count = Map.get(tags, :boot, 1)
     debug = Map.get(tags, :debug, false)
 
-    hosts = Enum.map(1..count, &(boot(conf(&1, debug))))
+    hosts = Enum.map(1..count, &(init(boot(conf(&1, debug)))))
 
     on_exit fn -> kill(hosts) end
 
@@ -25,18 +25,25 @@ defmodule SSHKit.FunctionalCase do
     %{cmd: cmd, args: args}
   end
 
-  def boot(config) do
+  def boot(config = %{cmd: cmd, args: args}) do
     options = ["--rm", "--detach", "--publish-all"]
-    id = Docker.run!(options, "sshkit-test-sshd", config.cmd, config.args)
 
+    id = Docker.run!(options, "sshkit-test-sshd", cmd, args)
+
+    ip = Docker.host
+
+    port =
+      Docker.cmd!("port", [id, "22/tcp"])
+      |> String.split(":")
+      |> List.last
+      |> String.to_integer
+
+    Map.merge(config, %{id: id, ip: ip, port: port})
+  end
+
+  def init(host) do
     # TODO: Set up container with user & keys, e.g. via Docker.exec!
-
-    addr = Docker.cmd!("port", [id, "22/tcp"])
-    uri = URI.parse("tcp://" <> addr)
-
-    # TODO: Get correct hostname/IP when using docker-machine
-
-    Map.merge(config, %{id: id, port: uri.port})
+    Map.merge(host, %{user: nil, key: nil, password: nil})
   end
 
   def kill(hosts) do
