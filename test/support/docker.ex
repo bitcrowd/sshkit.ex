@@ -6,6 +6,13 @@ defmodule Docker do
     end
   end
 
+  def host do
+    case System.get_env("DOCKER_HOST") do
+      addr when is_binary(addr) -> Map.get(URI.parse(addr), :host)
+      nil -> "127.0.0.1"
+    end
+  end
+
   def build!(tag, path) do
     output = cmd!("build", ["--tag", tag, path])
     Regex.run(~r{([0-9a-f]+)$}, output) |> List.last
