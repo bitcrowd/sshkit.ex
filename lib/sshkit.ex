@@ -69,7 +69,9 @@ defmodule SSHKit do
 
     run = fn host ->
       {:ok, conn} = SSH.connect(host.name, host.options)
-      SSH.run(conn, cmd)
+      res = SSH.run(conn, cmd)
+      :ok = SSH.close(conn)
+      res
     end
 
     Enum.map(context.hosts, run)

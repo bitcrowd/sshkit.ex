@@ -12,6 +12,6 @@ unless Docker.ready? do
   exit({:shutdown, 1})
 end
 
-Docker.build!("sshkit-test-sshd", "test/docker")
+Docker.build!("sshkit-test-sshd", "test/support/docker")
 
 ExUnit.start()
