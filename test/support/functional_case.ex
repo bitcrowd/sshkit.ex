@@ -41,9 +41,15 @@ defmodule SSHKit.FunctionalCase do
     Map.merge(config, %{id: id, ip: ip, port: port})
   end
 
-  def init(host) do
+  def init(host = %{id: id}) do
     # TODO: Set up container with user & keys, e.g. via Docker.exec!
-    Map.merge(host, %{user: nil, key: nil, password: nil})
+    username = "me"
+    password = "pass"
+
+    Docker.exec!([], id, "adduser", ["-D", "me"])
+    Docker.exec!([], id, "sh", ["-c", "echo #{username}:#{password} | chpasswd &>/dev/null"])
+
+    Map.merge(host, %{user: username, password: password, key: nil})
   end
 
   def kill(hosts) do
