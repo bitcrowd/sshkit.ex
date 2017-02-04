@@ -1,5 +1,5 @@
 defmodule SSHKitTest do
-  use SSHKit.FunctionalCase
+  use SSHKit.FunctionalCase, async: true
   # doctest SSHKit
 
   @defaults [silently_accept_hosts: true]
