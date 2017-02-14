@@ -1,4 +1,12 @@
 defmodule Docker do
+  defmodule Error do
+    defexception [:command, :args, :status, :output]
+
+    def message(%{command: command, args: args, status: status, output: output}) do
+      "Failed on docker #{Enum.join([command | args], " ")} (#{status}):\n#{output}"
+    end
+  end
+
   @doc """
   Checks whether docker is available and ready to be run.
 
@@ -10,7 +18,7 @@ defmodule Docker do
   Otherwise returns true and Docker should be ready for use.
   """
   def ready? do
-    case cmd("info", [], stderr_to_stdout: true) do
+    case cmd("info", []) do
       {_, 0} -> true
       _ -> false
     end
@@ -42,21 +50,18 @@ defmodule Docker do
   Returns the image ID.
   """
   def build!(tag, path) do
-    output = cmd!("build", ["--tag", tag, path])
-    Regex.run(~r{([0-9a-f]+)$}, output) |> List.last
+    cmd!("build", ["--quiet", "--tag", tag, path])
   end
-
-  @runopts ~w[--rm --detach --publish-all]
 
   @doc """
   Runs a command in a new container.
 
   Returns the command output.
   """
-  def run!(options \\ @runopts, image, command \\ nil, args \\ [])
+  def run!(options \\ [], image, command \\ nil, args \\ [])
 
-  def run!(options, image, nil, args) do
-    cmd!("run", options ++ [image] ++ args)
+  def run!(options, image, nil, []) do
+    cmd!("run", options ++ [image])
   end
 
   def run!(options, image, command, args) do
@@ -78,7 +83,7 @@ defmodule Docker do
   Returns a list of the killed containers' IDs.
   """
   def kill!(options \\ [], containers) do
-    cmd!("kill", options ++ containers) |> String.split("\n")
+    cmd!("kill", options ++ List.wrap(containers)) |> String.split("\n")
   end
 
   @doc """
@@ -88,20 +93,22 @@ defmodule Docker do
 
   For details, see [`System.cmd/3`](https://hexdocs.pm/elixir/System.html#cmd/3).
   """
-  def cmd(command, args \\ [], options \\ []) do
-    System.cmd("docker", [command | args], options)
+  def cmd(command, args \\ []) do
+    System.cmd("docker", [command | args], stderr_to_stdout: true)
   end
 
   @doc """
   Runs a docker command with the given arguments.
 
   Returns the command output or, if the command exits with a non-zero status,
-  raises a [`RuntimeError`](https://hexdocs.pm/elixir/RuntimeError.html).
+  raises a `Docker.Error`.
   """
-  def cmd!(command, args \\ [], options \\ []) do
-    case cmd(command, args, options) do
-      {output, 0} -> String.trim(output)
-      {_, status} -> raise("Failed on docker #{command} #{inspect(args)} (#{status})")
+  def cmd!(command, args \\ []) do
+    {output, status} = cmd(command, args)
+
+    case status do
+      0 -> String.trim(output)
+      _ -> raise Error, command: command, args: args, status: status, output: output
     end
   end
 end
