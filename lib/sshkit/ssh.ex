@@ -56,51 +56,22 @@ defmodule SSHKit.SSH do
   end
 
   @doc """
-  Executes a command on the remote.
+  Executes a command on the remote and aggregates incoming messages.
 
-  Returns `{:ok, chan}` or `{:error, reason}`.
-
-  The returned channel will be closed once the command has exited.
-
-  ## Example
-
-  ```
-  {:ok, chan} = SSHKit.SSH.start(conn, 'scp -f /home/code/sshkit/README.md')
-  :ok = SSHKit.SSH.Channel.send(chan, <<0>>)
-  SSHKit.SSH.Channel.loop(chan, :infinity, :open, …)
-  ```
-  """
-  def start(connection, command, timeout \\ :infinity) do
-    case Channel.open(connection, timeout: timeout) do
-      {:ok, channel} ->
-        case Channel.exec(channel, command, timeout) do
-          :success -> {:ok, channel}
-          :failure -> {:error, :failure}
-          other -> other
-        end
-      other -> other
-    end
-  end
-
-  @doc """
-  Executes a command on the remote and listens to incoming messages.
-
-  Using the default handler, returns `{:ok, output, status}` or
-  `{:error, reason}`.
-
-  By default, command output is captured into a list of tuples of the form
-  `{:normal, data}` or `{:stderr, data}`.
+  Using the default handler, returns `{:ok, output, status}` or `{:error,
+  reason}`. By default, command output is captured into a list of tuples of the
+  form `{:normal, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
+
   For further details on handling incoming messages,
   see `SSHKit.SSH.Channel.loop/4`.
 
-  If the remote process expects you to send a first message before sending any
-  data itself, use:
+  ## Options
 
-  1. `SSHKit.SSH.start/3` to start the command,
-  2. `SSHKit.SSH.Channel.send/4` to send your initial message, and then
-  3. `SSHKit.SSH.Channel.loop/4` for the remaining communication.
+  * `:timeout` - maximum wait time between messages, defautls to `:infinity`
+  * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
+  * `:acc` - initial accumulator value used in the loop
 
   ## Example
 
@@ -109,19 +80,28 @@ defmodule SSHKit.SSH do
   IO.inspect(output)
   ```
   """
-  def run(connection, command, timeout \\ :infinity, ini \\ {[], nil}, handler \\ &capture/3) do
-    case start(connection, command, timeout) do
-      {:ok, channel} -> Channel.loop(channel, timeout, ini, handler) |> elem(1)
-      other -> other
+  def run(connection, command, options \\ []) do
+    timeout = Keyword.get(options, :timeout, :infinity)
+    acc = Keyword.get(options, :acc, {:cont, {[], nil}})
+    fun = Keyword.get(options, :fun, &capture/2)
+
+    case Channel.open(connection, timeout: timeout) do
+      {:ok, channel} ->
+        case Channel.exec(channel, command, timeout) do
+          :success -> Channel.loop(channel, timeout, acc, fun) |> elem(1)
+          :failure -> {:error, :failure}
+          err -> err
+        end
+      err -> err
     end
   end
 
-  defp capture(_, message, state = {buffer, status}) do
+  defp capture(message, state = {buffer, status}) do
     next = case message do
-      {:data, 0, data} -> {[{:normal, data} | buffer], status}
-      {:data, 1, data} -> {[{:stderr, data} | buffer], status}
-      {:exit_status, code} -> {buffer, code}
-      {:closed} -> {:ok, Enum.reverse(buffer), status}
+      {:data, _, 0, data} -> {[{:normal, data} | buffer], status}
+      {:data, _, 1, data} -> {[{:stderr, data} | buffer], status}
+      {:exit_status, _, code} -> {buffer, code}
+      {:closed, _} -> {:ok, Enum.reverse(buffer), status}
       _ -> state
     end
 

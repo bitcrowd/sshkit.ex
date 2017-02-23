@@ -33,7 +33,7 @@ defmodule SSHKit.SSH.Connection do
 
     case :ssh.connect(host, port, options, timeout) do
       {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref}}
-      other -> other
+      err -> err
     end
   end
 
@@ -52,7 +52,7 @@ defmodule SSHKit.SSH.Connection do
   Opens a new connection, based on the parameters of an existing one.
 
   The timeout value of the original connection is discarded.
-  Other connection options are reused and may be overriden.
+  Other connection options are reused and may be overridden.
 
   Uses `SSHKit.SSH.open/2`.
 
