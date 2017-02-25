@@ -20,11 +20,22 @@ defmodule SSHKit.SCP.Upload do
   ```
   """
   def transfer(connection, local, remote, options \\ []) do
+    recursive = Keyword.get(options, :recursive, false)
+    local = Path.expand(local)
+
+    if !recursive && File.dir?(local) do
+      {:error, "SCP option :recursive not specified, but local file is a directory (#{local})"}
+    else
+      start(connection, local, remote, options)
+    end
+  end
+
+  defp start(connection, local, remote, options) do
     timeout = Keyword.get(options, :timeout, :infinity)
 
     command = Command.build(:upload, remote, options)
 
-    ini = {:next, ".", [[local]]}
+    ini = {:next, Path.dirname(local), [[Path.basename(local)]]}
 
     handler = fn message, state ->
       case message do
@@ -32,7 +43,7 @@ defmodule SSHKit.SCP.Upload do
           case state do
             {:next, cwd, stack} -> next(options, cwd, stack)
             {:directory, name, stat, cwd, stack} -> directory(options, name, stat, cwd, stack)
-            {:file, name, stat, cwd, stack} -> file(options, name, stat, cwd, stack)
+            {:regular, name, stat, cwd, stack} -> regular(options, name, stat, cwd, stack)
             {:data, name, stat, cwd, stack} -> data(options, name, stat, cwd, stack)
             {:done, status} -> done(options, status)
           end
@@ -52,7 +63,7 @@ defmodule SSHKit.SCP.Upload do
     SSHKit.SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
   end
 
-  defp next(_, ".", []) do
+  defp next(_, _, []) do
     {:cont, :eof, {:done, nil}}
   end
 
@@ -64,9 +75,18 @@ defmodule SSHKit.SCP.Upload do
     path = Path.join(cwd, name)
     stat = File.stat!(path, time: :posix)
 
-    case stat.type do
-      :directory -> directory(options, name, stat, cwd, [File.ls!(path) | [rest | dirs]])
-      :regular -> file(options, name, stat, cwd, [rest | dirs])
+    stack = case stat.type do
+      :directory -> [File.ls!(path) | [rest | dirs]]
+      :regular -> [rest | dirs]
+    end
+
+    if Keyword.get(options, :preserve, false) do
+      time(options, stat.type, name, stat, cwd, stack)
+    else
+      case stat.type do
+        :directory -> directory(options, name, stat, cwd, stack)
+        :regular -> regular(options, name, stat, cwd, stack)
+      end
     end
   end
 
@@ -80,7 +100,7 @@ defmodule SSHKit.SCP.Upload do
     {:cont, directive, {:next, Path.join(cwd, name), stack}}
   end
 
-  defp file(_, name, stat, cwd, stack) do
+  defp regular(_, name, stat, cwd, stack) do
     directive = 'C#{modefmt(stat.mode)} #{stat.size} #{name}\n'
     {:cont, directive, {:data, name, stat, cwd, stack}}
   end
