@@ -16,7 +16,7 @@ defmodule SSHKit.SCP.Upload do
   ## Example
 
   ```
-  :ok = SSHKit.SCP.Upload.transfer(conn, '.', '/home/code/sshkit', recursive: true)
+  :ok = SSHKit.SCP.Upload.transfer(conn, ".", "/home/code/sshkit", recursive: true)
   ```
   """
   def transfer(connection, local, remote, options \\ []) do
@@ -44,8 +44,7 @@ defmodule SSHKit.SCP.Upload do
             {:next, cwd, stack} -> next(options, cwd, stack)
             {:directory, name, stat, cwd, stack} -> directory(options, name, stat, cwd, stack)
             {:regular, name, stat, cwd, stack} -> regular(options, name, stat, cwd, stack)
-            {:data, name, stat, cwd, stack} -> data(options, name, stat, cwd, stack)
-            {:done, status} -> done(options, status)
+            {:write, name, stat, cwd, stack} -> write(options, name, stat, cwd, stack)
           end
         {:data, _, 0, <<1, msg :: binary>>} -> warning(options, state, msg)
         {:data, _, 0, <<2, msg :: binary>>} -> fatal(options, state, msg)
@@ -55,8 +54,8 @@ defmodule SSHKit.SCP.Upload do
             {:fatal, state, buffer} -> fatal(options, state, buffer <> msg)
           end
         {:exit_status, _, status} -> exited(options, status)
-        {:eof, _} -> cont(state)
-        {:closed, _} -> cont(state)
+        {:eof, _} -> eof(options, state)
+        {:closed, _} -> closed(options, state)
       end
     end
 
@@ -102,10 +101,10 @@ defmodule SSHKit.SCP.Upload do
 
   defp regular(_, name, stat, cwd, stack) do
     directive = 'C#{modefmt(stat.mode)} #{stat.size} #{name}\n'
-    {:cont, directive, {:data, name, stat, cwd, stack}}
+    {:cont, directive, {:write, name, stat, cwd, stack}}
   end
 
-  defp data(_, name, _, cwd, stack) do
+  defp write(_, name, _, cwd, stack) do
     fs = File.stream!(Path.join(cwd, name), [], 16_384)
     {:cont, Stream.concat(fs, [<<0>>]), {:next, cwd, stack}}
   end
@@ -114,31 +113,35 @@ defmodule SSHKit.SCP.Upload do
     {:cont, {:done, status}}
   end
 
-  defp done(_, 0) do
-    {:cont, :ok}
-  end
-
-  defp done(_, status) do
-    {:cont, {:error, "SCP exited with a non-zero exit code (#{status})"}}
-  end
-
-  defp cont(state) do
+  defp eof(_, state) do
     {:cont, state}
   end
 
-  defp warning(options, state, buffer) do
-    error(options, :warning, state, buffer)
+  defp closed(_, {:done, 0}) do
+    {:cont, :ok}
   end
 
-  defp fatal(options, state, buffer) do
-    error(options, :fatal, state, buffer)
+  defp closed(_, {:done, status}) do
+    {:cont, {:error, "SCP exited with a non-zero exit code (#{status})"}}
   end
 
-  defp error(_, type, state, buffer) do
+  defp closed(_, _) do
+    {:cont, {:error, "SCP channel closed before completing the transfer"}}
+  end
+
+  defp warning(_, state, buffer) do
+    if String.last(buffer) == "\n" do
+      {:cont, state} # TODO: Handle/output warning message (buffer)?
+    else
+      {:cont, {:warning, state, buffer}}
+    end
+  end
+
+  defp fatal(_, state, buffer) do
     if String.last(buffer) == "\n" do
       {:halt, {:error, String.trim(buffer)}}
     else
-      {:cont, {type, state, buffer}}
+      {:cont, {:fatal, state, buffer}}
     end
   end
 
