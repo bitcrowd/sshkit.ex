@@ -10,14 +10,11 @@ defmodule SSHKit.SSH do
   {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
   :ok = SSHKit.SSH.close(conn)
 
-  log = fn {type, data} ->
-    case type do
-      :normal -> IO.write(data)
-      :stderr -> IO.write([IO.ANSI.red, data, IO.ANSI.reset])
-    end
-  end
+  Enum.each(output, fn
+    {:normal, data} -> IO.write(data)
+    {:stderr, data} -> IO.write([IO.ANSI.red, data, IO.ANSI.reset])
+  end)
 
-  Enum.each(output, log)
   IO.puts("$?: #{status}")
   ```
   """
