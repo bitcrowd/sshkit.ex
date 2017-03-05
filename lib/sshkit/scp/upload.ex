@@ -35,16 +35,16 @@ defmodule SSHKit.SCP.Upload do
 
     command = Command.build(:upload, remote, options)
 
-    ini = {:next, Path.dirname(local), [[Path.basename(local)]]}
+    ini = {:next, Path.dirname(local), [[Path.basename(local)]], []}
 
     handler = fn message, state ->
       case message do
         {:data, _, 0, <<0>>} ->
           case state do
-            {:next, cwd, stack} -> next(options, cwd, stack)
-            {:directory, name, stat, cwd, stack} -> directory(options, name, stat, cwd, stack)
-            {:regular, name, stat, cwd, stack} -> regular(options, name, stat, cwd, stack)
-            {:write, name, stat, cwd, stack} -> write(options, name, stat, cwd, stack)
+            {:next, cwd, stack, errs} -> next(options, cwd, stack, errs)
+            {:directory, name, stat, cwd, stack, errs} -> directory(options, name, stat, cwd, stack, errs)
+            {:regular, name, stat, cwd, stack, errs} -> regular(options, name, stat, cwd, stack, errs)
+            {:write, name, stat, cwd, stack, errs} -> write(options, name, stat, cwd, stack, errs)
           end
         {:data, _, 0, <<1, msg :: binary>>} -> warning(options, state, msg)
         {:data, _, 0, <<2, msg :: binary>>} -> fatal(options, state, msg)
@@ -53,7 +53,7 @@ defmodule SSHKit.SCP.Upload do
             {:warning, state, buffer} -> warning(options, state, buffer <> msg)
             {:fatal, state, buffer} -> fatal(options, state, buffer <> msg)
           end
-        {:exit_status, _, status} -> exited(options, status)
+        {:exit_status, _, status} -> exited(options, state, status)
         {:eof, _} -> eof(options, state)
         {:closed, _} -> closed(options, state)
       end
@@ -62,15 +62,15 @@ defmodule SSHKit.SCP.Upload do
     SSHKit.SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
   end
 
-  defp next(_, _, []) do
-    {:cont, :eof, {:done, nil}}
+  defp next(_, _, [], errs) do
+    {:cont, :eof, {:done, nil, errs}}
   end
 
-  defp next(_, cwd, [[] | dirs]) do
-    {:cont, 'E\n', {:next, Path.dirname(cwd), dirs}}
+  defp next(_, cwd, [[] | dirs], errs) do
+    {:cont, 'E\n', {:next, Path.dirname(cwd), dirs, errs}}
   end
 
-  defp next(options, cwd, [[name | rest] | dirs]) do
+  defp next(options, cwd, [[name | rest] | dirs], errs) do
     path = Path.join(cwd, name)
     stat = File.stat!(path, time: :posix)
 
@@ -80,58 +80,62 @@ defmodule SSHKit.SCP.Upload do
     end
 
     if Keyword.get(options, :preserve, false) do
-      time(options, stat.type, name, stat, cwd, stack)
+      time(options, stat.type, name, stat, cwd, stack, errs)
     else
       case stat.type do
-        :directory -> directory(options, name, stat, cwd, stack)
-        :regular -> regular(options, name, stat, cwd, stack)
+        :directory -> directory(options, name, stat, cwd, stack, errs)
+        :regular -> regular(options, name, stat, cwd, stack, errs)
       end
     end
   end
 
-  defp time(_, type, name, stat, cwd, stack) do
+  defp time(_, type, name, stat, cwd, stack, errs) do
     directive = 'T#{stat.mtime} 0 #{stat.atime} 0\n'
-    {:cont, directive, {type, name, stat, cwd, stack}}
+    {:cont, directive, {type, name, stat, cwd, stack, errs}}
   end
 
-  defp directory(_, name, stat, cwd, stack) do
+  defp directory(_, name, stat, cwd, stack, errs) do
     directive = 'D#{modefmt(stat.mode)} 0 #{name}\n'
-    {:cont, directive, {:next, Path.join(cwd, name), stack}}
+    {:cont, directive, {:next, Path.join(cwd, name), stack, errs}}
   end
 
-  defp regular(_, name, stat, cwd, stack) do
+  defp regular(_, name, stat, cwd, stack, errs) do
     directive = 'C#{modefmt(stat.mode)} #{stat.size} #{name}\n'
-    {:cont, directive, {:write, name, stat, cwd, stack}}
+    {:cont, directive, {:write, name, stat, cwd, stack, errs}}
   end
 
-  defp write(_, name, _, cwd, stack) do
+  defp write(_, name, _, cwd, stack, errs) do
     fs = File.stream!(Path.join(cwd, name), [], 16_384)
-    {:cont, Stream.concat(fs, [<<0>>]), {:next, cwd, stack}}
+    {:cont, Stream.concat(fs, [<<0>>]), {:next, cwd, stack, errs}}
   end
 
-  defp exited(_, status) do
-    {:cont, {:done, status}}
+  defp exited(_, {:done, nil, errs}, status) do
+    {:cont, {:done, status, errs}}
+  end
+
+  defp exited(_, {_, _, _, errs}, status) do
+    {:halt, {:error, "SCP exited before completing the transfer (#{status}): #{Enum.join(errs, ", ")}"}}
   end
 
   defp eof(_, state) do
     {:cont, state}
   end
 
-  defp closed(_, {:done, 0}) do
+  defp closed(_, {:done, 0, _}) do
     {:cont, :ok}
   end
 
-  defp closed(_, {:done, status}) do
-    {:cont, {:error, "SCP exited with a non-zero exit code (#{status})"}}
+  defp closed(_, {:done, status, errs}) do
+    {:cont, {:error, "SCP exited with non-zero exit code #{status}: #{Enum.join(errs, ", ")}"}}
   end
 
   defp closed(_, _) do
     {:cont, {:error, "SCP channel closed before completing the transfer"}}
   end
 
-  defp warning(_, state, buffer) do
+  defp warning(_, {name, cwd, stack, errs} = state, buffer) do
     if String.last(buffer) == "\n" do
-      {:cont, state} # TODO: Handle/output warning message (buffer)?
+      {:cont, {name, cwd, stack, errs ++ [String.trim(buffer)]}}
     else
       {:cont, {:warning, state, buffer}}
     end
