@@ -119,6 +119,22 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
+  Flushes any pending messages for the given channel.
+
+  Returns `:ok`.
+  """
+  def flush(channel, timeout \\ 0) do
+    ref = channel.connection.ref
+    id = channel.id
+
+    receive do
+      {:ssh_cm, ^ref, msg} when elem(msg, 1) == id -> flush(channel)
+    after
+      timeout -> :ok
+    end
+  end
+
+  @doc """
   Adjusts the flow control window.
 
   Returns `:ok`.
@@ -182,7 +198,7 @@ defmodule SSHKit.SSH.Channel do
       {:ok, msg} ->
         if elem(msg, 0) == :closed do
           {_, acc} = fun.(msg, acc)
-          {:done, acc}
+          done(channel, acc)
         else
           :ok = ljust(channel, msg)
           loop(channel, timeout, fun.(msg, acc), fun)
@@ -196,12 +212,21 @@ defmodule SSHKit.SSH.Channel do
   end
 
   def loop(channel, timeout, {:suspend, acc}, fun) do
-    {:suspended, acc, &loop(channel, timeout, &1, fun)}
+    suspend(channel, acc, fun, timeout)
   end
 
   defp halt(channel, acc) do
     :ok = close(channel)
+    :ok = flush(channel)
     {:halted, acc}
+  end
+
+  defp suspend(channel, acc, fun, timeout) do
+    {:suspended, acc, &loop(channel, timeout, &1, fun)}
+  end
+
+  defp done(_, acc) do
+    {:done, acc}
   end
 
   defp lsend(_, nil, _), do: :ok
