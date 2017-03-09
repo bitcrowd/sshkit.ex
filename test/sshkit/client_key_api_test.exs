@@ -3,36 +3,6 @@ defmodule SSHKit.SSH.ClientKeyApiTest do
 
   alias SSHKit.SSH.ClientKeyApi
 
-    @key """
-  -----BEGIN RSA PRIVATE KEY-----
-  MIIEpQIBAAKCAQEAr7CylYwuNUCYjOV7uj0X8ZRVVKlwhKtavL0vtmCiSes/TQ+u
-  bQb7787djy4fILh/9ALsvOs6mzmAI9Ye6CxwG2nPhbweD76K/92cAAvbcwWFhKTS
-  6q2MY6XhATcORqQmYhi6JToYkz51JFeG0k38TwyiIBaLe4yKTCnZ6F0tIB9szdR8
-  pNOoZTMDAjXRDA1T0Y1wgxXn5dCFR4ywDcphRTu18FWhulruyPGQjRjFRzZCF8rO
-  PYRCVBaWCIQ9Guj6VnAOaPH3tIkkdTxAeMigflCsCbFttbKLSVbi+woQrOnpQt1G
-  T9YPaZed9vuXXJMI5IzUacoveyqr/X5cOfdVjwIDAQABAoIBAQCWJHRJt1WZ7s0v
-  w8H8A8/dhT1zL6ZXyrStjSQkQOsQLrmXGqqexBQz+V6AyRKS/PlkR8eXH5OjKf2n
-  IoqhMbDQzJkrmfs6y0SwqutxYrC02GglVlJledD7K7xhNHK/zfJ7bNRPkhmEZCDp
-  4N74BOt1hr9amsmy2QUrV6zAljhFNQtGXlMIzjSwkhAO5RyVDdNUIuXVbK4vYQ8n
-  60LAFUqrNMU0H5P7N1I9Wv1XdVroQ23bZkkoQ2YNg3+Xt8/ma1R8ImliODq593EF
-  EWDdtcm6gUeKfZSmu3V3XLX2w03/xng9PiQJWhDyGiiqylLWw61V72BOfk8Lsq03
-  bCI8HP5pAoGBANmMlI31H1E6zNrJ5/1+2IETRLJhwhCE5SJ14UgHpGjzWpCRVoi1
-  KY+N6FfUgReMn6efFtJj59cKUxkODDr4yt+8mfM0evfIUJumQ56czDv5l2m3dnm1
-  0JOX4jIwetFv0ROrbk7EONkg4BYLV3OFlekB+iNR0cW3mtPM/x35hvbbAoGBAM6+
-  Icf5pDwvU9tqgBlbYdN9D8IJa2kTC2818XAeEBcnDsQNrpKNGfG7jcOb7Os7Qs4q
-  ArIrfaWKH5OnRv8sxEJzvR1yQ7zfN0qL5+FgI95/5GmNzmiIOMIRltszuqvXhEbf
-  VfxoEOrYidiliI1P2oSkaSHnKh06vTcX/Iuve3hdAoGAPLahFuUb8l2Iol7K4dIu
-  tgccmvPxZw7Pq8heMO4BElEoK0SEc+6rRKcD+s8Rn/Lc87jQc7LyFu+ItWtYOnUI
-  mVxXUqqIzvIWnPnP0UpNLUfA2/4ZkGoPZcFznTIudJjSLr0fMdhNTTuBjmVn6JOV
-  fMvSdVz2QEm3afjCEil7YxUCgYEAkSPH4XUvyJTNQTfGUIbn6apdurIUNwMIvv1W
-  z4g7cZWY9yhHy1jFwwARqSa5L/c9kjDKDb0ci2+pdWY1IIWUDrbkKF0Ekv79+Ra5
-  Jm7xH44Xk8bbBmXDuvLQPnlVbrhxg7Pc0MNaRRTZyT+E2vgZh49Iw2VfGoAXQCtV
-  v9blTn0CgYEAoaLnpcDDIAJrSEuYJlmMkCSOLnDaUJ2Gvk7h8J3AKUJqaZKDrYtp
-  LkmEnkNn9pRguHw5O4t2A2/MPTMMPl9okxWUxmFol6vrLcVWJ7fHKnAgN4VeVdmV
-  3wC+maU88MNIdY/eZWowKv/3ZzENQAJYVSOoDKRM5prZ4UMml4xIv4c=
-  -----END RSA PRIVATE KEY-----
-  """
-
   @decoded_pem {
     :RSAPrivateKey, 
     :"two-prime", 
@@ -40,86 +10,72 @@ defmodule SSHKit.SSH.ClientKeyApiTest do
     :asn1_NOVALUE
   }  
 
-  @known_hosts """
-github.com,192.30.252.128 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
-"""
-
   @host_key {
     :RSAPublicKey, 
     21634204163197213132817109123906975906368888521544012567769262995559431966147970056259890368935740096079275379887017970430632559083119648736096672444000478892100121400122505155635695213610246722639150597148186404829574795017869184029845276838222700401896051725788665083080114314875103545837696279553436341967388240785773957395421170074137268759810304409727303757139265883118481355074238232002946450070460602471201997377623196017810991617729908588802783067540409316213603919494955068312762445623851275603318105356333614840694877780018045461415298887693169943421044958989561462337777142733008105081260079805978461159529, 
     35
   }
-
-  @tmp_dir "./test/temp"
-
-  setup_all do
-    File.mkdir_p!(@tmp_dir)
-    on_exit(fn -> File.rm_rf!(@tmp_dir) end)
-  end
-
   
   setup do
-    {:ok, known_hosts} =  StringIO.open(@known_hosts)
-    {:ok, key} = StringIO.open(@key)
+    support_dir = Path.join(File.cwd!, "test/support/keys")
+    key_file = Path.join(support_dir, "id_rsa")
+    known_hosts_tmpl = Path.join(support_dir, "known_hosts.tmpl")
+    known_hosts_file = Path.join(support_dir, "known_hosts")
+    File.cp!(known_hosts_tmpl, known_hosts_file)
+    on_exit(fn -> File.rm!(known_hosts_file) end)    
     %{
-      known_hosts: known_hosts,
-      key: key
+      known_hosts_file: known_hosts_file,
+      key_file: key_file
     }
   end
 
-  test "add_host_key writes an entry to known hosts if accept_hosts is true" do
-    {:ok, known_hosts} = StringIO.open("")
+  test "add_host_key writes an entry to known hosts if accept_hosts is true", %{known_hosts_file: known_hosts_file} do
     ClientKeyApi.add_host_key(
       "example.com", 
       @host_key, 
-      [key_cb_private: [accept_hosts: true, known_hosts: known_hosts]]
+      [key_cb_private: [accept_hosts: true, known_hosts_file: known_hosts_file]]
       )
-    result = StringIO.flush(known_hosts)
+    result = File.read!(known_hosts_file)
     assert result =~ "example.com"
   end
 
-  test "add_host_key returns an error if accept_hosts is false" do
-    {:ok, known_hosts} = StringIO.open("")
+  test "add_host_key returns an error if accept_hosts is false", %{known_hosts_file: known_hosts_file} do
     result = ClientKeyApi.add_host_key(
       "example.com", 
       @host_key, 
-      [key_cb_private: [accept_hosts: false, known_hosts: known_hosts]])    
+      [key_cb_private: [accept_hosts: false,known_hosts_file: known_hosts_file]])    
     assert {:error, _message} = result  
   end  
 
-  test "is_host_key returns true if host and key match known hosts entry", %{known_hosts: known_hosts} do
+  test "is_host_key returns true if host and key match known hosts entry", %{known_hosts_file: known_hosts_file} do
     result = ClientKeyApi.is_host_key(
       @host_key,
       'github.com', 
       nil,
-      [key_cb_private: [accept_hosts: false, known_hosts: known_hosts]])
+      [key_cb_private: [accept_hosts: false, known_hosts_file: known_hosts_file]])
     assert result
   end
 
-  test "is_host_key returns false if host and key do not match known hosts entry", %{known_hosts: known_hosts} do
+  test "is_host_key returns false if host and key do not match known hosts entry", %{known_hosts_file: known_hosts_file} do
     result = ClientKeyApi.is_host_key(
       @host_key,
       'other.com', 
       nil,
-      [key_cb_private: [accept_hosts: false, known_hosts: known_hosts]])
+      [key_cb_private: [accept_hosts: false, known_hosts_file: known_hosts_file]])
     refute result    
   end  
 
-  test "user key returns the contents of the key option", %{key: key} do
+  test "user key returns the contents of the key option", %{key_file: key_file} do
     result = ClientKeyApi.user_key(
       nil,
-      [key_cb_private: [identity: key]]
+      [key_cb_private: [identity: File.read!(key_file)]]
     )
     assert result == {:ok, @decoded_pem}    
   end
 
-  test "with options creates IO devices for the specified files" do
-    key_file = Path.join(@tmp_dir, "./foo")
-    known_hosts_file = Path.join(@tmp_dir, "./bar")
-    File.touch(key_file)
-    File.touch(known_hosts_file)
-    {_module, opts} = ClientKeyApi.with_options([key_file: key_file, known_hosts_file: known_hosts_file ])
-    assert opts[:key_file]
+  test "with options creates IO devices for the specified files", %{known_hosts_file: known_hosts_file, key_file: key_file }do
+    {_module, opts} = ClientKeyApi.with_options([identity: key_file, known_hosts_file: known_hosts_file ])
+    assert opts[:identity]
     assert opts[:known_hosts_file]
   end
 
