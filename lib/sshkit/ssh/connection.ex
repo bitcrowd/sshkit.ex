@@ -1,5 +1,6 @@
 defmodule SSHKit.SSH.Connection do
   alias SSHKit.SSH.Connection
+  alias SSHKit.Utils
 
   defstruct [:host, :port, :options, :ref]
 
@@ -20,7 +21,12 @@ defmodule SSHKit.SSH.Connection do
 
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
   """
-  def open(host, options \\ []) do
+  def open(host, options \\ [])
+  def open(host, options) when is_binary(host) do
+    open(to_charlist(host), options)
+  end
+
+  def open(host, options) do
     port = Keyword.get(options, :port, 22)
     timeout = Keyword.get(options, :timeout, :infinity)
 
@@ -30,7 +36,8 @@ defmodule SSHKit.SSH.Connection do
       defaults
       |> Keyword.merge(options)
       |> Keyword.drop([:port, :timeout])
-
+      |> Utils.strings_to_charlists
+    
     case :ssh.connect(host, port, options, timeout) do
       {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref}}
       other -> other
