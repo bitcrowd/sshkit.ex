@@ -1,7 +1,10 @@
 defmodule SSHKit.SSH.ClientKeyApi do
+
+  @behaviour :ssh_client_key_api
+
   @moduledoc ~S"""
 
-  Simple wrapper for the Erlang `:ssh_client_key_api behavior`, to
+  Simple wrapper for the Erlang `:ssh_client_key_api` behavior, to
   to make it easier to specify SSH keys and known_hosts files independently of
   any particular users home directory
 
@@ -9,7 +12,7 @@ defmodule SSHKit.SSH.ClientKeyApi do
   It is meant to primarily be used via the convenience function `with_config`:
 
   `
-  cb = SSHKit.SSH.ClientKeyApi.with_options(identity: "path/to/keyfile", known_hostss: "path_to_known_hostsFile", accept_hosts: false)  
+  cb = SSHKit.SSH.ClientKeyApi.with_options(identity: "path/to/keyfile", known_hosts: "path/to/known_hosts", accept_hosts: false)  
   `
 
   The result can be passed as an option when creating an `SSHKit.SSH.Connection`:
@@ -18,24 +21,10 @@ defmodule SSHKit.SSH.ClientKeyApi do
   SSHKit.SSH.connect("example.com", key_cb: cb)
   `
 
-  If more flexibility is needed you can provide options directly when providing your options to `connect`:
-
-  `
-  SSHKit.SSH.Connection.open("example.com",
-                              key_cb: {
-                               SSHKit.SSH.ClientKeyApi, [
-                                  identity: <IO.device>,
-                                  known_hosts: <IO.device>,
-                                  accept_hosts: false]})
-  `                                  
-
-   valid options: 
     - `identity`: `IO.device` providing the ssh key (required)
     - `known_hosts`: `IO.device` providing the known hosts list (required)
     - `accept_hosts`: `boolean` silently accept and add new hosts to the known hosts. By default only known hosts will be accepted. 
   """
-
-  @behaviour :ssh_client_key_api
 
   @spec with_options(opts :: list) :: {atom, list}
   @doc """
@@ -50,7 +39,7 @@ defmodule SSHKit.SSH.ClientKeyApi do
 ### Example
 
       `
-      cb = SSHKit.SSH.ClientKeyApi.with_options(identity: "path/to/keyfile", known_hosts: "path_to_known_hostsFile", accept_hosts: false)  
+      cb = SSHKit.SSH.ClientKeyApi.with_options(identity: "path/to/keyfile", known_hosts: "path/to/known_hosts", accept_hosts: false)  
       SSHKit.SSH.connect("example.com", key_cb: cb)
       `
 
@@ -59,8 +48,7 @@ defmodule SSHKit.SSH.ClientKeyApi do
       opts = with_defaults(opts, default_opts())     
       opts = 
       opts
-        |> Keyword.put(:identity, File.open!(opts[:identity]))
-        |> Keyword.put(:known_hosts, File.open!(opts[:known_hosts]))  
+        |> Keyword.put(:identity, File.read!(opts[:identity]))
     {__MODULE__, opts}
   end  
 
@@ -69,11 +57,10 @@ defmodule SSHKit.SSH.ClientKeyApi do
       true -> 
         opts
         |> known_hosts
-        |> IO.read(:all)
         |> :public_key.ssh_decode(:known_hosts)
         |> (fn decoded -> decoded ++ [{key, [{:hostnames, [hostname]}]}] end).()
         |> :public_key.ssh_encode(:known_hosts)
-        |> (fn encoded -> IO.write(known_hosts(opts), encoded) end).()
+        |> (fn encoded -> File.write!(known_hosts_file(opts), encoded) end).()
       _ -> 
         message = 
           """
@@ -88,7 +75,6 @@ defmodule SSHKit.SSH.ClientKeyApi do
   def is_host_key(key, hostname, _alg, opts) do    
     opts
     |> known_hosts    
-    |> IO.read(:all)
     |> :public_key.ssh_decode(:known_hosts)
     |> has_fingerprint(key, hostname)
   end
@@ -96,15 +82,14 @@ defmodule SSHKit.SSH.ClientKeyApi do
   def user_key(_alg, opts) do
     material =
       opts
-      |> key
-      |> IO.read(:all)
+      |> identity
       |> :public_key.pem_decode
       |> List.first
       |> :public_key.pem_entry_decode
     {:ok, material}
   end
 
-  defp key(opts) do
+  defp identity(opts) do
     cb_opts(opts)[:identity]
   end
 
@@ -112,8 +97,12 @@ defmodule SSHKit.SSH.ClientKeyApi do
     cb_opts(opts)[:accept_hosts]
   end
 
+  defp known_hosts_file(opts) do
+    cb_opts(opts)[:known_hosts_file]
+  end  
+
   defp known_hosts(opts) do
-    cb_opts(opts)[:known_hosts]
+    File.read!(known_hosts_file(opts))
   end
 
   defp cb_opts(opts) do
@@ -129,7 +118,7 @@ defmodule SSHKit.SSH.ClientKeyApi do
   defp default_opts do
     [
       identity: Path.join([System.user_home!, ".ssh", "id_rsa.pub"]),
-      known_hosts: Path.join([System.user_home!, ".ssh", "known_hosts"]),
+      known_hosts_file: Path.join([System.user_home!, ".ssh", "known_hosts"]),
       accept_hosts: true
     ]
   end
