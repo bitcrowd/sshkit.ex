@@ -51,7 +51,11 @@ defmodule SSHKit.SSH.Channel do
   `loop/4` may be used to process any channel messages received as a result of
   executing `command` on the remote.
   """
-  def exec(channel, command, timeout \\ :infinity) do
+  def exec(channel, command, timeout \\ :infinity)
+  def exec(channel, command, timeout) when is_binary(command) do 
+    exec(channel, to_charlist(command), timeout)
+  end
+  def exec(channel, command, timeout) do
     :ssh_connection.exec(channel.connection.ref, channel.id, command, timeout)
   end
 
