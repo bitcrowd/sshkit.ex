@@ -1,0 +1,10 @@
+language: elixir
+elixir:
+  - 1.3
+  - 1.4
+script:
+  # TODO: Fix existing issues and enable credo code checks
+  # - mix credo --strict
+  - mix test
+after_script:
+  - mix inch.report
