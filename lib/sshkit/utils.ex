@@ -3,12 +3,16 @@ defmodule SSHKit.Utils do
 
   def shellquote(value), do: value
 
+  def charlistify(value) when is_list(value) do
+    Enum.map(value, &charlistify/1)
+  end
+  def charlistify(value) when is_tuple(value) do
+    Tuple.to_list(value) |> charlistify() |> List.to_tuple()
+  end
+  def charlistify(value) when is_binary(value) do
+    to_charlist(value)
+  end
   def charlistify(value) do
-    cond do
-      Keyword.keyword?(value) -> Enum.map(value, fn {k, v} -> {k, charlistify(v)} end)
-      is_list(value) -> Enum.map(value, &charlistify/1)
-      is_binary(value) -> to_charlist(value)
-      true -> value
-    end
+    value
   end
 end
