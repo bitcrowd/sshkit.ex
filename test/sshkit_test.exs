@@ -2,9 +2,11 @@ defmodule SSHKitTest do
   use ExUnit.Case
   # doctest SSHKit
 
+  @tag :skip
   test "connects" do
   end
 
+  @tag :skip
   test "command" do
     context =
       SSHKit.context('192.168.99.100')

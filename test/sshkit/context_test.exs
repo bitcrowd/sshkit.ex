@@ -5,6 +5,7 @@ defmodule SSHKit.ContextTest do
 
   @empty %Context{hosts: []}
 
+  @tag :skip
   test "build with path" do
     context = @empty |> Context.push({:cd, "/var/www"})
     assert Context.build(context, "ls -l") == "cd /var/www && /usr/bin/env ls -l"
