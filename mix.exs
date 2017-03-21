@@ -24,8 +24,8 @@ defmodule SSHKit.Mixfile do
 
   defp deps do
     [{:credo, "~> 0.7", only: [:dev, :test]},
-     {:ex_doc, "~> 0.14", only: [:dev]},
-     {:inch_ex, ">= 0.0.0", only: [:dev]}]
+     {:ex_doc, "~> 0.14", only: [:dev], runtime: false},
+     {:inch_ex, "~> 0.5", only: [:dev, :test]}]
   end
 
   defp description do
