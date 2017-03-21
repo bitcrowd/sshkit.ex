@@ -8,6 +8,10 @@ defmodule SSHKit.UtilsTest do
       assert Utils.charlistify("sshkit") == 'sshkit'
     end
 
+    test "converts binaries in tuples" do
+      assert Utils.charlistify({:user, "me"}) == {:user, 'me'}
+    end
+
     test "converts binaries in lists" do
       assert Utils.charlistify(["ssh-rsa","ssh-dss"]) == ['ssh-rsa','ssh-dss']
     end
