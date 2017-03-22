@@ -6,8 +6,8 @@ defmodule SSHKit.SSH do
   ## Examples
 
   ```
-  {:ok, conn} = SSHKit.SSH.connect('eg.io', user: 'me')
-  {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
+  {:ok, conn} = SSHKit.SSH.connect("eg.io", user: "me")
+  {:ok, output, status} = SSHKit.SSH.run(conn, "uptime")
   :ok = SSHKit.SSH.close(conn)
 
   Enum.each(output, fn
@@ -30,7 +30,7 @@ defmodule SSHKit.SSH do
   ## Example
 
   ```
-  {:ok, conn} = SSHKit.SSH.connect('eg.io', port: 2222, user: 'me', timeout: 1000)
+  {:ok, conn} = SSHKit.SSH.connect("eg.io", port: 2222, user: "me", timeout: 1000)
   ```
   """
   def connect(host, options \\ []) do
@@ -73,7 +73,7 @@ defmodule SSHKit.SSH do
   ## Example
 
   ```
-  {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
+  {:ok, output, status} = SSHKit.SSH.run(conn, "uptime")
   IO.inspect(output)
   ```
   """

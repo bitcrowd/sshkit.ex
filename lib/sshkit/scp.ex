@@ -17,8 +17,8 @@ defmodule SSHKit.SCP do
   ## Examples
 
   ```
-  {:ok, conn} = SSHKit.SSH.connect('eg.io', user: 'me')
-  :ok = SSHKit.SCP.upload(conn, '.', '/home/code/phx', recursive: true)
+  {:ok, conn} = SSHKit.SSH.connect("eg.io", user: "me")
+  :ok = SSHKit.SCP.upload(conn, ".", "/home/code/phx", recursive: true)
   :ok = SSHKit.SSH.close(conn)
   ```
   """
@@ -36,7 +36,7 @@ defmodule SSHKit.SCP do
   ## Example
 
   ```
-  :ok = SSHKit.SCP.upload(conn, '.', '/home/code/sshkit', recursive: true)
+  :ok = SSHKit.SCP.upload(conn, ".", "/home/code/sshkit", recursive: true)
   ```
   """
   def upload(connection, local, remote, options \\ []) do
@@ -53,7 +53,7 @@ defmodule SSHKit.SCP do
   ## Example
 
   ```
-  :ok = SSHKit.SCP.download(conn, '/home/code/sshkit', 'downloads', recursive: true)
+  :ok = SSHKit.SCP.download(conn, "/home/code/sshkit", "downloads", recursive: true)
   ```
   """
   def download(connection, remote, local, options \\ []) do
