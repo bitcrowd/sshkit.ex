@@ -6,18 +6,15 @@ defmodule SSHKit.SSH do
   ## Examples
 
   ```
-  {:ok, conn} = SSHKit.SSH.connect('eg.io', user: 'me')
-  {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
+  {:ok, conn} = SSHKit.SSH.connect("eg.io", user: "me")
+  {:ok, output, status} = SSHKit.SSH.run(conn, "uptime")
   :ok = SSHKit.SSH.close(conn)
 
-  log = fn {type, data} ->
-    case type do
-      :normal -> IO.write(data)
-      :stderr -> IO.write([IO.ANSI.red, data, IO.ANSI.reset])
-    end
-  end
+  Enum.each(output, fn
+    {:normal, data} -> IO.write(data)
+    {:stderr, data} -> IO.write([IO.ANSI.red, data, IO.ANSI.reset])
+  end)
 
-  Enum.each(output, log)
   IO.puts("$?: #{status}")
   ```
   """
@@ -33,7 +30,7 @@ defmodule SSHKit.SSH do
   ## Example
 
   ```
-  {:ok, conn} = SSHKit.SSH.connect('eg.io', port: 2222, user: 'me', timeout: 1000)
+  {:ok, conn} = SSHKit.SSH.connect("eg.io", port: 2222, user: "me", timeout: 1000)
   ```
   """
   def connect(host, options \\ []) do
@@ -56,40 +53,55 @@ defmodule SSHKit.SSH do
   end
 
   @doc """
-  Executes a command on the remote.
+  Executes a command on the remote and aggregates incoming messages.
 
-  Using the default handler, returns `{:ok, output, status}` or
-  `{:error, reason}`.
-
-  By default, command output is captured into a list of tuples of the form
-  `{:normal, data}` or `{:stderr, data}`.
+  Using the default handler, returns `{:ok, output, status}` or `{:error,
+  reason}`. By default, command output is captured into a list of tuples of the
+  form `{:normal, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
+
+  For further details on handling incoming messages,
+  see `SSHKit.SSH.Channel.loop/4`.
+
+  ## Options
+
+  * `:timeout` - maximum wait time between messages, defautls to `:infinity`
+  * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
+  * `:acc` - initial accumulator value used in the loop
 
   ## Example
 
   ```
-  {:ok, output, status} = SSHKit.SSH.run(conn, 'uptime')
+  {:ok, output, status} = SSHKit.SSH.run(conn, "uptime")
+  IO.inspect(output)
   ```
   """
-  def run(connection, command, timeout \\ :infinity, ini \\ {:ok, [], nil}, handler \\ &capture/3) do
+  def run(connection, command, options \\ []) do
+    timeout = Keyword.get(options, :timeout, :infinity)
+    acc = Keyword.get(options, :acc, {:cont, {[], nil}})
+    fun = Keyword.get(options, :fun, &capture/2)
+
     case Channel.open(connection, timeout: timeout) do
       {:ok, channel} ->
         case Channel.exec(channel, command, timeout) do
-          :success -> Channel.loop(channel, timeout, ini, handler)
+          :success -> Channel.loop(channel, timeout, acc, fun) |> elem(1)
           :failure -> {:error, :failure}
-          other -> other
+          err -> err
         end
-      other -> other
+      err -> err
     end
   end
 
-  defp capture(_, message, state = {:ok, buffer, status}) do
-    case message do
-      {:data, 0, data} -> {:ok, [{:normal, data} | buffer], status}
-      {:data, 1, data} -> {:ok, [{:stderr, data} | buffer], status}
-      {:exit_status, code} -> {:ok, Enum.reverse(buffer), code}
+  defp capture(message, state = {buffer, status}) do
+    next = case message do
+      {:data, _, 0, data} -> {[{:normal, data} | buffer], status}
+      {:data, _, 1, data} -> {[{:stderr, data} | buffer], status}
+      {:exit_status, _, code} -> {buffer, code}
+      {:closed, _} -> {:ok, Enum.reverse(buffer), status}
       _ -> state
     end
+
+    {:cont, next}
   end
 end

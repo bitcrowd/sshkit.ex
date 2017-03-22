@@ -25,7 +25,6 @@ defmodule SSHKit.SSH.Connection do
   def open(host, options) when is_binary(host) do
     open(to_charlist(host), options)
   end
-
   def open(host, options) do
     port = Keyword.get(options, :port, 22)
     timeout = Keyword.get(options, :timeout, :infinity)
@@ -36,11 +35,11 @@ defmodule SSHKit.SSH.Connection do
       defaults
       |> Keyword.merge(options)
       |> Keyword.drop([:port, :timeout])
-      |> Utils.strings_to_charlists
-    
+      |> Utils.charlistify()
+
     case :ssh.connect(host, port, options, timeout) do
       {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref}}
-      other -> other
+      err -> err
     end
   end
 
@@ -49,7 +48,7 @@ defmodule SSHKit.SSH.Connection do
 
   Returns `:ok`.
 
-  For details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
+  For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
   def close(connection) do
     :ssh.close(connection.ref)
@@ -59,7 +58,7 @@ defmodule SSHKit.SSH.Connection do
   Opens a new connection, based on the parameters of an existing one.
 
   The timeout value of the original connection is discarded.
-  Other connection options are reused and may be overriden.
+  Other connection options are reused and may be overridden.
 
   Uses `SSHKit.SSH.open/2`.
 
