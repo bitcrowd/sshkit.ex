@@ -83,6 +83,7 @@ defmodule SSHKit.SSH.ClientKeyApi do
     material =
       opts
       |> identity
+      |> to_string
       |> :public_key.pem_decode
       |> List.first
       |> :public_key.pem_entry_decode
