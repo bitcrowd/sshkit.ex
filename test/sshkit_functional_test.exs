@@ -1,4 +1,4 @@
-defmodule SSHKitTest do
+defmodule SSHKitFunctionalTest do
   use SSHKit.FunctionalCase, async: true
   # doctest SSHKit
 
@@ -10,8 +10,17 @@ defmodule SSHKitTest do
 
   @tag boot: 1
   test "connects", %{hosts: [host]} do
-    # context = SSHKit.context({host.ip, options(port: host.port)})
-    # {:ok, output} = SSHKit.run(context, "whoami")
+    context = SSHKit.context({host.ip, options(port: host.port, user: host.user, password: host.password, timeout: 5000)})
+    [{:ok, output, 0}] = SSHKit.run(context, "whoami")
+
+    name =
+      output
+      |> Keyword.get_values(:normal)
+      |> Enum.join()
+      |> String.trim()
+
+    assert name == host.user
+
     # Docker.exec!(host.id, "ls")
   end
 
