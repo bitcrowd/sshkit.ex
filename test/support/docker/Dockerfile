@@ -18,7 +18,7 @@ RUN chmod 600 /etc/skel/.ssh/authorized_keys
 
 EXPOSE 22
 
-CMD ["/usr/sbin/sshd", "-D"]
+CMD ["/usr/sbin/sshd", "-D", "-e"]
 
 # For debugging, let sshd be more verbose:
-# CMD ["/usr/sbin/sshd", "-D", "-d", "-d", "-d"]
+# CMD ["/usr/sbin/sshd", "-D", "-d", "-d", "-d", "-e"]

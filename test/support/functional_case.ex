@@ -1,18 +1,18 @@
 defmodule SSHKit.FunctionalCase do
   use ExUnit.CaseTemplate
 
-  # For server debugging, let sshd be more verbose:
-  # @args ["-D", "-d", "-d", "-d"]
-  #
-  # To follow the log output of a specific container:
-  # docker logs --follow [CONTAINER-ID]
-
   @image "sshkit-test-sshd"
   @cmd "/usr/sbin/sshd"
-  @args ["-D"]
+  @args ["-D", "-e"]
 
   @user "me"
   @pass "pass"
+
+  using do
+    quote do
+      @moduletag :functional
+    end
+  end
 
   setup tags do
     count = Map.get(tags, :boot, 1)
@@ -26,7 +26,7 @@ defmodule SSHKit.FunctionalCase do
   end
 
   def boot(config = %{image: image, cmd: cmd, args: args}) do
-    id = Docker.run!(image, cmd, args)
+    id = Docker.run!(["--rm", "--publish-all", "--detach"], image, cmd, args)
 
     ip = Docker.host
 
@@ -40,10 +40,11 @@ defmodule SSHKit.FunctionalCase do
   end
 
   def init(host) do
-    host
-    |> adduser(@user)
-    |> chpasswd(@user, @pass)
-    |> keygen(@user)
+    adduser(host, @user)
+    chpasswd(host, @user, @pass)
+    keygen(host, @user)
+
+    Map.merge(host, %{user: @user, password: @pass})
   end
 
   def kill(hosts) do
@@ -55,13 +56,11 @@ defmodule SSHKit.FunctionalCase do
 
   def adduser(host = %{id: id}, username) do
     Docker.exec!([], id, "adduser", ["-D", username])
-    Map.put(host, :user, username)
   end
 
   def chpasswd(_host = %{id: id}, username, password) do
     command = "echo #{username}:#{password} | chpasswd 2>&1"
     Docker.exec!([], id, "sh", ["-c", command])
-    Map.put(host, :password, password)
   end
 
   def keygen(_host = %{id: id}, username) do
