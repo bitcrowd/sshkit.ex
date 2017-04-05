@@ -32,8 +32,6 @@ defmodule SSHKit.SCP.Download do
 
     handler = fn message, state ->
       case message do
-        {:data, _, 0, <<1, data :: binary>>} -> warning(options, state, data)
-        {:data, _, 0, <<2, data :: binary>>} -> fatal(options, state, data)
         {:data, _, 0, data} ->
           case state do
             {:next, path, stack, attrs, buffer, errs} -> next(options, path, stack, attrs, buffer <> data, errs)
