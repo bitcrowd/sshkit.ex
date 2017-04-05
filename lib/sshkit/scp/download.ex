@@ -28,16 +28,14 @@ defmodule SSHKit.SCP.Download do
 
     command = Command.build(:download, remote, options)
 
-    ini = {:next, local, [], %{}, <<>>, []}
+    ini = {:next, local, [], %{}, <<>>}
 
     handler = fn message, state ->
       case message do
         {:data, _, 0, data} ->
           case state do
-            {:next, path, stack, attrs, buffer, errs} -> next(options, path, stack, attrs, buffer <> data, errs)
-            {:read, path, stack, attrs, buffer, errs} -> read(options, path, stack, attrs, buffer <> data, errs)
-            {:warning, state, buffer} -> warning(options, state, buffer <> data)
-            {:fatal, state, buffer} -> fatal(options, state, buffer <> data)
+            {:next, path, stack, attrs, buffer} -> next(options, path, stack, attrs, buffer <> data)
+            {:read, path, stack, attrs, buffer} -> read(options, path, stack, attrs, buffer <> data)
           end
         {:exit_status, _, status} -> exited(options, state, status)
         {:eof, _} -> eof(options, state)
@@ -48,26 +46,26 @@ defmodule SSHKit.SCP.Download do
     SSHKit.SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
   end
 
-  defp next(options, path, stack, attrs, buffer, errs) do
+  defp next(options, path, stack, attrs, buffer) do
     if String.last(buffer) == "\n" do
       case dirparse(buffer) do
-        {"T", mtime, _, atime, _} -> time(options, path, stack, attrs, mtime, atime, errs)
-        {"C", mode, len, name} -> regular(options, path, stack, attrs, mode, len, name, errs)
-        {"D", mode, _, name} -> directory(options, path, stack, attrs, mode, name, errs)
-        {"E"} -> up(options, path, stack, errs)
+        {"T", mtime, _, atime, _} -> time(options, path, stack, attrs, mtime, atime)
+        {"C", mode, len, name} -> regular(options, path, stack, attrs, mode, len, name)
+        {"D", mode, _, name} -> directory(options, path, stack, attrs, mode, name)
+        {"E"} -> up(options, path, stack)
         _ -> {:halt, {:error, "Invalid SCP directive received: #{buffer}"}}
       end
     else
-      {:cont, {:next, stack, buffer, attrs}}
+      {:cont, {:next, path, stack, attrs, buffer}}
     end
   end
 
-  defp time(_, path, stack, attrs, mtime, atime, errs) do
+  defp time(_, path, stack, attrs, mtime, atime) do
     attrs = Map.merge(attrs, %{atime: atime, mtime: mtime})
-    {:cont, <<0>>, {:next, path, stack, attrs, <<>>, errs}}
+    {:cont, <<0>>, {:next, path, stack, attrs, <<>>}}
   end
 
-  defp directory(options, path, stack, attrs, mode, name, errs) do
+  defp directory(options, path, stack, attrs, mode, name) do
     target = if File.dir?(path), do: Path.join(path, name), else: path
 
     preserve? = Keyword.get(options, :preserve, false)
@@ -84,10 +82,10 @@ defmodule SSHKit.SCP.Download do
     mode = if exists? && !preserve?, do: stat.mode, else: mode
     attrs = Map.put(attrs, :mode, mode)
 
-    {:cont, <<0>>, {:next, target, [attrs | stack], %{}, <<>>, errs}}
+    {:cont, <<0>>, {:next, target, [attrs | stack], %{}, <<>>}}
   end
 
-  defp regular(options, path, stack, attrs, mode, length, name, errs) do
+  defp regular(options, path, stack, attrs, mode, length, name) do
     target = if File.dir?(path), do: Path.join(path, name), else: path
 
     preserve? = Keyword.get(options, :preserve, false)
@@ -110,10 +108,10 @@ defmodule SSHKit.SCP.Download do
       |> Map.put(:length, length)
       |> Map.put(:written, 0)
 
-    {:cont, <<0>>, {:read, target, stack, attrs, <<>>, errs}}
+    {:cont, <<0>>, {:read, target, stack, attrs, <<>>}}
   end
 
-  defp read(options, path, stack, attrs, buffer, errs) do
+  defp read(options, path, stack, attrs, buffer) do
     %{device: device, length: length, written: written} = attrs
 
     {buffer, written} =
@@ -135,60 +133,44 @@ defmodule SSHKit.SCP.Download do
         :ok = touch!(path, attrs[:atime], attrs[:mtime])
       end
 
-      {:cont, <<0>>, {:next, Path.dirname(path), stack, %{}, <<>>, errs}}
+      {:cont, <<0>>, {:next, Path.dirname(path), stack, %{}, <<>>}}
     else
-      {:cont, {:read, path, stack, Map.put(attrs, :written, written), <<>>, errs}}
+      {:cont, {:read, path, stack, Map.put(attrs, :written, written), <<>>}}
     end
   end
 
-  defp up(options, path, [attrs | rest], errs) do
+  defp up(options, path, [attrs | rest]) do
     :ok = File.chmod!(path, attrs[:mode])
 
     if Keyword.get(options, :preserve, false) do
       :ok = touch!(path, attrs[:atime], attrs[:mtime])
     end
 
-    {:cont, <<0>>, {:next, Path.dirname(path), rest, %{}, <<>>, errs}}
+    {:cont, <<0>>, {:next, Path.dirname(path), rest, %{}, <<>>}}
   end
 
-  defp exited(_, {_, _, [], _, _, errs}, status) do
-    {:cont, {:done, status, errs}}
+  defp exited(_, {_, _, [], _, _}, status) do
+    {:cont, {:done, status}}
   end
 
-  defp exited(_, {_, _, _, _, _, errs}, status) do
-    {:halt, {:error, "SCP exited before completing the transfer (#{status}): #{Enum.join(errs, ", ")}"}}
+  defp exited(_, {_, _, _, _, _}, status) do
+    {:halt, {:error, "SCP exited before completing the transfer (#{status})"}}
   end
 
   defp eof(_, state) do
     {:cont, state}
   end
 
-  defp closed(_, {:done, 0, _}) do
+  defp closed(_, {:done, 0}) do
     {:cont, :ok}
   end
 
-  defp closed(_, {:done, status, errs}) do
-    {:cont, {:error, "SCP exited with non-zero exit code #{status}: #{Enum.join(errs, ", ")}"}}
+  defp closed(_, {:done, status}) do
+    {:cont, {:error, "SCP exited with non-zero exit code #{status}"}}
   end
 
   defp closed(_, _) do
     {:cont, {:error, "SCP channel closed before completing the transfer"}}
-  end
-
-  defp warning(_, {name, path, stack, attrs, buf, errs} = state, buffer) do
-    if String.last(buffer) == "\n" do
-      {:cont, {name, path, stack, attrs, buf, errs ++ [String.trim(buffer)]}}
-    else
-      {:cont, {:warning, state, buffer}}
-    end
-  end
-
-  defp fatal(_, state, buffer) do
-    if String.last(buffer) == "\n" do
-      {:halt, {:error, String.trim(buffer)}}
-    else
-      {:cont, {:fatal, state, buffer}}
-    end
   end
 
   @epoch :calendar.datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}})
