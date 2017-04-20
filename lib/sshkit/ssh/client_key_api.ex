@@ -81,7 +81,7 @@ defmodule SSHKit.SSH.ClientKeyAPI do
   end
 
   def is_host_key(key, hostname, alg, opts) when alg in @key_algorithms do
-    opts
+    accept_hosts(opts) || opts
     |> known_hosts_data
     |> to_string
     |> :public_key.ssh_decode(:known_hosts)
