@@ -62,7 +62,7 @@ defmodule SSHKit.SCP.Upload do
     SSHKit.SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
   end
 
-  defp next(_, _, [], errs) do
+  defp next(_, _, [[]], errs) do
     {:cont, :eof, {:done, nil, errs}}
   end
 
