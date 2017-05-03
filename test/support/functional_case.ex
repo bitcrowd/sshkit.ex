@@ -1,6 +1,8 @@
 defmodule SSHKit.FunctionalCase do
   use ExUnit.CaseTemplate
 
+  import SSHKit.FunctionalCaseHelpers
+
   @image "sshkit-test-sshd"
   @cmd "/usr/sbin/sshd"
   @args ["-D", "-e"]
@@ -52,19 +54,5 @@ defmodule SSHKit.FunctionalCase do
     killed = Docker.kill!(running)
     diff = running -- killed
     if Enum.empty?(diff), do: :ok, else: {:error, diff}
-  end
-
-  def adduser(host = %{id: id}, username) do
-    Docker.exec!([], id, "adduser", ["-D", username])
-  end
-
-  def chpasswd(_host = %{id: id}, username, password) do
-    command = "echo #{username}:#{password} | chpasswd 2>&1"
-    Docker.exec!([], id, "sh", ["-c", command])
-  end
-
-  def keygen(_host = %{id: id}, username) do
-    Docker.exec!([], id, "sh", ["-c", "ssh-keygen -b 1024 -f /tmp/#{username} -N '' -C \"#{username}@$(hostname)\""])
-    Docker.exec!([], id, "sh", ["-c", "cat /tmp/#{username}.pub > /home/#{username}/.ssh/authorized_keys"])
   end
 end
