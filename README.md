@@ -51,6 +51,19 @@ You can use SSHKit in your projects in two steps:
   end
   ```
 
+## Testing
+
+As usual run `mix test` to run the tests.
+We also have functional tests to test "the real thing" on a docker machine.
+Therefore, you'll need to have docker installed (also docker-machine if you're on OS X/Windows).
+
+Since these functional tests take precious time.
+You may want to not run them during development:
+
+```bash
+mix test --exclude functional
+```
+
 ## Contributing
 
 We welcome everyone to contribute to SSHKit and help us tackle existing issues!
