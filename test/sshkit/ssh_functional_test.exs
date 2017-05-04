@@ -11,7 +11,7 @@ defmodule SSHKit.SSHFunctionalTest do
     {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
     {:ok, data, status} = SSH.run(conn, "whoami")
 
-    assert [normal: "#{host.user}\n"] == data
+    assert [stdout: "#{host.user}\n"] == data
     assert 0 = status
   end
 end

@@ -11,7 +11,7 @@ defmodule SSHKit.SSH do
   :ok = SSHKit.SSH.close(conn)
 
   Enum.each(output, fn
-    {:normal, data} -> IO.write(data)
+    {:stdout, data} -> IO.write(data)
     {:stderr, data} -> IO.write([IO.ANSI.red, data, IO.ANSI.reset])
   end)
 
@@ -57,7 +57,7 @@ defmodule SSHKit.SSH do
 
   Using the default handler, returns `{:ok, output, status}` or `{:error,
   reason}`. By default, command output is captured into a list of tuples of the
-  form `{:normal, data}` or `{:stderr, data}`.
+  form `{:stdout, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
 
@@ -95,7 +95,7 @@ defmodule SSHKit.SSH do
 
   defp capture(message, state = {buffer, status}) do
     next = case message do
-      {:data, _, 0, data} -> {[{:normal, data} | buffer], status}
+      {:data, _, 0, data} -> {[{:stdout, data} | buffer], status}
       {:data, _, 1, data} -> {[{:stderr, data} | buffer], status}
       {:exit_status, _, code} -> {buffer, code}
       {:closed, _} -> {:ok, Enum.reverse(buffer), status}
