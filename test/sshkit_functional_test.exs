@@ -22,7 +22,7 @@ defmodule SSHKitFunctionalTest do
 
   def stdout(output) do
     output
-    |> Keyword.get_values(:normal)
+    |> Keyword.get_values(:stdout)
     |> Enum.join()
   end
 
