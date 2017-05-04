@@ -1,21 +1,21 @@
 defmodule SSHKit.Context do
   import SSHKit.Utils
 
-  defstruct [hosts: [], env: nil, pwd: nil, umask: nil, user: nil, group: nil]
+  defstruct [hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil]
 
   def build(context, command) do
     # cmd(command)
     # |> sudo(context.user, context.group)
     # |> export(context.env)
     # |> umask(context.umask)
-    # |> cd(context.pwd)
+    # |> cd(context.path)
 
     cmd(command)
     |> group(context.group)
     |> user(context.user)
     |> env(context.env)
     |> umask(context.umask)
-    |> pwd(context.pwd)
+    |> path(context.path)
   end
 
   defp cmd(command), do: "/usr/bin/env #{command}"
@@ -36,6 +36,6 @@ defmodule SSHKit.Context do
   defp umask(command, nil), do: command
   defp umask(command, mask), do: "umask #{mask} && #{command}"
 
-  defp pwd(command, nil), do: command
-  defp pwd(command, path), do: "cd #{path} && #{command}"
+  defp path(command, nil), do: command
+  defp path(command, path), do: "cd #{path} && #{command}"
 end

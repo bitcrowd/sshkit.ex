@@ -90,9 +90,9 @@ defmodule SSHKitFunctionalTest do
   end
 
   @tag boot: 1
-  test "pwd", %{hosts: [host]} do
+  test "path", %{hosts: [host]} do
     context = build_context(host)
-              |> SSHKit.pwd("/var/log")
+              |> SSHKit.path("/var/log")
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
     assert status == 0

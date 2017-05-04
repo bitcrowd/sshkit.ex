@@ -8,7 +8,7 @@ defmodule SSHKit do
 
   context =
     SSHKit.context(hosts)
-    |> SSHKit.pwd("/var/www/phx")
+    |> SSHKit.path("/var/www/phx")
     |> SSHKit.user("deploy")
     |> SSHKit.group("deploy")
     |> SSHKit.umask("022")
@@ -42,8 +42,8 @@ defmodule SSHKit do
     %Host{name: name, options: options}
   end
 
-  def pwd(context, path) do
-    %Context{context | pwd: path}
+  def path(context, path) do
+    %Context{context | path: path}
   end
 
   def umask(context, mask) do
