@@ -20,7 +20,7 @@ defmodule SSHKitFunctionalTest do
     })
   end
 
-  defp stdio(output, type \\ :stdout) do
+  defp stdio(output, type) do
     output
     |> Keyword.get_values(type)
     |> Enum.join()
