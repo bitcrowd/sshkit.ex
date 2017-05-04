@@ -25,9 +25,10 @@ defmodule SSHKit do
   alias SSHKit.Host
 
   def context(hosts) do
-    hosts = hosts
-            |> List.wrap
-            |> Enum.map(&host/1)
+    hosts =
+      hosts
+      |> List.wrap
+      |> Enum.map(&host/1)
     %Context{hosts: hosts}
   end
 

@@ -77,9 +77,10 @@ defmodule SSHKitFunctionalTest do
 
   @tag boot: 1
   test "umask", %{hosts: [host]} do
-    context = host
-              |> build_context
-              |> SSHKit.umask("077")
+    context =
+      host
+      |> build_context
+      |> SSHKit.umask("077")
     SSHKit.run(context, "mkdir my_dir")
     SSHKit.run(context, "touch my_file")
     [{:ok, output, status}] = SSHKit.run(context, "ls -la")
@@ -92,9 +93,10 @@ defmodule SSHKitFunctionalTest do
 
   @tag boot: 1
   test "path", %{hosts: [host]} do
-    context = host
-              |> build_context
-              |> SSHKit.path("/var/log")
+    context =
+      host
+      |> build_context
+      |> SSHKit.path("/var/log")
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
     assert status == 0
@@ -107,9 +109,10 @@ defmodule SSHKitFunctionalTest do
   test "user", %{hosts: [host]} do
     adduser(host, "despicable_me")
 
-    context = host
-              |> build_context
-              |> SSHKit.user("despicable_me")
+    context =
+      host
+      |> build_context
+      |> SSHKit.user("despicable_me")
 
     [{:ok, output, status}] = SSHKit.run(context, "whoami")
     output = stdout(output)
@@ -126,20 +129,22 @@ defmodule SSHKitFunctionalTest do
     add_user_to_group(host, "gru", "villains")
     add_user_to_group(host, "gru", "minion_owners")
 
-    context = host
-              |> build_context
-              |> SSHKit.user("gru")
-              |> SSHKit.group("villains")
+    context =
+      host
+      |> build_context
+      |> SSHKit.user("gru")
+      |> SSHKit.group("villains")
 
     [{:ok, output, status}] = SSHKit.run(context, "id -gn gru")
     output = stdout(output)
     assert output == "villains\n"
     assert status == 0
 
-    context = host
-              |> build_context
-              |> SSHKit.user("gru")
-              |> SSHKit.group("minion_owners")
+    context =
+      host
+      |> build_context
+      |> SSHKit.user("gru")
+      |> SSHKit.group("minion_owners")
 
     [{:ok, output, status}] = SSHKit.run(context, "id -gn gru")
     output = stdout(output)

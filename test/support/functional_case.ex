@@ -34,11 +34,12 @@ defmodule SSHKit.FunctionalCase do
 
     ip = Docker.host
 
-    port = "port"
-           |> Docker.cmd!([id, "22/tcp"])
-           |> String.split(":")
-           |> List.last
-           |> String.to_integer
+    port =
+      "port"
+      |> Docker.cmd!([id, "22/tcp"])
+      |> String.split(":")
+      |> List.last
+      |> String.to_integer
 
     Map.merge(config, %{id: id, ip: ip, port: port})
   end
