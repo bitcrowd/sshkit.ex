@@ -19,14 +19,15 @@ defmodule SSHKit do
   ```
   """
 
-  alias SSHKit.SCP
   alias SSHKit.SSH
 
   alias SSHKit.Context
   alias SSHKit.Host
 
   def context(hosts) do
-    hosts = List.wrap(hosts) |> Enum.map(&host/1)
+    hosts = hosts
+            |> List.wrap
+            |> Enum.map(&host/1)
     %Context{hosts: hosts}
   end
 
@@ -63,8 +64,6 @@ defmodule SSHKit do
   end
 
   def run(context, command) do
-    # TODO: Connection pool, parallel/sequential/grouped runs
-
     cmd = Context.build(context, command)
 
     run = fn host ->
@@ -76,8 +75,6 @@ defmodule SSHKit do
 
     Enum.map(context.hosts, run)
   end
-
-  # TODO: SCP operations
 
   # def upload(context, path, options \\ []) do
   #   …

@@ -1,4 +1,6 @@
 defmodule SSHKit.SSH.Connection do
+  @moduledoc false
+
   alias SSHKit.SSH.Connection
   alias SSHKit.Utils
 

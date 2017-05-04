@@ -85,7 +85,9 @@ defmodule SSHKit.SSH do
     case Channel.open(connection, timeout: timeout) do
       {:ok, channel} ->
         case Channel.exec(channel, command, timeout) do
-          :success -> Channel.loop(channel, timeout, acc, fun) |> elem(1)
+          :success -> channel
+                      |> Channel.loop(timeout, acc, fun)
+                      |> elem(1)
           :failure -> {:error, :failure}
           err -> err
         end

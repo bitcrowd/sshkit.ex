@@ -1,7 +1,10 @@
 defmodule SSHKit.SCP.Upload do
+  @moduledoc false
+
   require Bitwise
 
   alias SSHKit.SCP.Command
+  alias SSHKit.SSH
 
   @doc """
   Uploads a local file or directory to a remote host.
@@ -32,34 +35,46 @@ defmodule SSHKit.SCP.Upload do
 
   defp start(connection, local, remote, options) do
     timeout = Keyword.get(options, :timeout, :infinity)
-
     command = Command.build(:upload, remote, options)
+    handler = connection_handler(options)
 
     ini = {:next, Path.dirname(local), [[Path.basename(local)]], []}
+    SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
+  end
 
-    handler = fn message, state ->
+  @normal 0
+  @warning 1
+  @fatal 2
+  defp connection_handler(options) do
+    fn message, state ->
       case message do
-        {:data, _, 0, <<1, data :: binary>>} -> warning(options, state, data)
-        {:data, _, 0, <<2, data :: binary>>} -> fatal(options, state, data)
-        {:data, _, 0, <<0>>} ->
-          case state do
-            {:next, cwd, stack, errs} -> next(options, cwd, stack, errs)
-            {:directory, name, stat, cwd, stack, errs} -> directory(options, name, stat, cwd, stack, errs)
-            {:regular, name, stat, cwd, stack, errs} -> regular(options, name, stat, cwd, stack, errs)
-            {:write, name, stat, cwd, stack, errs} -> write(options, name, stat, cwd, stack, errs)
-          end
+        {:data, _, 0, <<@warning, data :: binary>>} -> warning(options, state, data)
+        {:data, _, 0, <<@fatal, data :: binary>>} -> fatal(options, state, data)
+        {:data, _, 0, <<@normal>>} ->
+          handle_data(state, options)
         {:data, _, 0, data} ->
-          case state do
-            {:warning, state, buffer} -> warning(options, state, buffer <> data)
-            {:fatal, state, buffer} -> fatal(options, state, buffer <> data)
-          end
+          handle_error_data(state, options, data)
         {:exit_status, _, status} -> exited(options, state, status)
         {:eof, _} -> eof(options, state)
         {:closed, _} -> closed(options, state)
       end
     end
+  end
 
-    SSHKit.SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
+  defp handle_data(state, options) do
+    case state do
+      {:next, cwd, stack, errs} -> next(options, cwd, stack, errs)
+      {:directory, name, stat, cwd, stack, errs} -> directory(options, name, stat, cwd, stack, errs)
+      {:regular, name, stat, cwd, stack, errs} -> regular(options, name, stat, cwd, stack, errs)
+      {:write, name, stat, cwd, stack, errs} -> write(options, name, stat, cwd, stack, errs)
+    end
+  end
+
+  defp handle_error_data(state, options, data) do
+    case state do
+      {:warning, state, buffer} -> warning(options, state, buffer <> data)
+      {:fatal, state, buffer} -> fatal(options, state, buffer <> data)
+    end
   end
 
   defp next(_, _, [[]], errs) do
@@ -150,7 +165,8 @@ defmodule SSHKit.SCP.Upload do
   end
 
   defp modefmt(value) do
-    Bitwise.band(value, 0o7777)
+    value
+    |> Bitwise.band(0o7777)
     |> Integer.to_string(8)
     |> String.rjust(4, ?0)
   end

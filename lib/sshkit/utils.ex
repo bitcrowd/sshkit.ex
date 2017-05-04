@@ -1,4 +1,6 @@
 defmodule SSHKit.Utils do
+  @moduledoc false
+
   def shellescape(value), do: value
 
   def shellquote(value), do: value
@@ -7,7 +9,10 @@ defmodule SSHKit.Utils do
     Enum.map(value, &charlistify/1)
   end
   def charlistify(value) when is_tuple(value) do
-    Tuple.to_list(value) |> charlistify() |> List.to_tuple()
+    value
+    |> Tuple.to_list
+    |> charlistify()
+    |> List.to_tuple()
   end
   def charlistify(value) when is_binary(value) do
     to_charlist(value)
