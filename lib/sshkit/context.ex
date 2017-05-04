@@ -1,16 +1,13 @@
 defmodule SSHKit.Context do
+  @moduledoc false
+
   import SSHKit.Utils
 
   defstruct [hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil]
 
   def build(context, command) do
-    # cmd(command)
-    # |> sudo(context.user, context.group)
-    # |> export(context.env)
-    # |> umask(context.umask)
-    # |> cd(context.path)
-
-    cmd(command)
+    command
+    |> cmd
     |> group(context.group)
     |> user(context.user)
     |> env(context.env)
@@ -21,7 +18,7 @@ defmodule SSHKit.Context do
   defp cmd(command), do: "/usr/bin/env #{command}"
 
   defp group(command, nil), do: command
-  defp group(command, name), do: command # TODO
+  defp group(command, _name), do: command
 
   defp user(command, nil), do: command
   defp user(command, name), do: "sudo -u #{name} -- sh -c #{shellquote(command)}"

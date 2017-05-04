@@ -1,4 +1,6 @@
 defmodule Docker do
+  @moduledoc false
+
   defmodule Error do
     defexception [:command, :args, :status, :output]
 
@@ -83,7 +85,9 @@ defmodule Docker do
   Returns a list of the killed containers' IDs.
   """
   def kill!(options \\ [], containers) do
-    cmd!("kill", options ++ List.wrap(containers)) |> String.split("\n")
+    "kill"
+    |> cmd!(options ++ List.wrap(containers))
+    |> String.split("\n")
   end
 
   @doc """

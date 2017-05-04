@@ -11,8 +11,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-engine
 script:
-  # TODO: Fix existing issues and enable credo code checks
-  # - mix credo --strict
+  - mix credo --strict
   - mix test
 after_script:
   - mix inch.report

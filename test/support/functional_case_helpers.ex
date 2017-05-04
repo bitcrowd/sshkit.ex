@@ -1,4 +1,6 @@
 defmodule SSHKit.FunctionalCaseHelpers do
+  @moduledoc false
+
   def adduser(_host = %{id: id}, username) do
     Docker.exec!([], id, "adduser", ["-D", username])
   end

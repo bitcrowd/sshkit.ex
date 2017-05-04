@@ -1,4 +1,6 @@
 defmodule SSHKit.SSH.Channel do
+  @moduledoc false
+
   alias SSHKit.SSH.Channel
 
   defstruct [:connection, :type, :id]

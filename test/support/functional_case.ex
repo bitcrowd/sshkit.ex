@@ -1,4 +1,6 @@
 defmodule SSHKit.FunctionalCase do
+  @moduledoc false
+
   use ExUnit.CaseTemplate
 
   import SSHKit.FunctionalCaseHelpers
@@ -33,7 +35,8 @@ defmodule SSHKit.FunctionalCase do
     ip = Docker.host
 
     port =
-      Docker.cmd!("port", [id, "22/tcp"])
+      "port"
+      |> Docker.cmd!([id, "22/tcp"])
       |> String.split(":")
       |> List.last
       |> String.to_integer

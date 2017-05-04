@@ -1,7 +1,10 @@
 defmodule SSHKit.SCP.Download do
+  @moduledoc false
+
   require Bitwise
 
   alias SSHKit.SCP.Command
+  alias SSHKit.SSH
 
   @doc """
   Downloads a file or directory from a remote host.
@@ -25,25 +28,35 @@ defmodule SSHKit.SCP.Download do
 
   defp start(connection, remote, local, options) do
     timeout = Keyword.get(options, :timeout, :infinity)
-
     command = Command.build(:download, remote, options)
+    handler = connection_handler(options)
 
     ini = {:next, local, [], %{}, <<>>}
+    SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
+  end
 
-    handler = fn message, state ->
+  defp connection_handler(options) do
+    fn message, state ->
       case message do
         {:data, _, 0, data} ->
-          case state do
-            {:next, path, stack, attrs, buffer} -> next(options, path, stack, attrs, buffer <> data)
-            {:read, path, stack, attrs, buffer} -> read(options, path, stack, attrs, buffer <> data)
-          end
-        {:exit_status, _, status} -> exited(options, state, status)
-        {:eof, _} -> eof(options, state)
-        {:closed, _} -> closed(options, state)
-     end
+          process_data(state, data, options)
+        {:exit_status, _, status} ->
+          exited(options, state, status)
+        {:eof, _} ->
+          eof(options, state)
+        {:closed, _} ->
+          closed(options, state)
+      end
     end
+  end
 
-    SSHKit.SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
+  defp process_data(state, data, options) do
+    case state do
+      {:next, path, stack, attrs, buffer} ->
+        next(options, path, stack, attrs, buffer <> data)
+      {:read, path, stack, attrs, buffer} ->
+        read(options, path, stack, attrs, buffer <> data)
+    end
   end
 
   defp next(options, path, stack, attrs, buffer) do
@@ -189,12 +202,18 @@ defmodule SSHKit.SCP.Download do
 
   defp dirparse(value) do
     case Regex.run(@dfmt, value, capture: :all_but_first) do
-      ["T", mtime, mtus, atime, atus] -> {"T", dec(mtime), dec(mtus), dec(atime), dec(atus)}
-      [chr, _, _, name] when chr in ["C", "D"] and name in ["/", "..", "."] -> nil
-      ["C", mode, len, name] -> {"C", oct(mode), dec(len), name}
-      ["D", mode, len, name] -> {"D", oct(mode), dec(len), name}
-      ["E"] -> {"E"}
-      nil -> nil
+      ["T", mtime, mtus, atime, atus] ->
+        {"T", dec(mtime), dec(mtus), dec(atime), dec(atus)}
+      [chr, _, _, name] when chr in ["C", "D"] and name in ["/", "..", "."] ->
+        nil
+      ["C", mode, len, name] ->
+        {"C", oct(mode), dec(len), name}
+      ["D", mode, len, name] ->
+        {"D", oct(mode), dec(len), name}
+      ["E"] ->
+        {"E"}
+      nil ->
+        nil
     end
   end
 

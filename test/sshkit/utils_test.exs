@@ -13,7 +13,7 @@ defmodule SSHKit.UtilsTest do
     end
 
     test "converts binaries in lists" do
-      assert Utils.charlistify(["ssh-rsa","ssh-dss"]) == ['ssh-rsa','ssh-dss']
+      assert Utils.charlistify(["ssh-rsa", "ssh-dss"]) == ['ssh-rsa', 'ssh-dss']
     end
 
     test "converts binaries in keywords" do
@@ -22,7 +22,7 @@ defmodule SSHKit.UtilsTest do
 
     test "converts binaries in nested lists" do
       actual = Utils.charlistify([pref_public_key_algs: ["ssh-rsa", "ssh-dss"]])
-      expected = [pref_public_key_algs: ['ssh-rsa','ssh-dss']]
+      expected = [pref_public_key_algs: ['ssh-rsa', 'ssh-dss']]
       assert actual == expected
     end
 
