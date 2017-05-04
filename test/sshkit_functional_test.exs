@@ -20,17 +20,14 @@ defmodule SSHKitFunctionalTest do
     })
   end
 
-  def stdout(output) do
+  defp stdio(output, type \\ :stdout) do
     output
-    |> Keyword.get_values(:stdout)
+    |> Keyword.get_values(type)
     |> Enum.join()
   end
 
-  def stderr(output) do
-    output
-    |> Keyword.get_values(:stderr)
-    |> Enum.join()
-  end
+  def stdout(output), do: stdio(output, :stdout)
+  def stderr(output), do: stdio(output, :stderr)
 
   @tag boot: 1
   test "connects", %{hosts: [host]} do
