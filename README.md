@@ -18,7 +18,7 @@ hosts = ["1.eg.io", {"2.eg.io", port: 2222}]
 
 context =
   SSHKit.context(hosts)
-  |> SSHKit.pwd("/var/www/phx")
+  |> SSHKit.path("/var/www/phx")
   |> SSHKit.user("deploy")
   |> SSHKit.group("deploy")
   |> SSHKit.umask("022")
