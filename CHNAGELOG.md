@@ -23,6 +23,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.1...HEAD
 ### Fixes:
 
 * Accept binaries (not only charlists) for configuration. Thanks @svoynow
+* Fixed a bug that prevented `SSHKit.env` from working [#35]
 
 ## `0.0.1` (2017-01-26)
 
