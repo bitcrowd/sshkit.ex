@@ -7,7 +7,7 @@ defmodule SSHKit.SSH do
 
   ```
   {:ok, conn} = SSHKit.SSH.connect("eg.io", user: "me")
-  {:ok, output, status} = SSHKit.SSH.run(conn, "uptime")
+  {:ok, output, status, uuid} = SSHKit.SSH.run(conn, "uptime")
   :ok = SSHKit.SSH.close(conn)
 
   Enum.each(output, fn
@@ -55,9 +55,9 @@ defmodule SSHKit.SSH do
   @doc """
   Executes a command on the remote and aggregates incoming messages.
 
-  Using the default handler, returns `{:ok, output, status}` or `{:error,
-  reason}`. By default, command output is captured into a list of tuples of the
-  form `{:stdout, data}` or `{:stderr, data}`.
+  Using the default handler, returns `{:ok, output, status, uuid}` or `{:error,
+  reason}`. By default, command output is captured into a list of tuples of
+  the form `{:stdout, data}` or `{:stderr, data}`.
 
   A custom handler function can be provided to handle channel messages.
 
@@ -69,21 +69,26 @@ defmodule SSHKit.SSH do
   * `:timeout` - maximum wait time between messages, defautls to `:infinity`
   * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
   * `:acc` - initial accumulator value used in the loop
+  * `:uuid` - unique identifier for the output
+  * `:formatter` - formatter module to use, defaults to `SSHKit.Formatters.SilentFormatter`
 
   ## Example
 
   ```
-  {:ok, output, status} = SSHKit.SSH.run(conn, "uptime")
+  {:ok, output, status, uuid} = SSHKit.SSH.run(conn, "uptime")
   IO.inspect(output)
   ```
   """
   def run(connection, command, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
     acc = Keyword.get(options, :acc, {:cont, {[], nil}})
-    fun = Keyword.get(options, :fun, &capture/2)
+    uuid = Keyword.get(options, :uuid, nil)
+    formatter = Keyword.get(options, :formatter, SSHKit.Formatters.SilentFormatter)
+    fun = Keyword.get(options, :fun, &capture(&1, &2, uuid, formatter))
 
     case Channel.open(connection, timeout: timeout) do
       {:ok, channel} ->
+        formatter.puts_exec(uuid, command)
         case Channel.exec(channel, command, timeout) do
           :success ->
             channel
@@ -98,16 +103,18 @@ defmodule SSHKit.SSH do
     end
   end
 
-  defp capture(message, state = {buffer, status}) do
+  defp capture(message, state = {buffer, status}, uuid, formatter) do
     next = case message do
       {:data, _, 0, data} ->
+        formatter.puts_receive(uuid, :stdout, data)
         {[{:stdout, data} | buffer], status}
       {:data, _, 1, data} ->
+        formatter.puts_receive(uuid, :stderr, data)
         {[{:stderr, data} | buffer], status}
       {:exit_status, _, code} ->
         {buffer, code}
       {:closed, _} ->
-        {:ok, Enum.reverse(buffer), status}
+        {:ok, Enum.reverse(buffer), status, uuid}
       _ ->
         state
     end
