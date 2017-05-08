@@ -59,14 +59,12 @@ defmodule SSHKitFunctionalTest do
     assert output =~ "'does-not-exist': No such file or directory"
   end
 
-  @tag :skip # not yet implemented
   @tag boot: 1
   test "env", %{hosts: [host]} do
     [{:ok, output, status}] =
       host
       |> build_context
-      |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH"})
-      |> SSHKit.env(%{"NODE_ENV" => "production"})
+      |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
       |> SSHKit.run("env")
 
     assert status == 0
