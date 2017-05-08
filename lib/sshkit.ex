@@ -25,39 +25,27 @@ defmodule SSHKit do
   alias SSHKit.Host
 
   @doc """
-  Produces a SSHKit.Host struct holding the information
+  Produces a `SSHKit.Host` struct holding the information
   needed to connect to a (remote) host.
 
-  ## Example
+  ## Examples
 
-  There a many ways to create an SSHKit host:
-
-  ```
-  host = SSHKit.host(%{name: "me.fancy_domain.io", options: [port: 3000]})
-  ```
-
-  or
+  In its most basic version, you just pass a hostname and all other options will use the defaults:
 
   ```
-  host = SSHKit.host({"me.fancy_domain.io", [port: 3000]})
+  host = SSHKit.host("name.io")
   ```
 
-  or
+  If you wish to provide additional host options, e.g. a non-standard port, you can pass a second argument:
 
   ```
-  host = SSHKit.host({"me.fancy_domain.io", [port: 3000]})
+  host = SSHKit.host(name: "name.io", port: 2222)
   ```
 
-  or
+  … or, alternatively, a tuple with hostname and options:
 
   ```
-  host = SSHKit.host("10.0.0.1")
-  ```
-
-  or
-
-  ```
-  host = SSHKit.host("10.0.0.1", port: 3000)
+  host = SSHKit.host({"name.io", port: 2222})
   ```
 
   One or many of these hosts can then be used
@@ -133,7 +121,7 @@ defmodule SSHKit do
 
   @doc """
   Changes the umask affecting default file/directory
-  permission.
+  permissions.
   It returns the modified context for easy chaining.
 
   ## Example
@@ -152,7 +140,7 @@ defmodule SSHKit do
   end
 
   @doc """
-  Specifies the user under whose name commands are executed at.
+  Specifies the user under whose name commands are executed.
   That user might be different than the user with which
   ssh connects to the remote host.
   It returns the modified context for easy chaining.
@@ -226,12 +214,10 @@ defmodule SSHKit do
 
   @doc ~S"""
   Executes a command within the given context.
-  Returns a list of tuples of the form `{:ok, output, return_code}`.
+  Returns a list of tuples of the form `{:ok, output, exit_code}`.
   There is one tuple per connected host a command was executed at.
 
-  ## Parameters
-
-  * `return_code` is the number with which the executed command returns.
+  * `exit_code` is the number with which the executed command returns.
     If things went well, that usually is `0`.
 
   * `output` is a keyword list of the commands collected output.
