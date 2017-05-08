@@ -40,7 +40,7 @@ defmodule SSHKit.ContextTest do
         |> Context.build("ls")
 
       assert command =~ ~r/export CI="true"/
-      assert !String.contains?(command, "NODE_ENV")
+      refute command =~ ~r/NODE_ENV/
     end
   end
 end

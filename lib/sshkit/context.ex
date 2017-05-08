@@ -1,8 +1,8 @@
 defmodule SSHKit.Context do
   @moduledoc """
   Holds information about the context in which a command can be executed.
-  This includeds the `group`, `user`, `umask` setting, `path`,
-  environment variables, as well as the hosts a command should be on.
+  This includes the `group`, `user`, `umask` setting, working directory,
+  environment variables, as well as the hosts a command should run on.
 
   `build/2` compiles a context into an executable command string.
   """
@@ -12,12 +12,14 @@ defmodule SSHKit.Context do
   defstruct [hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil]
 
   @doc """
-  Compile the given context into a string that is executable (via SSH) on a shell.
+  Compiles an executable command string for running the given `command` in the provided `context`.
 
-  ## Parameters
+  ## Example
 
-  * `context`: a `SSHKit.Context` struct
-  * `command`: a string containing the command to execute in that context
+  ` ``
+  iex> %SSHKit.Context{path: "/var/www"} |> SSHKit.Context.build("ls")
+  "cd /var/www && /usr/bin/env ls"
+  ` ``
   """
   def build(context, command) do
     command
