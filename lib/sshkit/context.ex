@@ -16,10 +16,10 @@ defmodule SSHKit.Context do
 
   ## Example
 
-  ` ``
+  ```
   iex> %SSHKit.Context{path: "/var/www"} |> SSHKit.Context.build("ls")
   "cd /var/www && /usr/bin/env ls"
-  ` ``
+  ```
   """
   def build(context, command) do
     command
