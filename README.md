@@ -28,6 +28,7 @@ context =
 :ok = SSHKit.run(context, "yarn install")
 ```
 
+The [`SSHKit`](https://hexdocs.pm/sshkit/SSHKit.html) module documentation has more guidance and examples for the DSL.
 If you need more control, take a look at the `SSHKit.SSH` and `SSHKit.SCP`
 modules.
 
