@@ -9,7 +9,7 @@ defmodule SSHKit.SSHFunctionalTest do
   test "opens a connection with username and password", %{hosts: [host]} do
     options = [port: host.port, user: host.user, password: host.password]
     {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-    {:ok, data, status} = SSH.run(conn, "whoami")
+    {:ok, data, status} = SSH.run(conn, "id -un")
 
     assert [stdout: "#{host.user}\n"] == data
     assert 0 = status

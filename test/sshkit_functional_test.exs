@@ -5,21 +5,15 @@ defmodule SSHKitFunctionalTest do
 
   use SSHKit.FunctionalCase, async: true
 
-  @defaults [silently_accept_hosts: true]
+  @defaults [silently_accept_hosts: true, timeout: 5000]
 
   def options(overrides) do
     Keyword.merge(@defaults, overrides)
   end
 
   def build_context(host) do
-    SSHKit.context({
-      host.ip,
-      options(port: host.port,
-              user: host.user,
-              password: host.password,
-              timeout: 5000
-             )
-    })
+    overrides = [port: host.port, user: host.user, password: host.password]
+    SSHKit.context({host.ip, Keyword.merge(@defaults, overrides)})
   end
 
   defp stdio(output, type) do
@@ -33,42 +27,39 @@ defmodule SSHKitFunctionalTest do
 
   @tag boot: 1
   test "connects", %{hosts: [host]} do
-    [{:ok, output, 0}] = SSHKit.run(build_context(host), "whoami")
-
+    [{:ok, output, 0}] = SSHKit.run(build_context(host), "id -un")
     name = String.trim(stdout(output))
     assert name == host.user
   end
 
   @tag boot: 1
-  test "run", %{hosts: [host]} do
+  test "runs commands", %{hosts: [host]} do
     context = build_context(host)
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
     assert status == 0
-    output = stdout(output)
-    assert output == "/home/me\n"
+    assert stdout(output) == "/home/me\n"
 
     [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
     assert status == 1
-    output = stderr(output)
-    assert output =~ "ls: non-existing: No such file or directory"
+    assert stderr(output) =~ "ls: non-existing: No such file or directory"
 
     [{:ok, output, status}] = SSHKit.run(context, "does-not-exist")
     assert status == 127
-    output = stderr(output)
-    assert output =~ "'does-not-exist': No such file or directory"
+    assert stderr(output) =~ "'does-not-exist': No such file or directory"
   end
 
   @tag boot: 1
   test "env", %{hosts: [host]} do
     [{:ok, output, status}] =
       host
-      |> build_context
+      |> build_context()
       |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
       |> SSHKit.run("env")
 
-    assert status == 0
     output = stdout(output)
+
+    assert status == 0
     assert output =~ "NODE_ENV=production"
     assert output =~ ~r/PATH=.*\/\.rbenv\/shims:/
   end
@@ -77,14 +68,17 @@ defmodule SSHKitFunctionalTest do
   test "umask", %{hosts: [host]} do
     context =
       host
-      |> build_context
+      |> build_context()
       |> SSHKit.umask("077")
-    SSHKit.run(context, "mkdir my_dir")
-    SSHKit.run(context, "touch my_file")
+
+    [{:ok, _, 0}] = SSHKit.run(context, "mkdir my_dir")
+    [{:ok, _, 0}] = SSHKit.run(context, "touch my_file")
+
     [{:ok, output, status}] = SSHKit.run(context, "ls -la")
 
-    assert status == 0
     output = stdout(output)
+
+    assert status == 0
     assert output =~ ~r/drwx--S---\s+2\s+me\s+me\s+4096.+my_dir/
     assert output =~ ~r/-rw-------\s+1\s+me\s+me\s+0.+my_file/
   end
@@ -97,23 +91,25 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.path("/var/log")
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
-    assert status == 0
     output = stdout(output)
+
+    assert status == 0
     assert output == "/var/log\n"
   end
 
-  @tag skip: true # it produces an error: "sudo not found" on stderr
   @tag boot: 1
   test "user", %{hosts: [host]} do
     adduser(host, "despicable_me")
+    add_user_to_group(host, host.user, "danger")
 
     context =
       host
-      |> build_context
+      |> build_context()
       |> SSHKit.user("despicable_me")
 
-    [{:ok, output, status}] = SSHKit.run(context, "whoami")
+    [{:ok, output, status}] = SSHKit.run(context, "id -un")
     output = stdout(output)
+
     assert output == "despicable_me\n"
     assert status == 0
   end
