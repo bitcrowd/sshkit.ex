@@ -3,7 +3,7 @@ defmodule SSHKit.Utils do
 
   def shellescape(value), do: value
 
-  def shellquote(value), do: value
+  def shellquote(value), do: "'#{value}'" # TODO: Proper quoting
 
   def charlistify(value) when is_list(value) do
     Enum.map(value, &charlistify/1)
