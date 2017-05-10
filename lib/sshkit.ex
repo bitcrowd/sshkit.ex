@@ -80,6 +80,9 @@ defmodule SSHKit do
   See `path/2`, `umask/2`, `user/2`, `group/2`, or `env/2`
   for details on how to modify a context.
 
+  * `hash_fun` can be specified in the options as the function/1 to be called
+    with the `%SSHKit.Host{}` and return a unique identifier.
+
   ## Example
 
   Create an execution context for two hosts.
@@ -91,11 +94,13 @@ defmodule SSHKit do
   context = SSHKit.context(hosts)
   ```
   """
-  def context(hosts) do
+  def context(hosts, opts \\ []) do
+    hash_fun = Keyword.get(opts, :hash_fun, &set_hash/1)
     hosts =
       hosts
       |> List.wrap
       |> Enum.map(&host/1)
+      |> Enum.map(hash_fun)
     %Context{hosts: hosts}
   end
 
@@ -214,8 +219,11 @@ defmodule SSHKit do
 
   @doc ~S"""
   Executes a command within the given context.
-  Returns a list of tuples of the form `{:ok, output, exit_code}`.
+  Returns a list of tuples of the form `{:ok, output, exit_code, uuid}`.
   There is one tuple per connected host a command was executed at.
+
+  * `uuid` is the unique identifier that represents a host.
+    It is set by `context/2` based on a simple hashing algorithm.
 
   * `exit_code` is the number with which the executed command returns.
     If things went well, that usually is `0`.
@@ -249,17 +257,29 @@ defmodule SSHKit do
   assert "Hello World!\n" == stdout
   ```
   """
-  def run(context, command) do
+  def run(context, command, opts \\ []) do
     cmd = Context.build(context, command)
+    formatter = Keyword.get(opts, :formatter, SSHKit.Formatters.SilentFormatter)
 
     run = fn host ->
+      formatter.puts_connect(host)
       {:ok, conn} = SSH.connect(host.name, host.options)
-      res = SSH.run(conn, cmd)
+      res = SSH.run(conn, cmd, formatter: formatter, uuid: host.uuid)
       :ok = SSH.close(conn)
       res
     end
 
     Enum.map(context.hosts, run)
+  end
+
+  def set_hash(host = %Host{name: name}) do
+    new_hash =
+      :sha
+      |> :crypto.hash(name)
+      |> Base.encode16()
+      |> String.slice(0..7)
+
+    %{host | uuid: new_hash}
   end
 
   # def upload(context, path, options \\ []) do

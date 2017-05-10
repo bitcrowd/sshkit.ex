@@ -22,6 +22,31 @@ defmodule SSHKitFunctionalTest do
     })
   end
 
+  def build_context(host1, host2) do
+    hashing_fun = fn(host) ->
+      %{host | uuid: "DEADBEEF:" <> host.options[:port]}
+    end
+
+    SSHKit.context([
+      {
+        host1.ip,
+        options(port: "5560",
+            user: host1.user,
+            password: host1.password,
+            timeout: 5000
+           )
+      },
+      {
+        host2.ip,
+        options(port: "5570",
+            user: host2.user,
+            password: host2.password,
+            timeout: 5000
+           )
+      },
+    ], hash_fun: hashing_fun)
+  end
+
   defp stdio(output, type) do
     output
     |> Keyword.get_values(type)
@@ -31,29 +56,38 @@ defmodule SSHKitFunctionalTest do
   def stdout(output), do: stdio(output, :stdout)
   def stderr(output), do: stdio(output, :stderr)
 
+  @tag boot: 2
+  test "context", %{hosts: [host1, host2]} do
+    context = build_context(host1, host2)
+    assert "DEADBEEF:5560" == List.first(context.hosts).uuid
+    assert "DEADBEEF:5570" == List.last(context.hosts).uuid
+  end
+
   @tag boot: 1
   test "connects", %{hosts: [host]} do
-    [{:ok, output, 0}] = SSHKit.run(build_context(host), "whoami")
+    context = build_context(host)
+    [{:ok, output, 0, uuid}] = SSHKit.run(context, "whoami")
 
     name = String.trim(stdout(output))
     assert name == host.user
+    assert uuid == List.first(context.hosts).uuid
   end
 
   @tag boot: 1
   test "run", %{hosts: [host]} do
     context = build_context(host)
 
-    [{:ok, output, status}] = SSHKit.run(context, "pwd")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "pwd")
     assert status == 0
     output = stdout(output)
     assert output == "/home/me\n"
 
-    [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "ls non-existing")
     assert status == 1
     output = stderr(output)
     assert output =~ "ls: non-existing: No such file or directory"
 
-    [{:ok, output, status}] = SSHKit.run(context, "does-not-exist")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "does-not-exist")
     assert status == 127
     output = stderr(output)
     assert output =~ "'does-not-exist': No such file or directory"
@@ -61,7 +95,7 @@ defmodule SSHKitFunctionalTest do
 
   @tag boot: 1
   test "env", %{hosts: [host]} do
-    [{:ok, output, status}] =
+    [{:ok, output, status, _uuid}] =
       host
       |> build_context
       |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
@@ -81,7 +115,7 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.umask("077")
     SSHKit.run(context, "mkdir my_dir")
     SSHKit.run(context, "touch my_file")
-    [{:ok, output, status}] = SSHKit.run(context, "ls -la")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "ls -la")
 
     assert status == 0
     output = stdout(output)
@@ -96,7 +130,7 @@ defmodule SSHKitFunctionalTest do
       |> build_context
       |> SSHKit.path("/var/log")
 
-    [{:ok, output, status}] = SSHKit.run(context, "pwd")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "pwd")
     assert status == 0
     output = stdout(output)
     assert output == "/var/log\n"
@@ -112,7 +146,7 @@ defmodule SSHKitFunctionalTest do
       |> build_context
       |> SSHKit.user("despicable_me")
 
-    [{:ok, output, status}] = SSHKit.run(context, "whoami")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "whoami")
     output = stdout(output)
     assert output == "despicable_me\n"
     assert status == 0
@@ -133,7 +167,7 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.user("gru")
       |> SSHKit.group("villains")
 
-    [{:ok, output, status}] = SSHKit.run(context, "id -gn gru")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "id -gn gru")
     output = stdout(output)
     assert output == "villains\n"
     assert status == 0
@@ -144,7 +178,7 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.user("gru")
       |> SSHKit.group("minion_owners")
 
-    [{:ok, output, status}] = SSHKit.run(context, "id -gn gru")
+    [{:ok, output, status, _uuid}] = SSHKit.run(context, "id -gn gru")
     output = stdout(output)
     assert output == "minion_owners\n"
     assert status == 0

@@ -11,5 +11,5 @@ defmodule SSHKit.Host do
   |> SSHKit.run("mkdir my_dir")
   ```
   """
-  defstruct [:name, :options]
+  defstruct [:name, :options, :uuid]
 end

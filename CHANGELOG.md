@@ -14,11 +14,13 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.1...HEAD
 
 * Renamed response from remotely executed commands from 'normal' to 'stdout' [#34]
 * Renamed `SSHKit.pwd` to `SSHKit.path` [#33] Thanks @brienw for the idea
+* `SSH.run/3` accepts an optional `uuid` option and returns this `uuid` with the output
 
 ### New features:
 
 * Support basic SCP up-/downloads
 * Added documentation https://hexdocs.pm/sshkit/SSHKit.html
+* Basic output formatting (default is silent - no change)
 
 ### Fixes:
 
