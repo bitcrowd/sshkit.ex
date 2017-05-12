@@ -10,7 +10,7 @@ defmodule SSHKit.Utils do
   end
   def charlistify(value) when is_tuple(value) do
     value
-    |> Tuple.to_list
+    |> Tuple.to_list()
     |> charlistify()
     |> List.to_tuple()
   end

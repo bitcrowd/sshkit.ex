@@ -20,8 +20,8 @@ RUN echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers.d/wheel
 
 # Allow passwordless sudo for users in the "danger" group.
 
-RUN addgroup -S danger
-RUN echo "%danger ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yolo
+RUN addgroup -S passwordless-sudoers
+RUN echo "%passwordless-sudoers ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yolo
 
 # Run SSH daemon and expose the standard SSH port.
 

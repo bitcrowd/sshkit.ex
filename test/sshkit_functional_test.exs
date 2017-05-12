@@ -100,7 +100,7 @@ defmodule SSHKitFunctionalTest do
   @tag boot: 1
   test "user", %{hosts: [host]} do
     adduser(host, "despicable_me")
-    add_user_to_group(host, host.user, "danger")
+    add_user_to_group(host, host.user, "passwordless-sudoers")
 
     context =
       host
