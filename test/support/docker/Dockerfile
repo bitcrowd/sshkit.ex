@@ -3,7 +3,7 @@ FROM alpine:3.5
 # Set up an Alpine Linux machine running an SSH server.
 # Autogenerate missing host keys.
 
-RUN apk add --no-cache openssh
+RUN apk add --no-cache openssh sudo
 RUN ssh-keygen -A
 
 # Create the skeleton directory, used for creating new users.
@@ -13,6 +13,15 @@ RUN chmod 700 /etc/skel/.ssh
 
 RUN touch /etc/skel/.ssh/authorized_keys
 RUN chmod 600 /etc/skel/.ssh/authorized_keys
+
+# Allow members of group "wheel" to execute any command.
+
+RUN echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers.d/wheel
+
+# Allow passwordless sudo for users in the "danger" group.
+
+RUN addgroup -S passwordless-sudoers
+RUN echo "%passwordless-sudoers ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yolo
 
 # Run SSH daemon and expose the standard SSH port.
 

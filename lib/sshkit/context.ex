@@ -22,25 +22,20 @@ defmodule SSHKit.Context do
   ```
   """
   def build(context, command) do
-    command
-    |> cmd
-    |> group(context.group)
-    |> user(context.user)
-    |> env(context.env)
+    "/usr/bin/env #{command}"
+    |> sudo(context.user, context.group)
+    |> export(context.env)
     |> umask(context.umask)
-    |> path(context.path)
+    |> cd(context.path)
   end
 
-  defp cmd(command), do: "/usr/bin/env #{command}"
+  defp sudo(command, nil, nil), do: command
+  defp sudo(command, username, nil), do: "sudo -n -u #{username} -- sh -c #{shellquote(command)}"
+  defp sudo(command, nil, groupname), do: "sudo -n -g #{groupname} -- sh -c #{shellquote(command)}"
+  defp sudo(command, username, groupname), do: "sudo -n -u #{username} -g #{groupname} -- sh -c #{shellquote(command)}"
 
-  defp group(command, nil), do: command
-  defp group(command, _name), do: command
-
-  defp user(command, nil), do: command
-  defp user(command, name), do: "sudo -u #{name} -- sh -c #{shellquote(command)}"
-
-  defp env(command, nil), do: command
-  defp env(command, env) do
+  defp export(command, nil), do: command
+  defp export(command, env) do
     exports = Enum.map_join(env, " ", fn {name, value} -> "#{name}=\"#{value}\"" end)
     "(export #{exports} && #{command})"
   end
@@ -48,6 +43,6 @@ defmodule SSHKit.Context do
   defp umask(command, nil), do: command
   defp umask(command, mask), do: "umask #{mask} && #{command}"
 
-  defp path(command, nil), do: command
-  defp path(command, path), do: "cd #{path} && #{command}"
+  defp cd(command, nil), do: command
+  defp cd(command, path), do: "cd #{path} && #{command}"
 end

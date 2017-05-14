@@ -3,14 +3,14 @@ defmodule SSHKit.Utils do
 
   def shellescape(value), do: value
 
-  def shellquote(value), do: value
+  def shellquote(value), do: "'#{value}'"
 
   def charlistify(value) when is_list(value) do
     Enum.map(value, &charlistify/1)
   end
   def charlistify(value) when is_tuple(value) do
     value
-    |> Tuple.to_list
+    |> Tuple.to_list()
     |> charlistify()
     |> List.to_tuple()
   end
