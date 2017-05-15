@@ -37,7 +37,7 @@ defmodule SSHKitFunctionalTest do
     context = build_context(host)
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
-    assert status == 0
+    assert status == 0, stderr(output)
     assert stdout(output) == "/home/me\n"
 
     [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
@@ -57,9 +57,9 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
       |> SSHKit.run("env")
 
-    output = stdout(output)
+    assert status == 0, stderr(output)
 
-    assert status == 0
+    output = stdout(output)
     assert output =~ "NODE_ENV=production"
     assert output =~ ~r/PATH=.*\/\.rbenv\/shims:/
   end
@@ -76,9 +76,9 @@ defmodule SSHKitFunctionalTest do
 
     [{:ok, output, status}] = SSHKit.run(context, "ls -la")
 
-    output = stdout(output)
+    assert status == 0, stderr(output)
 
-    assert status == 0
+    output = stdout(output)
     assert output =~ ~r/drwx--S---\s+2\s+me\s+me\s+4096.+my_dir/
     assert output =~ ~r/-rw-------\s+1\s+me\s+me\s+0.+my_file/
   end
@@ -91,10 +91,9 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.path("/var/log")
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
-    output = stdout(output)
 
-    assert status == 0
-    assert output == "/var/log\n"
+    assert status == 0, stderr(output)
+    assert stdout(output) == "/var/log\n"
   end
 
   @tag boot: 1
@@ -109,10 +108,9 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.user("despicable_me")
 
     [{:ok, output, status}] = SSHKit.run(context, "id -un")
-    output = stdout(output)
 
-    assert output == "despicable_me\n"
-    assert status == 0
+    assert status == 0, stderr(output)
+    assert stdout(output) == "despicable_me\n"
   end
 
   @tag boot: 1
@@ -131,8 +129,7 @@ defmodule SSHKitFunctionalTest do
 
     [{:ok, output, status}] = SSHKit.run(context, "id -gn")
 
-    output = stdout(output)
-    assert output == "villains\n"
-    assert status == 0
+    assert status == 0, stderr(output)
+    assert stdout(output) == "villains\n"
   end
 end
