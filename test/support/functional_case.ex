@@ -45,9 +45,9 @@ defmodule SSHKit.FunctionalCase do
   end
 
   def init(host) do
-    adduser(host, @user)
-    chpasswd(host, @user, @pass)
-    keygen(host, @user)
+    adduser!(host, @user)
+    chpasswd!(host, @user, @pass)
+    keygen!(host, @user)
 
     Map.merge(host, %{user: @user, password: @pass})
   end
