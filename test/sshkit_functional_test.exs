@@ -87,7 +87,7 @@ defmodule SSHKitFunctionalTest do
   test "path", %{hosts: [host]} do
     context =
       host
-      |> build_context
+      |> build_context()
       |> SSHKit.path("/var/log")
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
@@ -99,8 +99,9 @@ defmodule SSHKitFunctionalTest do
 
   @tag boot: 1
   test "user", %{hosts: [host]} do
-    adduser(host, "despicable_me")
     add_user_to_group(host, host.user, "passwordless-sudoers")
+
+    adduser(host, "despicable_me")
 
     context =
       host
@@ -114,35 +115,24 @@ defmodule SSHKitFunctionalTest do
     assert status == 0
   end
 
-  @tag skip: true # "sh: sudo: not found" on stderr
   @tag boot: 1
   test "group", %{hosts: [host]} do
+    add_user_to_group(host, host.user, "passwordless-sudoers")
+
     adduser(host, "gru")
     addgroup(host, "villains")
-    addgroup(host, "minion_owners")
     add_user_to_group(host, "gru", "villains")
-    add_user_to_group(host, "gru", "minion_owners")
 
     context =
       host
-      |> build_context
+      |> build_context()
       |> SSHKit.user("gru")
       |> SSHKit.group("villains")
 
-    [{:ok, output, status}] = SSHKit.run(context, "id -gn gru")
+    [{:ok, output, status}] = SSHKit.run(context, "id -gn")
+
     output = stdout(output)
     assert output == "villains\n"
-    assert status == 0
-
-    context =
-      host
-      |> build_context
-      |> SSHKit.user("gru")
-      |> SSHKit.group("minion_owners")
-
-    [{:ok, output, status}] = SSHKit.run(context, "id -gn gru")
-    output = stdout(output)
-    assert output == "minion_owners\n"
     assert status == 0
   end
 end
