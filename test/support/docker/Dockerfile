@@ -18,10 +18,11 @@ RUN chmod 600 /etc/skel/.ssh/authorized_keys
 
 RUN echo "%wheel ALL=(ALL) ALL" >> /etc/sudoers.d/wheel
 
-# Allow passwordless sudo for users in the "danger" group.
+# Allow passwordless sudo for users in the "passwordless-sudoers" group.
+# Users in this group may run commands as any user in any group.
 
 RUN addgroup -S passwordless-sudoers
-RUN echo "%passwordless-sudoers ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yolo
+RUN echo "%passwordless-sudoers ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yolo
 
 # Run SSH daemon and expose the standard SSH port.
 
