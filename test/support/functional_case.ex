@@ -8,6 +8,7 @@ defmodule SSHKit.FunctionalCase do
   @image "sshkit-test-sshd"
   @cmd "/usr/sbin/sshd"
   @args ["-D", "-e"]
+  @shared_volume "#{System.cwd!}/test/fixtures/docker_workspace:/workspace"
 
   @user "me"
   @pass "pass"
@@ -30,7 +31,7 @@ defmodule SSHKit.FunctionalCase do
   end
 
   def boot(config = %{image: image, cmd: cmd, args: args}) do
-    id = Docker.run!(["--rm", "--publish-all", "--detach"], image, cmd, args)
+    id = Docker.run!(["--rm", "--publish-all", "--detach", "--volume=#{@shared_volume}"], image, cmd, args)
 
     ip = Docker.host
 
