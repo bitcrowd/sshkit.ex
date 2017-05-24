@@ -87,8 +87,17 @@ defmodule SSHKit do
 
   See `host/1` for additional ways of specifying host details.
   """
-  def host(name, options \\ []) do
+  def host(host, options \\ [])
+  def host(name, options) when is_binary(name) do
     %Host{name: name, options: options}
+  end
+
+  def host(%{name: name, options: options}, shared_options) do
+    %Host{name: name, options: Keyword.merge(shared_options, options)}
+  end
+
+  def host({name, options}, shared_options) do
+    %Host{name: name, options: Keyword.merge(shared_options, options)}
   end
 
   @doc """
@@ -116,7 +125,8 @@ defmodule SSHKit do
   context = SSHKit.context(hosts)
   ```
   """
-  def context(hosts) do
+
+  def context(hosts, options \\ []) do
     hosts =
       hosts
       |> List.wrap()
