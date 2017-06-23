@@ -28,7 +28,9 @@ context =
 :ok = SSHKit.run(context, "yarn install")
 ```
 
-The [`SSHKit`](https://hexdocs.pm/sshkit/SSHKit.html) module documentation has more guidance and examples for the DSL.
+The [`SSHKit`](https://hexdocs.pm/sshkit/SSHKit.html) module documentation has
+more guidance and examples for the DSL.
+
 If you need more control, take a look at the `SSHKit.SSH` and `SSHKit.SCP`
 modules.
 
@@ -54,16 +56,27 @@ You can use SSHKit in your projects in two steps:
 
 ## Testing
 
-As usual run `mix test` to run the tests.
-We also have functional tests to test "the real thing" on a docker machine.
-Therefore, you'll need to have docker installed (also docker-machine if you're on OS X/Windows).
+As usual, to run all tests, use:
 
-Since these functional tests take precious time.
-You may want to not run them during development:
+```shell
+mix test
+```
 
-```bash
+Apart from unit tests, we also have
+[functional tests](https://en.wikipedia.org/wiki/Functional_testing).
+These check SSHKit functionality against real SSH server implementations
+running inside Docker containers. Therefore, you need to have
+[Docker](https://www.docker.com/) installed.
+
+All functional tests are tagged as such. Hence, if you wish to skip them:
+
+```shell
 mix test --exclude functional
 ```
+
+Hint: We've found functional tests to run significantly faster with
+[Docker Machine](https://docs.docker.com/machine/) compared to
+[Docker for Mac](https://docs.docker.com/docker-for-mac/) on OS X.
 
 ## Contributing
 
