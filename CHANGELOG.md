@@ -4,7 +4,7 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.0.1...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
 
 ### Deprecations:
 
