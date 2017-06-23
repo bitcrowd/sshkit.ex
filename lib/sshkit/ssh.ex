@@ -82,19 +82,17 @@ defmodule SSHKit.SSH do
     acc = Keyword.get(options, :acc, {:cont, {[], nil}})
     fun = Keyword.get(options, :fun, &capture/2)
 
-    case Channel.open(connection, timeout: timeout) do
-      {:ok, channel} ->
-        case Channel.exec(channel, command, timeout) do
-          :success ->
-            channel
-            |> Channel.loop(timeout, acc, fun)
-            |> elem(1)
-          :failure ->
-            {:error, :failure}
-          err ->
-            err
-        end
-      err -> err
+    with {:ok, channel} <- Channel.open(connection, timeout: timeout) do
+      case Channel.exec(channel, command, timeout) do
+        :success ->
+          channel
+          |> Channel.loop(timeout, acc, fun)
+          |> elem(1)
+        :failure ->
+          {:error, :failure}
+        err ->
+          err
+      end
     end
   end
 
