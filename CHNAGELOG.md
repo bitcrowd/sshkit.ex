@@ -12,6 +12,22 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.1...HEAD
 
 ### Potentially breaking changes:
 
+* Put potentially breaking changes here
+
+### New features:
+
+* Put new features here
+
+### Fixes:
+
+* Put fixes here
+
+## `0.0.2` (2017-06-23)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.1...v0.0.2
+
+### Potentially breaking changes:
+
 * Renamed response from remotely executed commands from 'normal' to 'stdout' [#34]
 * Renamed `SSHKit.pwd` to `SSHKit.path` [#33] Thanks @brienw for the idea
 
