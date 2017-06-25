@@ -1,5 +1,14 @@
 defmodule SSHKit.SSH.Connection do
-  @moduledoc false
+  @moduledoc """
+  Defines a `SSHKit.SSH.Connection` struct representing a host connection.
+
+  A connection struct has the following fields:
+
+  * `host` - the name or IP of the remote host
+  * `port` - the port to connect to
+  * `options` - additional connection options
+  * `ref` - the underlying `:ssh` connection ref
+  """
 
   alias SSHKit.SSH.Connection
   alias SSHKit.Utils
