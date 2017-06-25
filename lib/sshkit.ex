@@ -25,38 +25,28 @@ defmodule SSHKit do
   alias SSHKit.Host
 
   @doc """
-  Produces a `SSHKit.Host` struct holding the information
+  Produces an `SSHKit.Host` struct holding the information
   needed to connect to a (remote) host.
 
   ## Examples
 
-  In its most basic version, you just pass a hostname and all other options will use the defaults:
+  You can pass a map with hostname and options:
 
   ```
-  host = SSHKit.host("name.io")
+  host = SSHKit.host(%{name: "name.io", options: [port: 2222]})
+
+  # This means, that if you pass in a host struct,
+  # you'll get the same result. In particular:
+  host == SSHKit.host(host)
   ```
 
-  If you wish to provide additional host options, e.g. a non-standard port, you can pass a second argument:
-
-  ```
-  host = SSHKit.host(name: "name.io", port: 2222)
-  ```
-
-  … or, alternatively, a tuple with hostname and options:
+  …or, alternatively, a tuple with hostname and options:
 
   ```
   host = SSHKit.host({"name.io", port: 2222})
   ```
 
-  One or many of these hosts can then be used
-  to create an execution context in which commands
-  can be executed.
-
-  ```
-  host
-  |> SSHKit.context
-  |> SSHKit.run("echo \"That was fun\"")
-  ```
+  See `host/2` for additional details and examples.
   """
   def host(%{name: name, options: options}) do
     %Host{name: name, options: options}
@@ -67,52 +57,87 @@ defmodule SSHKit do
   end
 
   @doc """
-  See `host/1` for details and examples.
+  Produces an `SSHKit.Host` struct holding the information
+  needed to connect to a (remote) host.
+
+  ## Examples
+
+  In its most basic version, you just pass a hostname and all other options
+  will use the defaults:
+
+  ```
+  host = SSHKit.host("name.io")
+  ```
+
+  If you wish to provide additional host options, e.g. a non-standard port,
+  you can pass a keyword list as the second argument:
+
+  ```
+  host = SSHKit.host("name.io", port: 2222)
+  ```
+
+  One or many of these hosts can then be used to create an execution context
+  in which commands can be executed:
+
+  ```
+  host
+  |> SSHKit.context()
+  |> SSHKit.run("echo \"That was fun\"")
+  ```
+
+  See `host/1` for additional ways of specifying host details.
   """
   def host(name, options \\ []) do
     %Host{name: name, options: options}
   end
 
   @doc """
-  Takes one or more (remote) hosts and creates
-  an execution context in which remote commands can be run.
+  Takes one or more (remote) hosts and creates an execution context in which
+  remote commands can be run. Accepts any form of host specification also
+  accepted by `host/1` and `host/2`, i.e. binaries, maps and 2-tuples.
 
-  See `path/2`, `umask/2`, `user/2`, `group/2`, or `env/2`
-  for details on how to modify a context.
+  See `path/2`, `user/2`, `group/2`, `umask/2`, and `env/2`
+  for details on how to derive variations of a context.
 
   ## Example
 
-  Create an execution context for two hosts.
-  Commands issued on that context will be executed
-  on both hosts.
+  Create an execution context for two hosts. Commands issued in this context
+  will be executed on both hosts.
 
   ```
   hosts = ["10.0.0.1", "10.0.0.2"]
+  context = SSHKit.context(hosts)
+  ```
+
+  Create a context for hosts with different connection options:
+
+  ```
+  hosts = [{"10.0.0.3", port: 2223}, %{name: "10.0.0.4", options: [port: 2224]}]
   context = SSHKit.context(hosts)
   ```
   """
   def context(hosts) do
     hosts =
       hosts
-      |> List.wrap
+      |> List.wrap()
       |> Enum.map(&host/1)
     %Context{hosts: hosts}
   end
 
   @doc """
-  Changes the working directory commands are executed in
-  for the given context.
-  It returns the modified context for easy chaining.
+  Changes the working directory commands are executed in for the given context.
+
+  Returns a new, derived context for easy chaining.
 
   ## Example
 
-  ```
-  # creates /var/www/my_app/my_file
+  Create `/var/www/app/config.json`:
 
+  ```
   "10.0.0.1"
-  |> SSHKit.context
-  |> SSHKit.path("/var/www/my_app")
-  |> SSHKit.run("touch my_file")
+  |> SSHKit.context()
+  |> SSHKit.path("/var/www/app")
+  |> SSHKit.run("touch config.json")
   ```
   """
   def path(context, path) do
@@ -120,19 +145,20 @@ defmodule SSHKit do
   end
 
   @doc """
-  Changes the umask affecting default file/directory
+  Changes the file creation mode mask affecting default file and directory
   permissions.
-  It returns the modified context for easy chaining.
+
+  Returns a new, derived context for easy chaining.
 
   ## Example
 
-  ```
-  # creates my_file, readable and writable only for the logged in user
+  Create `precious.txt`, readable and writable only for the logged-in user:
 
+  ```
   "10.0.0.1"
-  |> SSHKit.context
+  |> SSHKit.context()
   |> SSHKit.umask("077")
-  |> SSHKit.run("touch my_file")
+  |> SSHKit.run("touch precious.txt")
   ```
   """
   def umask(context, mask) do
@@ -143,35 +169,38 @@ defmodule SSHKit do
   Specifies the user under whose name commands are executed.
   That user might be different than the user with which
   ssh connects to the remote host.
-  It returns the modified context for easy chaining.
+
+  Returns a new, derived context for easy chaining.
 
   ## Example
 
+  All commands executed in the created `context` will run as `deploy_user`,
+  although we use the `login_user` to log in to the remote host:
+
   ```
   context =
-    {"10.0.0.1", [port: 3000, user: "login_user", password: "secret"]}
-    |> SSHKit.context
+    {"10.0.0.1", port: 3000, user: "login_user", password: "secret"}
+    |> SSHKit.context()
     |> SSHKit.user("deploy_user")
   ```
-
-  All commands executed in the created `context` are
-  run under the user `deploy_user`, although we used
-  the `login_user` to log in to the remote host.
   """
   def user(context, name) do
     %Context{context | user: name}
   end
 
   @doc """
-  Specifies the unix group commands are executed with.
-  It returns the modified context for easy chaining.
+  Specifies the group commands are executed with.
+
+  Returns a new, derived context for easy chaining.
 
   ## Example
+
+  All commands executed in the created `context` will run in group `www`:
 
   ```
   context =
     "10.0.0.1"
-    |> SSHKit.context
+    |> SSHKit.context()
     |> SSHKit.group("www")
   ```
   """
@@ -182,30 +211,33 @@ defmodule SSHKit do
   @doc """
   Defines new environment variables or overrides existing ones
   for a given context.
-  It returns the modified context for easy chaining.
+
+  Returns a new, derived context for easy chaining.
 
   ## Examples
 
   Setting `NODE_ENV=production`:
+
   ```
   context =
     "10.0.0.1"
-    |> SSHKit.context
+    |> SSHKit.context()
     |> SSHKit.env(%{"NODE_ENV" => "production"})
 
-  # runs with NODE_ENV=production
+  # Run the npm start script with NODE_ENV=production
   SSHKit.run(context, "npm start")
   ```
 
   Modifying the `PATH`:
+
   ```
   context =
     "10.0.0.1"
-    |> SSHKit.context
+    |> SSHKit.context()
     |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH"})
 
-  # Executes the rbenv-installed ruby to output "hello world"
-  SSHKit.run(context, "ruby -e \"puts 'hello world'\"")
+  # Execute the rbenv-installed ruby to print its version
+  SSHKit.run(context, "ruby --version")
   ```
   """
   def env(context, map) do
@@ -213,34 +245,40 @@ defmodule SSHKit do
   end
 
   @doc ~S"""
-  Executes a command within the given context.
-  Returns a list of tuples of the form `{:ok, output, exit_code}`.
-  There is one tuple per connected host a command was executed at.
+  Executes a command in the given context.
 
-  * `exit_code` is the number with which the executed command returns.
-    If things went well, that usually is `0`.
+  Returns a list of tuples, one fore each host in the context.
 
-  * `output` is a keyword list of the commands collected output.
-    It has the form:
-    ```
-    [
-      stdout: "output on standard out",
-      stderr: "output on standard error",
-      stdout: "some more normal output",
-    ]
-    ```
+  The resulting tuples have the form `{:ok, output, exit_code}` –
+  as returned by `SSHKit.SSH.run/3`:
+
+  * `exit_code` is the number with which the executed command returned.
+
+      If everything went well, that usually is `0`.
+
+  * `output` is a keyword list of the output collected from the command.
+
+      It has the form:
+
+      ```
+      [
+        stdout: "output on standard out",
+        stderr: "output on standard error",
+        stdout: "some more normal output",
+        …
+      ]
+      ```
 
   ## Example
 
-  Run a command and verify its output.
+  Run a command and verify its output:
 
   ```
-  {:ok, output, 0} =
+  [{:ok, output, 0}] =
     "my.remote-host.tld"
-    |> SSHKit.context
+    |> SSHKit.context()
     |> SSHKit.run("echo \"Hello World!\"")
 
-  # join captured output fragments from stdout
   stdout =
     output
     |> Keyword.get_values(:stdout)

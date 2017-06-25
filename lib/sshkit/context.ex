@@ -1,10 +1,16 @@
 defmodule SSHKit.Context do
   @moduledoc """
-  Holds information about the context in which a command can be executed.
-  This includes the `group`, `user`, `umask` setting, working directory,
-  environment variables, as well as the hosts a command should run on.
+  A context encapsulates the environment for the execution of a task. That is:
 
-  `build/2` compiles a context into an executable command string.
+  * hosts to run the task on, see `SSHKit.context/1`
+  * working directory to start in, see `SSHKit.path/2`
+  * user to run as, see `SSHKit.user/2`
+  * group, see `SSHKit.group/2`
+  * file creation mode mask, see `SSHKit.umask/2`
+  * environment variables, see `SSHKit.env/2`
+
+  A context can then be used to run commands, upload or download files:
+  See `SSHKit.run/2`, `SSHKit.upload/3` and `SSHKit.download/3`.
   """
 
   import SSHKit.Utils
@@ -12,13 +18,17 @@ defmodule SSHKit.Context do
   defstruct [hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil]
 
   @doc """
-  Compiles an executable command string for running the given `command` in the provided `context`.
+  Compiles an executable command string for running the given `command`
+  in the provided `context`.
 
-  ## Example
+  ## Examples
 
   ```
   iex> %SSHKit.Context{path: "/var/www"} |> SSHKit.Context.build("ls")
   "cd /var/www && /usr/bin/env ls"
+
+  iex> %SSHKit.Context{user: "me"} |> SSHKit.Context.build("whoami")
+  "sudo -n -u me -- sh -c \\"/usr/bin/env whoami\\""
   ```
   """
   def build(context, command) do
