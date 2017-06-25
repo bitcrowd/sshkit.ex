@@ -1,5 +1,13 @@
 defmodule SSHKit.SSH.Channel do
-  @moduledoc false
+  @moduledoc """
+  Defines a `SSHKit.SSH.Channel` struct representing a connection channel.
+
+  A channel struct has the following fields:
+
+  * `connection` - the underlying `SSHKit.SSH.Connection`
+  * `type` - the type of the channel, i.e. `:session`
+  * `id` - the unique channel id
+  """
 
   alias SSHKit.SSH.Channel
 
