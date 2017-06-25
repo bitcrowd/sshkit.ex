@@ -7,8 +7,8 @@ defmodule SSHKit.Host do
 
   ```
   %SSHKit.Host{name: "3.eg.io", options: [port: 2223]}
-  |> SSHKit.context
-  |> SSHKit.run("mkdir my_dir")
+  |> SSHKit.context()
+  |> SSHKit.run("touch base")
   ```
   """
   defstruct [:name, :options]
