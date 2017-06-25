@@ -31,8 +31,9 @@ context =
 The [`SSHKit`](https://hexdocs.pm/sshkit/SSHKit.html) module documentation has
 more guidance and examples for the DSL.
 
-If you need more control, take a look at the `SSHKit.SSH` and `SSHKit.SCP`
-modules.
+If you need more control, take a look at the
+[`SSHKit.SSH`](https://hexdocs.pm/sshkit/SSHKit.SSH.html) and
+[`SSHKit.SCP`](https://hexdocs.pm/sshkit/SSHKit.SCP.html) modules.
 
 ## Installation
 
@@ -53,6 +54,25 @@ You can use SSHKit in your projects in two steps:
     [applications: [:sshkit]]
   end
   ```
+
+## Modules
+
+SSHKit consists of three core modules:
+
+1. [**`SSHKit.SSH`**](https://hexdocs.pm/sshkit/SSHKit.SSH.html) provides
+   convenience functions for working with SSH connections and for executing
+   commands on remote hosts.
+
+2. [**`SSHKit.SCP`**](https://hexdocs.pm/sshkit/SSHKit.SCP.html) provides
+   convenience functions for transferring files or entire directory trees to
+   or from a remote host via SCP. It is built on top of `SSHKit.SSH`.
+
+3. [**`SSHKit`**](https://hexdocs.pm/sshkit/SSHKit.html) provides the main API
+   for automating tasks on remote hosts in a structured way. It uses both `SSH`
+   and `SCP` to implement its functionality.
+
+Additional modules, e.g. for custom client key handling, may be available as
+separate packages.
 
 ## Testing
 
