@@ -3,8 +3,7 @@ FROM alpine:3.5
 # Set up an Alpine Linux machine running an SSH server.
 # Autogenerate missing host keys.
 
-RUN echo http://dl-cdn.alpinelinux.org/alpine/edge/main >> /etc/apk/repositories
-RUN apk add --update --no-cache openssh sudo perl-utils
+RUN apk add --update --no-cache openssh sudo
 RUN ssh-keygen -A
 
 # Create the skeleton directory, used for creating new users.
@@ -26,7 +25,7 @@ RUN addgroup -S passwordless-sudoers
 RUN echo "%passwordless-sudoers ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers.d/yolo
 
 # Add fixture data for tests
-ADD fixtures /fixtures
+COPY fixtures /fixtures
 
 # Run SSH daemon and expose the standard SSH port.
 EXPOSE 22

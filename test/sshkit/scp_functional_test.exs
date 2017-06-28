@@ -17,6 +17,7 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.upload(conn, local, remote)
       assert verify_transfer(conn, local, remote)
+      :ok = SSH.close(conn)
     end
 
     @tag boot: 1
@@ -29,6 +30,7 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.upload(conn, local, remote, recursive: true)
       assert verify_transfer(conn, local, remote)
+      :ok = SSH.close(conn)
     end
 
     @tag boot: 1
@@ -43,6 +45,7 @@ defmodule SSHKit.SCPFunctionalTest do
       assert verify_mode(conn, local, remote)
       # assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
+      :ok = SSH.close(conn)
     end
 
     @tag boot: 1
@@ -57,6 +60,7 @@ defmodule SSHKit.SCPFunctionalTest do
       assert verify_mode(conn, local, remote)
       # assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
+      :ok = SSH.close(conn)
     end
   end
 
@@ -72,6 +76,7 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.download(conn, remote, local)
       assert verify_transfer(conn, local, remote)
+      :ok = SSH.close(conn)
     end
 
     @tag boot: 1
@@ -85,6 +90,7 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.download(conn, remote, local, recursive: true)
       assert verify_transfer(conn, local, remote)
+      :ok = SSH.close(conn)
     end
 
     @tag boot: 1
@@ -92,7 +98,7 @@ defmodule SSHKit.SCPFunctionalTest do
       options = [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures/file.txt"
       local = create_random_path()
-      on_exit fn -> File.rm(local) end
+      # on_exit fn -> File.rm(local) end
 
       {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
 
@@ -100,6 +106,7 @@ defmodule SSHKit.SCPFunctionalTest do
       assert verify_mode(conn, local, remote)
       # assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
+      :ok = SSH.close(conn)
     end
 
     @tag boot: 1
@@ -113,40 +120,41 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.download(conn, remote, local, recursive: true, preserve: true)
       assert verify_mode(conn, local, remote)
-      # assert verify_atime(conn, local, remote)
+      assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
+      :ok = SSH.close(conn)
     end
   end
 
   defp verify_transfer(conn, local, remote) do
-    command = "find <%= path %> -type f -exec shasum -a 1 {} \\; | sort | awk '{print $1}' | xargs"
+    command = &"find #{&1} -type f -exec sha1sum {} \\; | sort | awk '{print $1}' | xargs"
     compare_command_output(conn,
-      EEx.eval_string(command, [path: local]),
-      EEx.eval_string(command, [path: remote])
+      command.(local),
+      command.(remote)
       )
   end
 
   defp verify_mode(conn, local, remote) do
-    command = "find <%= path %> -type f -exec perl -e 'print join(\"\",+(stat $ARGV[0])[2,7]),\"\\n\"' {} \\; | sort | xargs"
+    command = &"find #{&1} -type f -exec ls -l {} + | awk '{print $1 $5}' | sort |xargs"
     compare_command_output(conn,
-      EEx.eval_string(command, [path: local]),
-      EEx.eval_string(command, [path: remote])
+      command.(local),
+      command.(remote)
       )
   end
 
   defp verify_atime(conn, local, remote) do
-    command = "find <%= path %> -type f -exec <%= stat %> {} \\; | cut -f1,2 | sort | xargs"
-    compare_command_output(conn,
-      EEx.eval_string(command, [path: local, stat: get_local_stat_cmd()]),
-      EEx.eval_string(command, [path: remote, stat: "stat -c '%s\t%X\t%Y'"])
+    command = &"env find #{&1} -type f -exec #{&2} {} \\; | cut -f1,2 | sort | xargs"
+      compare_command_output(conn,
+        command.(local, get_local_stat_cmd()),
+        command.(remote, "stat -c '%s\t%X\t%Y'")
       )
   end
 
   defp verify_mtime(conn, local, remote) do
-    command = "find <%= path %> -type f -exec <%= stat %> {} \\; | cut -f1,3 | sort | xargs"
+    command = &"env find #{&1} -type f -exec #{&2} {} \\; | cut -f1,3 | sort | xargs"
     compare_command_output(conn,
-      EEx.eval_string(command, [path: local, stat: get_local_stat_cmd()]),
-      EEx.eval_string(command, [path: remote, stat: "stat -c '%s\t%X\t%Y'"])
+      command.(local, get_local_stat_cmd()),
+      command.(remote, "stat -c '%s\t%X\t%Y'")
       )
   end
 
@@ -154,7 +162,6 @@ defmodule SSHKit.SCPFunctionalTest do
     local_output = local |> String.to_char_list |> :os.cmd |>  to_string
     {:ok, [stdout: remote_output], 0} = SSH.run(conn, remote)
     assert local_output == remote_output
-
   end
 
   defp get_local_stat_cmd do
