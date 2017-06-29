@@ -23,8 +23,6 @@ unless sha1sum do
   exit({:shutdown, 1})
 end
 
-
-
 Docker.build!("sshkit-test-sshd", "test/support/docker")
 
 ExUnit.start()
