@@ -24,6 +24,9 @@ defmodule SSHKit.SSH.Connection do
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
   """
   def open(host, options \\ [])
+  def open(nil, _) do
+    {:error, "No host given."}
+  end
   def open(host, options) when is_binary(host) do
     open(to_charlist(host), options)
   end
