@@ -14,4 +14,8 @@ defmodule SSHKit.SSHFunctionalTest do
     assert [stdout: "#{host.user}\n"] == data
     assert 0 = status
   end
+
+  test "returns error with nil host" do
+    assert {:error, _} = SSH.connect(nil)
+  end
 end
