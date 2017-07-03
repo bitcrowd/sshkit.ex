@@ -12,15 +12,18 @@ unless Docker.ready? do
   exit({:shutdown, 1})
 end
 
-{output, _} = System.cmd("sha1sum", ["--version"])
-sha1sum = String.contains?(output, "sha1sum")
-unless sha1sum do
-  IO.puts """
-  It seems like the `sha1sum` command isn't available?
-  Please check that sha1sum is installed: `which sha1sum`
-  """
 
-  exit({:shutdown, 1})
+try do
+  System.cmd("sha1sum", ["--version"])
+rescue
+  error in ErlangError ->
+    IO.puts """
+    An error happened while executing sha1sum (#{error.original}).
+
+    It seems like the `sha1sum` command isn't available?
+    Please check that sha1sum is installed: `which sha1sum`
+    """
+    exit({:shutdown, 1})
 end
 
 Docker.build!("sshkit-test-sshd", "test/support/docker")
