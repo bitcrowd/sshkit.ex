@@ -129,7 +129,7 @@ defmodule SSHKit.SCPFunctionalTest do
   defp verify_transfer(conn, local, remote) do
     command = &"find #{&1} -type f -exec #{&2} {} \\; | sort | awk '{print $1}' | xargs"
     compare_command_output(conn,
-      command.(local, SystemCommands.shasumcmd()),
+      command.(local, SystemCommands.shasum_cmd()),
       command.(remote, "sha1sum")
       )
   end
@@ -145,7 +145,7 @@ defmodule SSHKit.SCPFunctionalTest do
   defp verify_atime(conn, local, remote) do
     command = &"env find #{&1} -type f -exec #{&2} {} \\; | cut -f1,2 | sort | xargs"
       compare_command_output(conn,
-        command.(local, get_local_stat_cmd()),
+        command.(local, SystemCommands.stat_cmd()),
         command.(remote, "stat -c '%s\t%X\t%Y'")
       )
   end
@@ -153,7 +153,7 @@ defmodule SSHKit.SCPFunctionalTest do
   defp verify_mtime(conn, local, remote) do
     command = &"env find #{&1} -type f -exec #{&2} {} \\; | cut -f1,3 | sort | xargs"
     compare_command_output(conn,
-      command.(local, get_local_stat_cmd()),
+      command.(local, SystemCommands.stat_cmd()),
       command.(remote, "stat -c '%s\t%X\t%Y'")
       )
   end
@@ -162,13 +162,6 @@ defmodule SSHKit.SCPFunctionalTest do
     local_output = local |> String.to_char_list |> :os.cmd |> to_string
     {:ok, [stdout: remote_output], 0} = SSH.run(conn, remote)
     assert local_output == remote_output
-  end
-
-  defp get_local_stat_cmd do
-    case :os.type() do
-      {:unix, :darwin} -> "stat -f '%z\t%a\t%m'"
-      _ -> "stat -c '%s\t%X\t%Y'"
-    end
   end
 
   defp create_random_path do

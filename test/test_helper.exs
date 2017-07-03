@@ -12,7 +12,7 @@ unless Docker.ready? do
   exit({:shutdown, 1})
 end
 
-shasum_command = SystemCommands.shasumcmd()
+shasum_command = SystemCommands.shasum_cmd()
 try do
   System.cmd(shasum_command, ["--version"])
 rescue

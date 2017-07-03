@@ -8,10 +8,17 @@ defmodule SystemCommands do
   It defaults to `sha1sum`, since that is the command we know to work in
   our test-docker-container.
   """
-  def shasumcmd do
+  def shasum_cmd do
     case which("shasum") do
       {_, 0} -> "shasum"
       _ -> "sha1sum"
+    end
+  end
+
+  def stat_cmd do
+    case :os.type() do
+      {:unix, :darwin} -> "stat -f '%z\t%a\t%m'"
+      _ -> "stat -c '%s\t%X\t%Y'"
     end
   end
 
