@@ -127,10 +127,10 @@ defmodule SSHKit.SCPFunctionalTest do
   end
 
   defp verify_transfer(conn, local, remote) do
-    command = &"find #{&1} -type f -exec sha1sum {} \\; | sort | awk '{print $1}' | xargs"
+    command = &"find #{&1} -type f -exec #{&2} {} \\; | sort | awk '{print $1}' | xargs"
     compare_command_output(conn,
-      command.(local),
-      command.(remote)
+      command.(local, SystemCommands.shasumcmd()),
+      command.(remote, "sha1sum")
       )
   end
 
@@ -159,7 +159,7 @@ defmodule SSHKit.SCPFunctionalTest do
   end
 
   defp compare_command_output(conn, local, remote) do
-    local_output = local |> String.to_char_list |> :os.cmd |>  to_string
+    local_output = local |> String.to_char_list |> :os.cmd |> to_string
     {:ok, [stdout: remote_output], 0} = SSH.run(conn, remote)
     assert local_output == remote_output
   end

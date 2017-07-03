@@ -12,16 +12,16 @@ unless Docker.ready? do
   exit({:shutdown, 1})
 end
 
-
+shasum_command = SystemCommands.shasumcmd()
 try do
-  System.cmd("sha1sum", ["--version"])
+  System.cmd(shasum_command, ["--version"])
 rescue
   error in ErlangError ->
     IO.puts """
-    An error happened while executing sha1sum (#{error.original}).
+    An error happened while executing #{shasum_command} (#{error.original}).
 
-    It seems like the `sha1sum` command isn't available?
-    Please check that sha1sum is installed: `which sha1sum`
+    It seems like the `#{shasum_command}` command isn't available?
+    Please check that #{shasum_command} is installed: `which #{shasum_command}`
     """
     exit({:shutdown, 1})
 end
