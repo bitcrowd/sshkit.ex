@@ -13,7 +13,9 @@ defmodule SSHKit.SSH.Connection do
   alias SSHKit.SSH.Connection
   alias SSHKit.Utils
 
-  defstruct [:host, :port, :options, :ref]
+  defstruct [:host, :port, :options, :ref, :ssh_modules]
+
+  @ssh_modules %{ssh: :ssh, ssh_connection: :ssh_connection}
 
   @doc """
   Opens a connection to an SSH server.
@@ -42,19 +44,25 @@ defmodule SSHKit.SSH.Connection do
   def open(host, options) do
     port = Keyword.get(options, :port, 22)
     timeout = Keyword.get(options, :timeout, :infinity)
+    ssh_modules = Keyword.get(options, :ssh_modules, @ssh_modules)
+    ssh = erlang_module(%{ssh_modules: ssh_modules}, :ssh)
 
     defaults = [user_interaction: false]
 
     options =
       defaults
       |> Keyword.merge(options)
-      |> Keyword.drop([:port, :timeout])
+      |> Keyword.drop([:port, :timeout, :ssh_modules])
       |> Utils.charlistify()
 
-    case :ssh.connect(host, port, options, timeout) do
-      {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref}}
+    case ssh.connect(host, port, options, timeout) do
+      {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref, ssh_modules: ssh_modules}}
       err -> err
     end
+  end
+
+  defp erlang_module(conn, name) do
+    Map.fetch!(conn.ssh_modules, name)
   end
 
   @doc """
@@ -64,8 +72,9 @@ defmodule SSHKit.SSH.Connection do
 
   For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
-  def close(connection) do
-    :ssh.close(connection.ref)
+  def close(conn) do
+    ssh = erlang_module(conn, :ssh)
+    ssh.close(conn.ref)
   end
 
   @doc """
