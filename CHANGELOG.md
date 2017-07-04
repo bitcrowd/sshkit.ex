@@ -16,7 +16,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
 
 ### New features:
 
-* Put new features here
+* Added support for passing an anonymous function to `SSH.connect` [#72]
 
 ### Fixes:
 

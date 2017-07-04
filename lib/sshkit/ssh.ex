@@ -27,14 +27,50 @@ defmodule SSHKit.SSH do
 
   Uses `SSHKit.SSH.Connection.open/2` to open a connection.
 
+  `options_or_function` can either be a list of ssh-options or a function. If it's a
+  list, it's considered to be a list of ssh-options as described in `Connection.open/2`. If
+  it's a function, then it's equivalent to calling `connect(host, [],
+  options_or_function)`. See the documentation for `open/3` for more information
+  on this function.
+
   ## Example
 
   ```
   {:ok, conn} = SSHKit.SSH.connect("eg.io", port: 2222, user: "me", timeout: 1000)
   ```
   """
-  def connect(host, options \\ []) do
-    Connection.open(host, options)
+  def connect(host, options_or_function \\ [])
+  def connect(host, function) when is_function(function), do: connect(host, [], function)
+  def connect(host, options) when is_list(options), do: Connection.open(host, options)
+
+  @doc """
+  Similar to `connect/2` but expects a function as its last argument.
+
+  The ssh-connection is opened, given to the function as an argument and
+  automatically closed after the function returns, regardless
+  if there was an error when executing the function.
+
+  Returns `{:ok, function_result}` in case of success,
+  `{:error, reason}` otherwise.
+
+  ## Examples
+
+      SSH.connect("eg.io", port: 2222, user: "me", fn(conn) ->
+        SCP.upload(conn, "list.txt")
+      end)
+
+  See `open/2` for the list of available `options`.
+  """
+  def connect(host, options, function) do
+    case connect(host, options) do
+      {:ok, conn} ->
+        try do
+          {:ok, function.(conn)}
+        after
+          :ok = close(conn)
+        end
+      other -> other
+    end
   end
 
   @doc """
