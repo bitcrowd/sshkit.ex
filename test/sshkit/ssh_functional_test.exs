@@ -15,6 +15,15 @@ defmodule SSHKit.SSHFunctionalTest do
     assert 0 = status
   end
 
+  @tag boot: 1
+  test "opens a connection and runs an SSH command as a lambda function", %{hosts: [host]} do
+    options = [port: host.port, user: host.user, password: host.password]
+    func    = fn(conn) -> SSH.run(conn, "id -un") end
+    result  = {:ok, [stdout: "me\n"], 0}
+
+    assert SSH.connect(host.ip, options, func) == {:ok, result}
+  end
+
   test "returns error with nil host" do
     assert {:error, _} = SSH.connect(nil)
   end
