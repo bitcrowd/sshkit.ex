@@ -43,7 +43,6 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.upload(conn, local, remote, preserve: true)
       assert verify_mode(conn, local, remote)
-      # assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
       :ok = SSH.close(conn)
     end
@@ -58,7 +57,6 @@ defmodule SSHKit.SCPFunctionalTest do
 
       assert :ok = SCP.upload(conn, local, remote, recursive: true, preserve: true)
       assert verify_mode(conn, local, remote)
-      # assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
       :ok = SSH.close(conn)
     end
@@ -98,13 +96,13 @@ defmodule SSHKit.SCPFunctionalTest do
       options = [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures/file.txt"
       local = create_random_path()
-      # on_exit fn -> File.rm(local) end
+      on_exit fn -> File.rm(local) end
 
       {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
 
       assert :ok = SCP.download(conn, remote, local, preserve: true)
       assert verify_mode(conn, local, remote)
-      # assert verify_atime(conn, local, remote)
+      assert verify_atime(conn, local, remote)
       assert verify_mtime(conn, local, remote)
       :ok = SSH.close(conn)
     end
