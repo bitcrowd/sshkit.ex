@@ -12,6 +12,20 @@ unless Docker.ready? do
   exit({:shutdown, 1})
 end
 
+shasum_command = SystemCommands.shasum_cmd()
+try do
+  System.cmd(shasum_command, ["--version"])
+rescue
+  error in ErlangError ->
+    IO.puts """
+    An error happened while executing #{shasum_command} (#{error.original}).
+
+    It seems like the `#{shasum_command}` command isn't available?
+    Please check that #{shasum_command} is installed: `which #{shasum_command}`
+    """
+    exit({:shutdown, 1})
+end
+
 Docker.build!("sshkit-test-sshd", "test/support/docker")
 
 ExUnit.start()
