@@ -124,13 +124,22 @@ defmodule SSHKit do
   hosts = [{"10.0.0.3", port: 2223}, %{name: "10.0.0.4", options: [port: 2224]}]
   context = SSHKit.context(hosts)
   ```
+
+  Any shared options can be specified in the second argument.
+  Here we add a user and port for all hosts.
+
+  ```
+  hosts = ["10.0.0.1", "10.0.0.2"]
+  options = [user: "admin", port: "2222"]
+  context = SSHKit.context(hosts, options)
+  ```
   """
 
-  def context(hosts, options \\ []) do
+  def context(hosts, shared_options \\ []) do
     hosts =
       hosts
       |> List.wrap()
-      |> Enum.map(&host/1)
+      |> build_hosts(shared_options)
     %Context{hosts: hosts}
   end
 
@@ -323,4 +332,9 @@ defmodule SSHKit do
   #   local = Map.get(options, :as, Path.basename(path))
   #   SCP.download(conn, remote, local, options)
   # end
+
+  defp build_hosts(hosts, shared_options) do
+    build_host = &host(&1, shared_options)
+    Enum.map(hosts, build_host)
+  end
 end
