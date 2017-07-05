@@ -85,4 +85,20 @@ defmodule SSHKit.SSHTest do
       refute_received :closed_sandbox_connection
     end
   end
+
+  describe "close/1" do
+    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: :ssh_connection}]
+    test "call close on the connection" do
+      conn = %SSHKit.SSH.Connection{
+        host:        'test',
+        options:     [user_interaction: false],
+        port:        22,
+        ref:         :sandbox,
+        ssh_modules: Keyword.get(@options, :ssh_modules)
+      }
+
+      assert close(conn) == :ok
+      assert_received :closed_sandbox_connection
+    end
+  end
 end
