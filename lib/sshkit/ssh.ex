@@ -102,7 +102,7 @@ defmodule SSHKit.SSH do
 
   ## Options
 
-  * `:timeout` - maximum wait time between messages, defautls to `:infinity`
+  * `:timeout` - maximum wait time between messages, defaults to `:infinity`
   * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
   * `:acc` - initial accumulator value used in the loop
 
