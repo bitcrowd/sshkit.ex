@@ -42,23 +42,39 @@ defmodule SSHKit.SSH.Connection do
     open(to_charlist(host), options)
   end
   def open(host, options) do
-    port = Keyword.get(options, :port, 22)
-    timeout = Keyword.get(options, :timeout, :infinity)
-    ssh_modules = Keyword.get(options, :ssh_modules, @ssh_modules)
-    ssh = erlang_module(%{ssh_modules: ssh_modules}, :ssh)
+    { ssh_options, sshkit_options } = fetch_options(options)
+    ssh = erlang_module(sshkit_options, :ssh)
 
-    defaults = [user_interaction: false]
+    case ssh.connect(host, sshkit_options.port, ssh_options, sshkit_options.timeout) do
+      {:ok, ref} -> {
+        :ok,
+        %Connection{
+          host: host,
+          port: sshkit_options.port,
+          options: ssh_options,
+          ref: ref,
+          ssh_modules: sshkit_options.ssh_modules
+        }
+      }
+      err -> err
+    end
+  end
 
-    options =
-      defaults
+  @default_erlang_ssh_options [user_interaction: false]
+  defp fetch_options(options) do
+    sshkit_options = %{
+      port: Keyword.get(options, :port, 22),
+      timeout: Keyword.get(options, :timeout, :infinity),
+      ssh_modules: Keyword.get(options, :ssh_modules, @ssh_modules)
+    }
+
+    erlang_ssh_options =
+      @default_erlang_ssh_options
       |> Keyword.merge(options)
       |> Keyword.drop([:port, :timeout, :ssh_modules])
       |> Utils.charlistify()
 
-    case ssh.connect(host, port, options, timeout) do
-      {:ok, ref} -> {:ok, %Connection{host: host, port: port, options: options, ref: ref, ssh_modules: ssh_modules}}
-      err -> err
-    end
+    { erlang_ssh_options, sshkit_options }
   end
 
   defp erlang_module(conn, name) do
