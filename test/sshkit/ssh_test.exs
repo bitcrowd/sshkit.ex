@@ -20,6 +20,24 @@ defmodule SSHKit.SSHTest do
     end
   end
 
+  defmodule SSHSandboxConnectionSuccess do
+    def session_channel(:sandbox, _, _, _), do: {:ok, 0}
+
+    def exec(_, _, _, _) do
+      send self(), :exec_sandbox_connection
+      {:ok, :result}
+    end
+  end
+
+  defmodule SSHSandboxConnectionError do
+    def session_channel(:sandbox, _, _, _), do: {:ok, 0}
+
+    def exec(_, _, _, _) do
+      send self(), :exec_sandbox_connection
+      :failure
+    end
+  end
+
   setup_all do
     {:ok, host: "foo.io"}
   end
@@ -99,6 +117,46 @@ defmodule SSHKit.SSHTest do
 
       assert close(conn) == :ok
       assert_received :closed_sandbox_connection
+    end
+  end
+
+  describe "run/3" do
+    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: :ssh_connection}]
+    test "error if Channel cannot be opened" do
+      conn = %SSHKit.SSH.Connection{
+        host:        'test',
+        options:     [user_interaction: false],
+        port:        22,
+        ref:         :sandbox,
+        ssh_modules: Keyword.get(@options, :ssh_modules)
+      }
+      assert run(conn, "uptime") == {:error, :closed}
+    end
+
+    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: SSHSandboxConnectionSuccess}]
+    test "sucessfully execute command on connection and return result" do
+      conn = %SSHKit.SSH.Connection{
+        host:        'test',
+        options:     [user_interaction: false],
+        port:        22,
+        ref:         :sandbox,
+        ssh_modules: Keyword.get(@options, :ssh_modules)
+      }
+      assert run(conn, "uptime") == {:ok, :result}
+      assert_received :exec_sandbox_connection
+    end
+
+    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: SSHSandboxConnectionError}]
+    test "error when execution of command returns failure" do
+      conn = %SSHKit.SSH.Connection{
+        host:        'test',
+        options:     [user_interaction: false],
+        port:        22,
+        ref:         :sandbox,
+        ssh_modules: Keyword.get(@options, :ssh_modules)
+      }
+      assert run(conn, "uptime") == {:error, :failure}
+      assert_received :exec_sandbox_connection
     end
   end
 end
