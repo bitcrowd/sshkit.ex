@@ -10,7 +10,8 @@ defmodule SSHKit.SSH.Connection do
   * `ref` - the underlying `:ssh` connection ref
   """
 
-  alias SSHKit.SSH.{Connection, DryRun}
+  alias SSHKit.SSH.Connection
+  alias SSHKit.SSH.DryRun
   alias SSHKit.Utils
 
   defstruct [:host, :port, :options, :ref, :ssh_modules]
@@ -45,7 +46,7 @@ defmodule SSHKit.SSH.Connection do
     open(to_charlist(host), options)
   end
   def open(host, options) do
-    { ssh_options, sshkit_options } = fetch_options(options)
+    {ssh_options, sshkit_options} = fetch_options(options)
 
     ssh = ssh_module(sshkit_options)
     case ssh.connect(host, sshkit_options.port, ssh_options, sshkit_options.timeout) do
@@ -85,7 +86,7 @@ defmodule SSHKit.SSH.Connection do
       |> Keyword.drop([:port, :timeout, :ssh_modules, :dry_run])
       |> Utils.charlistify()
 
-    { erlang_ssh_options, sshkit_options }
+    {erlang_ssh_options, sshkit_options}
   end
 
   defp ssh_module(conn) do
