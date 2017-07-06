@@ -17,7 +17,7 @@ defmodule SSHKit.SSHFunctionalTest do
 
   @tag boot: 1
   test "opens a connection and runs an SSH command as a lambda function", %{hosts: [host]} do
-    options = [port: host.port, user: host.user, password: host.password]
+    options = @defaults ++ [port: host.port, user: host.user, password: host.password]
     func    = fn(conn) -> SSH.run(conn, "id -un") end
     result  = {:ok, [stdout: "me\n"], 0}
 
