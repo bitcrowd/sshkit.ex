@@ -3,14 +3,19 @@ defmodule SSHKit.SSH.DryRun.SSH do
 
   require Logger
 
-  def connect(host, port, _options, _timeout) do
-    Logger.info("Connect: #{host}:#{port}")
+  def connect(host, port, options, _timeout) do
+    login_identifier = if options[:user] do
+      "#{options[:user]}@#{host}:#{port}"
+    else
+      "#{host}:#{port}"
+    end
 
-    {:ok, "#{host}:#{port}"}
+    Logger.info("Connect: #{login_identifier}")
+    {:ok, login_identifier}
   end
 
   def close(ref) do
-    Logger.info("Disconnected #{ref}")
+    Logger.info("Disconnect: #{ref}")
 
     :ok
   end

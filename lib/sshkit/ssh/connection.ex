@@ -21,14 +21,16 @@ defmodule SSHKit.SSH.Connection do
   @doc """
   Opens a connection to an SSH server.
 
-  A timeout in ms can be provided through the `:timeout` option.
-  The default value is `:infinity`.
+  The following options are allowed:
 
-  A few more, common options are `:port`, `:user` and `:password`.
-  Port defaults to `22`, user to `$LOGNAME` or `$USER` on UNIX,
-  `$USERNAME` on Windows.
-
-  The `:user_interaction` option is set to false by default.
+  * `:timeout`: A timeout in ms after which a command is aborted. Defaults to `:infinity`.
+  * `:port`: The remote-port to connect to. Defaults to 22.
+  * `:user`: The username with which to connect.
+             Defaults to `$LOGNAME`, or `$USER` on UNIX, or `$USERNAME` on windows.
+  * `:password`: The password to login with
+  * `:dry_run`: If set to `true` no actual connection to the remote is established.
+                Instead all commands a logged. Defaults to `false`.
+  * `:user_interaction`: Defaults to `false`.
 
   For a complete list of options and their default values, see:
   [`:ssh.connect/4`](http://erlang.org/doc/man/ssh.html#connect-4).
