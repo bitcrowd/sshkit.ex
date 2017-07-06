@@ -18,6 +18,13 @@ defmodule SSHKit.SSH.Connection do
 
   @ssh_modules %{ssh: :ssh, ssh_connection: :ssh_connection}
   @dry_run_ssh_modules %{ssh: DryRun.SSH, ssh_connection: DryRun.SSHConnection}
+  @default_erlang_ssh_connection_options [user_interaction: false]
+  @default_sshkit_connection_options [
+    port: 22,
+    dry_run: false,
+    timeout: :infinity,
+    ssh_modules: @ssh_modules
+  ]
 
   @doc """
   Opens a connection to an SSH server.
@@ -64,29 +71,31 @@ defmodule SSHKit.SSH.Connection do
     end
   end
 
-  @default_erlang_ssh_options [user_interaction: false]
   defp fetch_options(options) do
-    dry_run = Keyword.get(options, :dry_run, false)
-    ssh_modules = if dry_run do
-      @dry_run_ssh_modules
-    else
-      @ssh_modules
-    end
+    valid_sshkit_option_keys = Keyword.keys(@default_sshkit_connection_options)
 
-    sshkit_options = %{
-      port: Keyword.get(options, :port, 22),
-      timeout: Keyword.get(options, :timeout, :infinity),
-      ssh_modules: Keyword.get(options, :ssh_modules, ssh_modules),
-      dry_run: dry_run
-    }
+    sshkit_options =
+      @default_sshkit_connection_options
+      |> Keyword.merge(options)
+      |> Keyword.take(valid_sshkit_option_keys)
+      |> install_dry_run_modules
+      |> Enum.into(%{})
 
     erlang_ssh_options =
-      @default_erlang_ssh_options
+      @default_erlang_ssh_connection_options
       |> Keyword.merge(options)
-      |> Keyword.drop([:port, :timeout, :ssh_modules, :dry_run])
+      |> Keyword.drop(valid_sshkit_option_keys)
       |> Utils.charlistify()
 
     {erlang_ssh_options, sshkit_options}
+  end
+
+  defp install_dry_run_modules(options) do
+    if Keyword.get(options, :dry_run, false) do
+      Keyword.merge(options, [ssh_modules: @dry_run_ssh_modules])
+    else
+      options
+    end
   end
 
   defp ssh_module(conn) do

@@ -60,15 +60,7 @@ defmodule SSHKit.SSHTest do
       refute_received :closed_sandbox_connection
     end
 
-    test "its logs the connection when dry_run is enabled" do
-      logged = capture_log fn ->
-        connect(@host, [user: @user, dry_run: true])
-      end
-
-      assert logged =~ "[info]  Connect: #{@user}@#{@host}:22"
-    end
-
-    test "its logs the connection when dry_run is enabled and there is no user" do
+    test "log the connection when dry_run is enabled" do
       logged = capture_log fn ->
         connect(@host, [dry_run: true])
       end
@@ -76,7 +68,15 @@ defmodule SSHKit.SSHTest do
       assert logged =~ "[info]  Connect: #{@host}:22"
     end
 
-    test "its logs the connection when dry_run is enabled with a non-default port" do
+    test "log the connection when dry_run is enabled and there is a user" do
+      logged = capture_log fn ->
+        connect(@host, [user: @user, dry_run: true])
+      end
+
+      assert logged =~ "[info]  Connect: #{@user}@#{@host}:22"
+    end
+
+    test "log the connection when dry_run is enabled with a non-default port" do
       logged = capture_log fn ->
         connect(@host, [dry_run: true, port: 666])
       end

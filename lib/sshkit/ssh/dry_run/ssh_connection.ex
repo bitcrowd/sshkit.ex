@@ -8,9 +8,6 @@ defmodule SSHKit.SSH.DryRun.SSHConnection do
     {:ok, @ssh_channel_id}
   end
 
-  def close(_ref, _id) do
-    :ok
-  end
 
   def exec(ref, id, command, _timeout) do
     Logger.info("Command: #{command}")
@@ -20,15 +17,8 @@ defmodule SSHKit.SSH.DryRun.SSHConnection do
     :success
   end
 
-  def send(_ref, _id, _type, _data, _timeout) do
-    :ok
-  end
-
-  def send_eof(_ref, _id) do
-    :ok
-  end
-
-  def adjust_window(_ref, _id, _size) do
-    :ok
-  end
+  def close(_ref, _id), do: :ok
+  def send_eof(_ref, _id), do: :ok
+  def adjust_window(_ref, _id, _size), do: :ok
+  def send(_ref, _id, _type, _data, _timeout), do: :ok
 end
