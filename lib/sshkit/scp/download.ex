@@ -191,7 +191,8 @@ defmodule SSHKit.SCP.Download do
   defp touch!(path, atime, mtime) do
     atime = :calendar.gregorian_seconds_to_datetime(@epoch + atime)
     mtime = :calendar.gregorian_seconds_to_datetime(@epoch + mtime)
-    :ok = :file.change_time(path, atime, mtime)
+    {:ok, file_info} = File.stat(path)
+    :ok = File.write_stat(path, %{file_info| mtime: mtime, atime: atime}, [:posix])
   end
 
   @tfmt ~S"(T)(0|[1-9]\d*) (0|[1-9]\d{0,5}) (0|[1-9]\d*) (0|[1-9]\d{0,5})"

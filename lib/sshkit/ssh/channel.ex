@@ -31,8 +31,9 @@ defmodule SSHKit.SSH.Channel do
     timeout = Keyword.get(options, :timeout, :infinity)
     ini_window_size = Keyword.get(options, :initial_window_size, 128 * 1024)
     max_packet_size = Keyword.get(options, :max_packet_size, 32 * 1024)
+    ssh_connection  = erlang_module(connection, :ssh_connection)
 
-    case :ssh_connection.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
+    case ssh_connection.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
       {:ok, id} -> {:ok, %Channel{connection: connection, type: :session, id: id}}
       err -> err
     end
@@ -66,7 +67,12 @@ defmodule SSHKit.SSH.Channel do
     exec(channel, to_charlist(command), timeout)
   end
   def exec(channel, command, timeout) do
-    :ssh_connection.exec(channel.connection.ref, channel.id, command, timeout)
+    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection.exec(channel.connection.ref, channel.id, command, timeout)
+  end
+
+  defp erlang_module(conn, name) do
+    Map.fetch!(conn.ssh_modules, name)
   end
 
   @doc """

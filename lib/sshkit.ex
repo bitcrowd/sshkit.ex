@@ -87,8 +87,17 @@ defmodule SSHKit do
 
   See `host/1` for additional ways of specifying host details.
   """
-  def host(name, options \\ []) do
+  def host(host, options \\ [])
+  def host(name, options) when is_binary(name) do
     %Host{name: name, options: options}
+  end
+
+  def host(%{name: name, options: options}, shared_options) do
+    %Host{name: name, options: Keyword.merge(shared_options, options)}
+  end
+
+  def host({name, options}, shared_options) do
+    %Host{name: name, options: Keyword.merge(shared_options, options)}
   end
 
   @doc """
@@ -115,12 +124,22 @@ defmodule SSHKit do
   hosts = [{"10.0.0.3", port: 2223}, %{name: "10.0.0.4", options: [port: 2224]}]
   context = SSHKit.context(hosts)
   ```
+
+  Any shared options can be specified in the second argument.
+  Here we add a user and port for all hosts.
+
+  ```
+  hosts = ["10.0.0.1", "10.0.0.2"]
+  options = [user: "admin", port: "2222"]
+  context = SSHKit.context(hosts, options)
+  ```
   """
-  def context(hosts) do
+
+  def context(hosts, shared_options \\ []) do
     hosts =
       hosts
       |> List.wrap()
-      |> Enum.map(&host/1)
+      |> build_hosts(shared_options)
     %Context{hosts: hosts}
   end
 
@@ -313,4 +332,9 @@ defmodule SSHKit do
   #   local = Map.get(options, :as, Path.basename(path))
   #   SCP.download(conn, remote, local, options)
   # end
+
+  defp build_hosts(hosts, shared_options) do
+    build_host = &host(&1, shared_options)
+    Enum.map(hosts, build_host)
+  end
 end
