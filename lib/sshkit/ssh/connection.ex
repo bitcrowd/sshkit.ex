@@ -10,12 +10,13 @@ defmodule SSHKit.SSH.Connection do
   * `ref` - the underlying `:ssh` connection ref
   """
 
-  alias SSHKit.SSH.Connection
+  alias SSHKit.SSH.{Connection, DryRun}
   alias SSHKit.Utils
 
   defstruct [:host, :port, :options, :ref, :ssh_modules]
 
   @ssh_modules %{ssh: :ssh, ssh_connection: :ssh_connection}
+  @dry_run_ssh_modules %{ssh: DryRun.SSH, ssh_connection: DryRun.SSHConnection}
 
   @doc """
   Opens a connection to an SSH server.
@@ -43,8 +44,8 @@ defmodule SSHKit.SSH.Connection do
   end
   def open(host, options) do
     { ssh_options, sshkit_options } = fetch_options(options)
-    ssh = erlang_module(sshkit_options, :ssh)
 
+    ssh = ssh_module(sshkit_options)
     case ssh.connect(host, sshkit_options.port, ssh_options, sshkit_options.timeout) do
       {:ok, ref} -> {
         :ok,
@@ -62,23 +63,31 @@ defmodule SSHKit.SSH.Connection do
 
   @default_erlang_ssh_options [user_interaction: false]
   defp fetch_options(options) do
+    dry_run = Keyword.get(options, :dry_run, false)
+    ssh_modules = if dry_run do
+      @dry_run_ssh_modules
+    else
+      @ssh_modules
+    end
+
     sshkit_options = %{
       port: Keyword.get(options, :port, 22),
       timeout: Keyword.get(options, :timeout, :infinity),
-      ssh_modules: Keyword.get(options, :ssh_modules, @ssh_modules)
+      ssh_modules: Keyword.get(options, :ssh_modules, ssh_modules),
+      dry_run: dry_run
     }
 
     erlang_ssh_options =
       @default_erlang_ssh_options
       |> Keyword.merge(options)
-      |> Keyword.drop([:port, :timeout, :ssh_modules])
+      |> Keyword.drop([:port, :timeout, :ssh_modules, :dry_run])
       |> Utils.charlistify()
 
     { erlang_ssh_options, sshkit_options }
   end
 
-  defp erlang_module(conn, name) do
-    Map.fetch!(conn.ssh_modules, name)
+  defp ssh_module(conn) do
+    Map.fetch!(conn.ssh_modules, :ssh)
   end
 
   @doc """
@@ -89,8 +98,7 @@ defmodule SSHKit.SSH.Connection do
   For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
   def close(conn) do
-    ssh = erlang_module(conn, :ssh)
-    ssh.close(conn.ref)
+    ssh_module(conn).close(conn.ref)
   end
 
   @doc """
