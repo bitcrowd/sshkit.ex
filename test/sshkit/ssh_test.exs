@@ -2,117 +2,92 @@ defmodule SSHKit.SSHTest do
   use ExUnit.Case, async: true
 
   import SSHKit.SSH
+  import SSHSandbox
 
-  defmodule SSHSandboxSuccess do
-    def connect(_, _, _, _), do: {:ok, :sandbox}
-    def close(_) do
-      send self(), :closed_sandbox_connection
-      :ok
+  setup context do
+    ssh = case context[:ssh] do
+      :error -> SSHSandbox.SSH.Error
+      _      -> SSHSandbox.SSH.Success
     end
-  end
-
-  defmodule SSHSandboxError do
-    def connect(_, _, _, _), do: {:error, :sandbox}
-
-    def close(_) do
-      send self(), :closed_sandbox_connection
-      :ok
+    ssh_connection = case context[:ssh_connection] do
+      :failure -> SSHSandbox.SSHConnection.Failure
+      :error   -> :ssh_connection
+      _        -> SSHSandbox.SSHConnection.Success
     end
+    ssh_modules = %{ssh: ssh, ssh_connection: ssh_connection}
+    {:ok, [ssh_modules: ssh_modules]}
   end
-
-  defmodule SSHSandboxConnectionSuccess do
-    def session_channel(:sandbox, _, _, _), do: {:ok, 0}
-
-    def exec(_, _, _, _) do
-      send self(), :exec_sandbox_connection
-      {:ok, :result}
-    end
-  end
-
-  defmodule SSHSandboxConnectionError do
-    def session_channel(:sandbox, _, _, _), do: {:ok, 0}
-
-    def exec(_, _, _, _) do
-      send self(), :exec_sandbox_connection
-      :failure
-    end
-  end
-
-  @host "foo.io"
-  @user "me"
 
   describe "connect/2" do
-    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: :ssh_connection}]
-    test "open sandbox connection with given options and keep it open" do
-      host = String.to_charlist(@host)
-      user = String.to_charlist(@user)
-      options = @options ++ [user: @user]
-      conn = %SSHKit.SSH.Connection{
-        host:        host,
-        options:     [user_interaction: false, user: user],
+    test "open sandbox connection with given options and keep it open", %{ssh_modules: ssh_modules} do
+      options = [user: "me", ssh_modules: ssh_modules]
+      conn    = %SSHKit.SSH.Connection{
+        host:        'foo.io',
+        options:     [user_interaction: false, user: 'me'],
         port:        22,
         ref:         :sandbox,
-        ssh_modules: Keyword.get(options, :ssh_modules)
+        ssh_modules: ssh_modules
       }
 
-      assert connect(@host, options) == {:ok, conn}
+      assert connect("foo.io", options) == {:ok, conn}
       refute_received :closed_sandbox_connection
     end
 
-    @options [ssh_modules: %{ssh: SSHSandboxError, ssh_connection: :ssh_connection}]
-    test "return error and do not attempt to close if connection cannot be opened" do
-      assert connect(@host, @options) == {:error, :sandbox}
+    @tag ssh: :error
+    test "return error and do not attempt to close if connection cannot be opened", %{ssh_modules: ssh_modules} do
+      assert connect("foo.io", ssh_modules: ssh_modules) == {:error, :sandbox}
       refute_received :closed_sandbox_connection
     end
 
     test "return error and do not attempt to close if no host given" do
-      assert connect(nil, @options) == {:error, "No host given."}
+      assert connect(nil) == {:error, "No host given."}
       refute_received :closed_sandbox_connection
     end
 
     test "error if options not provided as List" do
       options = %{user: "me", password: "secret"}
-      assert_raise FunctionClauseError, fn -> connect(@host, options) end
+      assert_raise FunctionClauseError, fn -> connect("foo.io", options) end
     end
   end
 
   describe "connect/3" do
-    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: :ssh_connection}]
-    test "execute function on open connection" do
-      func = fn(conn) ->
-        assert conn.ssh_modules == Keyword.get(@options, :ssh_modules)
+    test "execute function on open connection", %{ssh_modules: ssh_modules} do
+      options = [ssh_modules: ssh_modules]
+      func    = fn(conn) ->
+        assert conn.ssh_modules == ssh_modules
         42
       end
 
-      assert connect(@host, @options, func) == {:ok, 42}
+      assert connect("foo.io", options, func) == {:ok, 42}
       assert_received :closed_sandbox_connection
     end
 
-    test "close connection although function errored" do
-      func = fn(_conn) -> raise("error") end
+    test "close connection although function errored", %{ssh_modules: ssh_modules} do
+      options = [ssh_modules: ssh_modules]
+      func    = fn(_conn) -> raise("error") end
 
-      assert_raise RuntimeError, "error", fn -> connect(@host, @options, func) end
+      assert_raise RuntimeError, "error", fn -> connect("foo.io", options, func) end
       assert_received :closed_sandbox_connection
     end
 
-    @options [ssh_modules: %{ssh: SSHSandboxError, ssh_connection: :ssh_connection}]
-    test "error during connect" do
-      func = fn(_conn) -> flunk "should never be called" end
+    @tag ssh: :error
+    test "error during connect", %{ssh_modules: ssh_modules} do
+      options = [ssh_modules: ssh_modules]
+      func    = fn(_conn) -> flunk "should never be called" end
 
-      assert connect(@host, @options, func) == {:error, :sandbox}
+      assert connect("foo.io", options, func) == {:error, :sandbox}
       refute_received :closed_sandbox_connection
     end
   end
 
   describe "close/1" do
-    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: :ssh_connection}]
-    test "call close on the connection" do
+    test "call close on the connection", %{ssh_modules: ssh_modules} do
       conn = %SSHKit.SSH.Connection{
         host:        'test',
         options:     [user_interaction: false],
         port:        22,
         ref:         :sandbox,
-        ssh_modules: Keyword.get(@options, :ssh_modules)
+        ssh_modules: ssh_modules
       }
 
       assert close(conn) == :ok
@@ -121,39 +96,39 @@ defmodule SSHKit.SSHTest do
   end
 
   describe "run/3" do
-    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: :ssh_connection}]
-    test "error if Channel cannot be opened" do
+    test "sucessfully execute command on connection and return result", %{ssh_modules: ssh_modules} do
       conn = %SSHKit.SSH.Connection{
         host:        'test',
         options:     [user_interaction: false],
         port:        22,
         ref:         :sandbox,
-        ssh_modules: Keyword.get(@options, :ssh_modules)
+        ssh_modules: ssh_modules
       }
-      assert run(conn, "uptime") == {:error, :closed}
-    end
-
-    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: SSHSandboxConnectionSuccess}]
-    test "sucessfully execute command on connection and return result" do
-      conn = %SSHKit.SSH.Connection{
-        host:        'test',
-        options:     [user_interaction: false],
-        port:        22,
-        ref:         :sandbox,
-        ssh_modules: Keyword.get(@options, :ssh_modules)
-      }
-      assert run(conn, "uptime") == {:ok, :result}
+      assert run(conn, "uptime") == {:ok, :sandbox_result}
       assert_received :exec_sandbox_connection
     end
 
-    @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: SSHSandboxConnectionError}]
-    test "error when execution of command returns failure" do
+    @tag ssh_connection: :error
+    test "error if Channel cannot be opened", %{ssh_modules: ssh_modules} do
+      conn    = %SSHKit.SSH.Connection{
+        host:        'test',
+        options:     [user_interaction: false],
+        port:        22,
+        ref:         :sandbox,
+        ssh_modules: ssh_modules
+      }
+
+      assert run(conn, "uptime") == {:error, :closed}
+    end
+
+    @tag ssh_connection: :failure
+    test "error when execution of command returns failure", %{ssh_modules: ssh_modules} do
       conn = %SSHKit.SSH.Connection{
         host:        'test',
         options:     [user_interaction: false],
         port:        22,
         ref:         :sandbox,
-        ssh_modules: Keyword.get(@options, :ssh_modules)
+        ssh_modules: ssh_modules
       }
       assert run(conn, "uptime") == {:error, :failure}
       assert_received :exec_sandbox_connection

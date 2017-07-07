@@ -47,7 +47,9 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
   """
   def close(channel) do
-    :ssh_connection.close(channel.connection.ref, channel.id)
+    connection     = channel.connection
+    ssh_connection = erlang_module(connection, :ssh_connection)
+    ssh_connection.close(connection.ref, channel.id)
   end
 
   @doc """
