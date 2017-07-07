@@ -8,7 +8,6 @@ defmodule SSHKit.SSH.DryRun.SSHConnection do
     {:ok, @ssh_channel_id}
   end
 
-
   def exec(ref, id, command, _timeout) do
     Logger.info("Command: #{command}")
 
