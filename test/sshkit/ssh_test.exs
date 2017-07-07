@@ -144,7 +144,7 @@ defmodule SSHKit.SSHTest do
       assert_received :closed_sandbox_connection
     end
 
-    test "its logs the closed when dry_run is enabled" do
+    test "log closing the connection when dry_run is enabled" do
       logged = capture_log fn ->
         {:ok, conn} = connect(@host, [user: @user, dry_run: true])
         assert close(conn) == :ok
@@ -180,7 +180,7 @@ defmodule SSHKit.SSHTest do
       assert_received :exec_sandbox_connection
     end
 
-    test "its logs the command execution when dry_run is enabled" do
+    test "log the command execution when dry_run is enabled" do
       logged = capture_log fn ->
         {:ok, conn} = connect(@host, [user: @user, dry_run: true])
         assert run(conn, "uptime") == {:ok, [], 0}
