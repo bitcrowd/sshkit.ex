@@ -1,5 +1,6 @@
 defmodule SSHKit.SCPFunctionalTest do
-  use SSHKit.FunctionalCase, async: true
+  use SSHKit.FunctionalCase, async: false
+  import SSHKit.FunctionalAssertionHelpers
 
   alias SSHKit.SCP
   alias SSHKit.SSH
@@ -63,7 +64,7 @@ defmodule SSHKit.SCPFunctionalTest do
     test "gets a file", %{hosts: [host]} do
       options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures/file.txt"
-      local = create_random_path()
+      local = create_local_tmp_path()
       on_exit fn -> File.rm(local) end
 
       SSH.connect host.ip, options, fn(conn) ->
@@ -76,7 +77,7 @@ defmodule SSHKit.SCPFunctionalTest do
     test "recursive: true", %{hosts: [host]} do
       options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures"
-      local = create_random_path()
+      local = create_local_tmp_path()
       on_exit fn -> File.rm_rf(local) end
 
       SSH.connect host.ip, options, fn(conn) ->
@@ -89,7 +90,7 @@ defmodule SSHKit.SCPFunctionalTest do
     test "preserve: true", %{hosts: [host]} do
       options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures/file.txt"
-      local = create_random_path()
+      local = create_local_tmp_path()
       on_exit fn -> File.rm(local) end
 
       SSH.connect host.ip, options, fn(conn) ->
@@ -104,7 +105,7 @@ defmodule SSHKit.SCPFunctionalTest do
     test "recursive: true, preserve: true", %{hosts: [host]} do
       options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures"
-      local = create_random_path()
+      local = create_local_tmp_path()
       on_exit fn -> File.rm_rf(local) end
 
       SSH.connect host.ip, options, fn(conn) ->
@@ -114,47 +115,5 @@ defmodule SSHKit.SCPFunctionalTest do
         assert verify_mtime(conn, local, remote)
       end
     end
-  end
-
-  defp verify_transfer(conn, local, remote) do
-    command = &"find #{&1} -type f -exec #{&2} {} \\; | sort | awk '{print $1}' | xargs"
-    compare_command_output(conn,
-      command.(local, SystemCommands.shasum_cmd()),
-      command.(remote, "sha1sum")
-      )
-  end
-
-  defp verify_mode(conn, local, remote) do
-    command = &"find #{&1} -type f -exec ls -l {} + | awk '{print $1 $5}' | sort |xargs"
-    compare_command_output(conn,
-      command.(local),
-      command.(remote)
-      )
-  end
-
-  defp verify_atime(conn, local, remote) do
-    command = &"env find #{&1} -type f -exec #{&2} {} \\; | cut -f1,2 | sort | xargs"
-      compare_command_output(conn,
-        command.(local, SystemCommands.stat_cmd()),
-        command.(remote, "stat -c '%s\t%X\t%Y'")
-      )
-  end
-
-  defp verify_mtime(conn, local, remote) do
-    command = &"env find #{&1} -type f -exec #{&2} {} \\; | cut -f1,3 | sort | xargs"
-    compare_command_output(conn,
-      command.(local, SystemCommands.stat_cmd()),
-      command.(remote, "stat -c '%s\t%X\t%Y'")
-      )
-  end
-
-  defp compare_command_output(conn, local, remote) do
-    local_output = local |> String.to_char_list |> :os.cmd |> to_string
-    {:ok, [stdout: remote_output], 0} = SSH.run(conn, remote)
-    assert local_output == remote_output
-  end
-
-  defp create_random_path do
-    "/tmp/test_#{16 |> :crypto.strong_rand_bytes |> Base.url_encode64 |> binary_part(0, 16)}"
   end
 end

@@ -77,7 +77,7 @@ defmodule SSHKit.SCP.Upload do
     end
   end
 
-  defp next(_, _, [], errs) do
+  defp next(_, _, [[]], errs) do
     {:cont, :eof, {:done, nil, errs}}
   end
 
@@ -119,7 +119,7 @@ defmodule SSHKit.SCP.Upload do
     {:cont, directive, {:write, name, stat, cwd, stack, errs}}
   end
 
-  defp write(_, name, _, cwd, [[] | stack], errs) do
+  defp write(_, name, _, cwd, stack, errs) do
     fs = File.stream!(Path.join(cwd, name), [], 16_384)
     {:cont, Stream.concat(fs, [<<0>>]), {:next, cwd, stack, errs}}
   end
