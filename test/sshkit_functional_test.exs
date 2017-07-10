@@ -13,7 +13,7 @@ defmodule SSHKitFunctionalTest do
 
   def build_context(host) do
     overrides = [port: host.port, user: host.user, password: host.password]
-    SSHKit.context({host.ip, Keyword.merge(@defaults, overrides)})
+    SSHKit.context({host.ip, options(overrides)})
   end
 
   defp stdio(output, type) do

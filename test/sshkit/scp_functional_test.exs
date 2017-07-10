@@ -9,42 +9,39 @@ defmodule SSHKit.SCPFunctionalTest do
   describe "upload/4" do
     @tag boot: 1
     test "sends a file", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       local = "test/fixtures/local_workspace/local_file.txt"
       remote = "file.txt"
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.upload(conn, local, remote)
-      assert verify_transfer(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.upload(conn, local, remote)
+        assert verify_transfer(conn, local, remote)
+      end
     end
 
     @tag boot: 1
     test "recursive: true", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       local = "test/fixtures/local_workspace"
       remote = "/home/#{host.user}/destination"
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.upload(conn, local, remote, recursive: true)
-      assert verify_transfer(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.upload(conn, local, remote, recursive: true)
+        assert verify_transfer(conn, local, remote)
+      end
     end
 
     @tag boot: 1
     test "preserve: true", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       local = "test/fixtures/local_workspace/local_file.txt"
       remote = "file.txt"
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.upload(conn, local, remote, preserve: true)
-      assert verify_mode(conn, local, remote)
-      assert verify_mtime(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.upload(conn, local, remote, preserve: true)
+        assert verify_mode(conn, local, remote)
+        assert verify_mtime(conn, local, remote)
+      end
     end
 
     @tag boot: 1
@@ -53,74 +50,69 @@ defmodule SSHKit.SCPFunctionalTest do
       local = "test/fixtures/local_workspace/"
       remote = "/home/#{host.user}/destination"
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.upload(conn, local, remote, recursive: true, preserve: true)
-      assert verify_mode(conn, local, remote)
-      assert verify_mtime(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.upload(conn, local, remote, recursive: true, preserve: true)
+        assert verify_mode(conn, local, remote)
+        assert verify_mtime(conn, local, remote)
+      end
     end
   end
 
   describe "download/4" do
     @tag boot: 1
     test "gets a file", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures/file.txt"
       local = create_random_path()
       on_exit fn -> File.rm(local) end
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.download(conn, remote, local)
-      assert verify_transfer(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.download(conn, remote, local)
+        assert verify_transfer(conn, local, remote)
+      end
     end
 
     @tag boot: 1
     test "recursive: true", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures"
       local = create_random_path()
       on_exit fn -> File.rm_rf(local) end
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.download(conn, remote, local, recursive: true)
-      assert verify_transfer(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.download(conn, remote, local, recursive: true)
+        assert verify_transfer(conn, local, remote)
+      end
     end
 
     @tag boot: 1
     test "preserve: true", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures/file.txt"
       local = create_random_path()
       on_exit fn -> File.rm(local) end
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.download(conn, remote, local, preserve: true)
-      assert verify_mode(conn, local, remote)
-      assert verify_atime(conn, local, remote)
-      assert verify_mtime(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.download(conn, remote, local, preserve: true)
+        assert verify_mode(conn, local, remote)
+        assert verify_atime(conn, local, remote)
+        assert verify_mtime(conn, local, remote)
+      end
     end
 
     @tag boot: 1
     test "recursive: true, preserve: true", %{hosts: [host]} do
-      options = [port: host.port, user: host.user, password: host.password]
+      options = @defaults ++ [port: host.port, user: host.user, password: host.password]
       remote = "/fixtures"
       local = create_random_path()
       on_exit fn -> File.rm_rf(local) end
 
-      {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
-
-      assert :ok = SCP.download(conn, remote, local, recursive: true, preserve: true)
-      assert verify_mode(conn, local, remote)
-      assert verify_atime(conn, local, remote)
-      assert verify_mtime(conn, local, remote)
-      :ok = SSH.close(conn)
+      SSH.connect host.ip, options, fn(conn) ->
+        assert :ok = SCP.download(conn, remote, local, recursive: true, preserve: true)
+        assert verify_mode(conn, local, remote)
+        assert verify_atime(conn, local, remote)
+        assert verify_mtime(conn, local, remote)
+      end
     end
   end
 
@@ -165,5 +157,4 @@ defmodule SSHKit.SCPFunctionalTest do
   defp create_random_path do
     "/tmp/test_#{16 |> :crypto.strong_rand_bytes |> Base.url_encode64 |> binary_part(0, 16)}"
   end
-
 end

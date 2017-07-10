@@ -31,7 +31,7 @@ defmodule SSHKit.SSH.Channel do
     timeout = Keyword.get(options, :timeout, :infinity)
     ini_window_size = Keyword.get(options, :initial_window_size, 128 * 1024)
     max_packet_size = Keyword.get(options, :max_packet_size, 32 * 1024)
-    ssh_connection  = erlang_module(connection, :ssh_connection)
+    ssh_connection  = ssh_connection_module(connection)
 
     case ssh_connection.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
       {:ok, id} -> {:ok, %Channel{connection: connection, type: :session, id: id}}
@@ -47,9 +47,8 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
   """
   def close(channel) do
-    connection     = channel.connection
-    ssh_connection = erlang_module(connection, :ssh_connection)
-    ssh_connection.close(connection.ref, channel.id)
+    ssh_connection = ssh_connection_module(channel.connection)
+    ssh_connection.close(channel.connection.ref, channel.id)
   end
 
   @doc """
@@ -69,12 +68,8 @@ defmodule SSHKit.SSH.Channel do
     exec(channel, to_charlist(command), timeout)
   end
   def exec(channel, command, timeout) do
-    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection = ssh_connection_module(channel.connection)
     ssh_connection.exec(channel.connection.ref, channel.id, command, timeout)
-  end
-
-  defp erlang_module(conn, name) do
-    Map.fetch!(conn.ssh_modules, name)
   end
 
   @doc """
@@ -89,7 +84,7 @@ defmodule SSHKit.SSH.Channel do
   def send(channel, type \\ 0, data, timeout \\ :infinity)
 
   def send(channel, type, data, timeout) when is_binary(data) or is_list(data) do
-    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection = ssh_connection_module(channel.connection)
     ssh_connection.send(channel.connection.ref, channel.id, type, data, timeout)
   end
 
@@ -105,7 +100,7 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.send_eof/2`](http://erlang.org/doc/man/ssh_connection.html#send_eof-2).
   """
   def eof(channel) do
-    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection = ssh_connection_module(channel.connection)
     ssh_connection.send_eof(channel.connection.ref, channel.id)
   end
 
@@ -166,7 +161,7 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.adjust_window/3`](http://erlang.org/doc/man/ssh_connection.html#adjust_window-3).
   """
   def adjust(channel, size) when is_integer(size) do
-    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection = ssh_connection_module(channel.connection)
     ssh_connection.adjust_window(channel.connection.ref, channel.id, size)
   end
 
@@ -271,4 +266,8 @@ defmodule SSHKit.SSH.Channel do
   end
 
   defp ljust(_, _), do: :ok
+
+  defp ssh_connection_module(conn) do
+    Map.fetch!(conn.ssh_modules, :ssh_connection)
+  end
 end

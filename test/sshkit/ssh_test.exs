@@ -2,6 +2,10 @@ defmodule SSHKit.SSHTest do
   use ExUnit.Case, async: true
 
   import SSHKit.SSH
+  import ExUnit.CaptureLog
+
+  @host "foo.io"
+  @user "me"
 
   setup context do
     ssh_modules = %{
@@ -30,6 +34,30 @@ defmodule SSHKit.SSHTest do
     test "return error and do not attempt to close if connection cannot be opened", %{ssh_modules: ssh_modules} do
       assert connect("foo.io", ssh_modules: ssh_modules) == {:error, :sandbox}
       refute_received :closed_sandbox_connection
+    end
+
+    test "log the connection when dry_run is enabled" do
+      logged = capture_log fn ->
+        connect(@host, [dry_run: true])
+      end
+
+      assert logged =~ "[info]  Connect: #{@host}:22"
+    end
+
+    test "log the connection when dry_run is enabled and there is a user" do
+      logged = capture_log fn ->
+        connect(@host, [user: @user, dry_run: true])
+      end
+
+      assert logged =~ "[info]  Connect: #{@user}@#{@host}:22"
+    end
+
+    test "log the connection when dry_run is enabled with a non-default port" do
+      logged = capture_log fn ->
+        connect(@host, [dry_run: true, port: 666])
+      end
+
+      assert logged =~ "[info]  Connect: #{@host}:666"
     end
 
     test "return error and do not attempt to close if no host given" do
@@ -86,6 +114,15 @@ defmodule SSHKit.SSHTest do
       assert close(conn) == :ok
       assert_received :closed_sandbox_connection
     end
+
+    test "log closing the connection when dry_run is enabled" do
+      logged = capture_log fn ->
+        {:ok, conn} = connect(@host, [user: @user, dry_run: true])
+        assert close(conn) == :ok
+      end
+
+      assert logged =~ "[info]  Disconnect: #{@user}@#{@host}:22"
+    end
   end
 
   describe "run/3" do
@@ -100,6 +137,15 @@ defmodule SSHKit.SSHTest do
       }
 
       assert run(conn, "uptime") == {:error, :closed}
+    end
+
+    test "log the command execution when dry_run is enabled" do
+      logged = capture_log fn ->
+        {:ok, conn} = connect("foo.io", [user: "me", dry_run: true])
+        assert run(conn, "uptime") == {:ok, [], 0}
+      end
+
+      assert logged =~ "[info]  Command: uptime"
     end
 
     @tag ssh_connection: :failure
