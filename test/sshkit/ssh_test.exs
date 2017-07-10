@@ -2,6 +2,7 @@ defmodule SSHKit.SSHTest do
   use ExUnit.Case, async: true
 
   import SSHKit.SSH
+  import ExUnit.CaptureLog
 
   defmodule SSHSandboxSuccess do
     def connect(_, _, _, _), do: {:ok, :sandbox}
@@ -57,6 +58,30 @@ defmodule SSHKit.SSHTest do
 
       assert connect(@host, options) == {:ok, conn}
       refute_received :closed_sandbox_connection
+    end
+
+    test "log the connection when dry_run is enabled" do
+      logged = capture_log fn ->
+        connect(@host, [dry_run: true])
+      end
+
+      assert logged =~ "[info]  Connect: #{@host}:22"
+    end
+
+    test "log the connection when dry_run is enabled and there is a user" do
+      logged = capture_log fn ->
+        connect(@host, [user: @user, dry_run: true])
+      end
+
+      assert logged =~ "[info]  Connect: #{@user}@#{@host}:22"
+    end
+
+    test "log the connection when dry_run is enabled with a non-default port" do
+      logged = capture_log fn ->
+        connect(@host, [dry_run: true, port: 666])
+      end
+
+      assert logged =~ "[info]  Connect: #{@host}:666"
     end
 
     @options [ssh_modules: %{ssh: SSHSandboxError, ssh_connection: :ssh_connection}]
@@ -118,6 +143,15 @@ defmodule SSHKit.SSHTest do
       assert close(conn) == :ok
       assert_received :closed_sandbox_connection
     end
+
+    test "log closing the connection when dry_run is enabled" do
+      logged = capture_log fn ->
+        {:ok, conn} = connect(@host, [user: @user, dry_run: true])
+        assert close(conn) == :ok
+      end
+
+      assert logged =~ "[info]  Disconnect: #{@user}@#{@host}:22"
+    end
   end
 
   describe "run/3" do
@@ -144,6 +178,15 @@ defmodule SSHKit.SSHTest do
       }
       assert run(conn, "uptime") == {:ok, :result}
       assert_received :exec_sandbox_connection
+    end
+
+    test "log the command execution when dry_run is enabled" do
+      logged = capture_log fn ->
+        {:ok, conn} = connect(@host, [user: @user, dry_run: true])
+        assert run(conn, "uptime") == {:ok, [], 0}
+      end
+
+      assert logged =~ "[info]  Command: uptime"
     end
 
     @options [ssh_modules: %{ssh: SSHSandboxSuccess, ssh_connection: SSHSandboxConnectionError}]
