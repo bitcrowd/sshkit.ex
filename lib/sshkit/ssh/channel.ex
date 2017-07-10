@@ -89,7 +89,8 @@ defmodule SSHKit.SSH.Channel do
   def send(channel, type \\ 0, data, timeout \\ :infinity)
 
   def send(channel, type, data, timeout) when is_binary(data) or is_list(data) do
-    :ssh_connection.send(channel.connection.ref, channel.id, type, data, timeout)
+    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection.send(channel.connection.ref, channel.id, type, data, timeout)
   end
 
   def send(channel, type, data, timeout) do
@@ -104,7 +105,8 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.send_eof/2`](http://erlang.org/doc/man/ssh_connection.html#send_eof-2).
   """
   def eof(channel) do
-    :ssh_connection.send_eof(channel.connection.ref, channel.id)
+    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection.send_eof(channel.connection.ref, channel.id)
   end
 
   @doc """
@@ -164,7 +166,8 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.adjust_window/3`](http://erlang.org/doc/man/ssh_connection.html#adjust_window-3).
   """
   def adjust(channel, size) when is_integer(size) do
-    :ssh_connection.adjust_window(channel.connection.ref, channel.id, size)
+    ssh_connection = erlang_module(channel.connection, :ssh_connection)
+    ssh_connection.adjust_window(channel.connection.ref, channel.id, size)
   end
 
   @doc """

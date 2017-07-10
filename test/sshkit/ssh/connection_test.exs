@@ -4,14 +4,8 @@ defmodule SSHKit.SSH.ConnectionTest do
   import SSHKit.SSH.Connection
   alias SSHKit.SSH.Connection
 
-  import SSHSandbox
-
   setup context do
-    ssh = case context[:ssh] do
-      :error -> SSHSandbox.SSH.Error
-      nil    -> SSHSandbox.SSH.Success
-    end
-    ssh_modules = %{ssh: ssh}
+    ssh_modules = %{ssh: SSHSandboxHelper.ssh(context)}
     {:ok, [ssh_modules: ssh_modules]}
   end
 
