@@ -89,9 +89,6 @@ defmodule SSHKit.SSHTest do
   end
 
   describe "run/3" do
-    # TODO: add test for sucessfully executing command
-    # this requires to find out how to receive a message in the sandbox...
-
     @tag ssh_connection: :error
     test "error if Channel cannot be opened", %{ssh_modules: ssh_modules} do
       conn    = %SSHKit.SSH.Connection{

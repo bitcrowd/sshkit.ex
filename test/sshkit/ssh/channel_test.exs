@@ -90,8 +90,6 @@ defmodule SSHKit.SSH.ChannelTest do
     test "error when channel times out", %{channel: channel} do
       assert Channel.send(channel, "data") == {:error, :timeout}
     end
-
-    # TODO: add more tests for different types of data
   end
 
   describe "eof/1" do
@@ -104,6 +102,4 @@ defmodule SSHKit.SSH.ChannelTest do
       assert eof(channel) == {:error, :closed}
     end
   end
-
-  # TODO: add unit tests for other public functions in Channel
 end
