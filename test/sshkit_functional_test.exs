@@ -2,8 +2,9 @@ defmodule SSHKitFunctionalTest do
   @moduledoc false
 
   import SSHKit.FunctionalCaseHelpers
+  import SSHKit.FunctionalAssertionHelpers
 
-  use SSHKit.FunctionalCase, async: true
+  use SSHKit.FunctionalCase, async: false
 
   @defaults [silently_accept_hosts: true, timeout: 5000]
 
@@ -131,5 +132,121 @@ defmodule SSHKitFunctionalTest do
 
     assert status == 0, stderr(output)
     assert stdout(output) == "villains\n"
+  end
+
+  describe "upload/3" do
+    @tag boot: 2
+    test "sends a file", %{hosts: hosts} do
+      local = "test/fixtures/local_workspace/local_file.txt"
+
+      context = SSHKit.context(create_context_hosts(hosts))
+
+      assert [:ok, :ok] = SSHKit.upload(context, local)
+      assert verify_transfer(context, local, Path.basename(local))
+    end
+
+    @tag boot: 2
+    test "recursive: true", %{hosts: [host | _] = hosts} do
+      local = "test/fixtures/local_workspace"
+      remote = "/home/#{host.user}/local_workspace"
+
+      context = SSHKit.context(create_context_hosts(hosts))
+
+      assert [:ok, :ok] = SSHKit.upload(context, local, recursive: true)
+      assert verify_transfer(context, local, remote)
+    end
+
+    @tag boot: 2
+    test "preserve: true", %{hosts: hosts} do
+      local = "test/fixtures/local_workspace/local_file.txt"
+      remote = Path.basename(local)
+
+      context = SSHKit.context(create_context_hosts(hosts))
+
+      assert [:ok, :ok] = SSHKit.upload(context, local, preserve: true)
+      assert verify_transfer(context, local, remote)
+      assert verify_mode(context, local, remote)
+      assert verify_mtime(context, local, remote)
+    end
+
+    @tag boot: 2
+    test "recursive: true, preserve: true", %{hosts: [host | _] = hosts} do
+      local = "test/fixtures/local_workspace"
+      remote = "/home/#{host.user}/local_workspace"
+
+      context = SSHKit.context(create_context_hosts(hosts))
+
+      assert [:ok, :ok] = SSHKit.upload(context, local, recursive: true, preserve: true)
+      assert verify_transfer(context, local, remote)
+      assert verify_mode(context, local, remote)
+      assert verify_mtime(context, local, remote)
+    end
+  end
+
+  describe "download/3" do
+    @tag boot: 2
+    test "gets a file", %{hosts: hosts} do
+      remote = "/fixtures/file.txt"
+      local = Path.basename(remote)
+      File.cd!(System.tmp_dir, fn ->
+        on_exit fn -> File.rm(local) end
+
+        context = SSHKit.context(create_context_hosts(hosts))
+
+        assert [:ok, :ok] = SSHKit.download(context, remote)
+        assert verify_transfer(context, local, remote)
+      end)
+    end
+
+    @tag boot: 1
+    test "recursive: true", %{hosts: hosts} do
+      remote = "/fixtures"
+      local = Path.join(System.tmp_dir, "fixtures")
+      on_exit fn -> File.rm_rf(local) end
+
+      context = SSHKit.context(create_context_hosts(hosts))
+      File.cd!(System.tmp_dir, fn ->
+        assert [:ok] = SSHKit.download(context, remote, recursive: true)
+        assert verify_transfer(context, local, remote)
+      end)
+    end
+
+    @tag boot: 2
+    test "preserve: true", %{hosts: hosts} do
+      remote = "/fixtures/file.txt"
+      local = Path.join(System.tmp_dir, Path.basename(remote))
+      on_exit fn -> File.rm_rf(local) end
+
+      context = SSHKit.context(create_context_hosts(hosts))
+
+      File.cd!(System.tmp_dir, fn ->
+        assert [:ok, :ok] = SSHKit.download(context, remote, preserve: true)
+      end)
+      assert verify_mode(context, local, remote)
+      assert verify_atime(context, local, remote)
+      assert verify_mtime(context, local, remote)
+    end
+
+    @tag boot: 1
+    test "recursive: true, preserve: true", %{hosts: hosts} do
+      remote = "/fixtures"
+      local = Path.join(System.tmp_dir, "fixtures")
+      on_exit fn -> File.rm_rf(local) end
+
+      context = SSHKit.context(create_context_hosts(hosts))
+      File.cd!(System.tmp_dir, fn ->
+        assert [:ok] = SSHKit.download(context, remote, recursive: true, preserve: true)
+      end)
+      assert verify_mode(context, local, remote)
+      assert verify_atime(context, local, remote)
+      assert verify_mtime(context, local, remote)
+    end
+  end
+
+  defp create_context_hosts(hosts) do
+    Enum.map(hosts,
+      fn(h) ->
+        SSHKit.host(h.ip, Keyword.merge(@defaults, [port: h.port, user: h.user, password: h.password]))
+      end)
   end
 end

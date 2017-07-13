@@ -19,6 +19,7 @@ defmodule SSHKit do
   ```
   """
 
+  alias SSHKit.SCP
   alias SSHKit.SSH
 
   alias SSHKit.Context
@@ -319,19 +320,87 @@ defmodule SSHKit do
     Enum.map(context.hosts, run)
   end
 
-  # def upload(context, path, options \\ []) do
-  #   …
-  #   # resolve remote relative to context path
-  #   remote = Path.expand(Map.get(options, :as, Path.basename(path)), _)
-  #   SCP.upload(conn, path, remote, options)
-  # end
+  @doc ~S"""
+  Upload a file or files to the given context.
 
-  # def download(context, path, options \\ []) do
-  #   …
-  #   remote = _ # resolve remote relative to context path
-  #   local = Map.get(options, :as, Path.basename(path))
-  #   SCP.download(conn, remote, local, options)
-  # end
+  Returns a list of `:ok` or {:error, "reason"} - one for each host
+
+  Possible options are `as: "new_name"` (specify the name of the uploaded file/directory)
+  and all options specified in `SSHKit.SCP.Upload.transfer/4`.
+
+  ## Examples
+  Upload all files and folders in current directory to "/workspace".
+  ```
+  [:ok] =
+    "my.remote-host.tld"
+    |> SSHKit.context
+    |> SSHKit.path("/workspace")
+    |> SSHKit.upload(".", recursive: true)
+  ```
+  Upload file to different name on host
+  ```
+  [:ok] =
+    "my.remote-host.tld"
+    |> SSHKit.context
+    |> SSHKit.upload("some_file.txt", as: "other_file.txt" )
+  ```
+  """
+  def upload(context, path, options \\ []) do
+    as_path = Keyword.get(options, :as, Path.basename(path))
+    remote_path = build_remote_path(context, as_path)
+
+    run = fn host ->
+      {:ok, res} = SSH.connect host.name, host.options, fn(conn) ->
+        SCP.upload(conn, path, remote_path, options)
+      end
+      res
+    end
+
+    Enum.map(context.hosts, run)
+  end
+
+  @doc ~S"""
+  Download a file or files from the given context.
+
+  Returns a list of `:ok` or {:error, "reason"} - one for each host
+
+  Possible options are `as: "new_name"` (specify the name of the downloaded file/directory)
+  and all options specified in `SSHKit.SCP.Upload.transfer/4`.
+
+  ## Examples
+  Download all files and folders in context directory to current working directory.
+  ```
+  [:ok] =
+    "my.remote-host.tld"
+    |> SSHKit.context
+    |> SSHKit.path("/workspace")
+    |> SSHKit.upload(".", recursive: true)
+  ```
+  Download file to different local name.
+  ```
+  [:ok] =
+    "my.remote-host.tld"
+    |> SSHKit.context
+    |> SSHKit.download("some_file.txt", as: "other_file.txt" )
+  ```
+  """
+  def download(context, path, options \\ []) do
+    remote = build_remote_path(context, path)
+    local = Keyword.get(options, :as, Path.basename(path))
+
+    run = fn host ->
+      {:ok, res} = SSH.connect host.name, host.options, fn(conn) ->
+        SCP.download(conn, remote, local, options)
+      end
+      res
+    end
+
+    Enum.map(context.hosts, run)
+  end
+
+  defp build_remote_path(context, path) do
+    Path.absname(path, context.path || ".")
+  end
 
   defp build_hosts(hosts, shared_options) do
     build_host = &host(&1, shared_options)
