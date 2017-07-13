@@ -4,7 +4,7 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...HEAD
 
 ### Deprecations:
 
@@ -13,6 +13,18 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
 ### Potentially breaking changes:
 
 * Put potentially breaking changes here
+
+### New features:
+
+* Put new features here
+
+### Fixes:
+
+* Put fixes here
+
+## `0.0.3` (2017-07-13)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...v0.0.3
 
 ### New features:
 

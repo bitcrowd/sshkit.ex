@@ -43,7 +43,7 @@ You can use SSHKit in your projects in two steps:
 
   ```elixir
   def deps do
-    [{:sshkit, "~> 0.0.2"}]
+    [{:sshkit, "~> 0.0.3"}]
   end
   ```
 
