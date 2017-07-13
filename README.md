@@ -71,8 +71,10 @@ SSHKit consists of three core modules:
    for automating tasks on remote hosts in a structured way. It uses both `SSH`
    and `SCP` to implement its functionality.
 
-Additional modules, e.g. for custom client key handling, may be available as
-separate packages.
+Additional modules, e.g. for custom client key handling, are available as
+separate packages:
+
+* [**`ssh_client_key_api`**](https://hex.pm/packages/ssh_client_key_api): An Elixir implementation for the Erlang `ssh_client_key_api` behavior, to make it easier to specify SSH keys and `known_hosts` files independently of any particular user's home directory.
 
 ## Testing
 
