@@ -16,7 +16,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
 
 ### New features:
 
-* Added support for uploading/downloading files [#32]
+* Added support for uploading/downloading files via the `SSHKIT` main DSL [#32]
 * Added support for options that are shared between hosts [#61]
 * Improved documentation [#67]
 * Added support for passing an anonymous function to `SSH.connect` [#72]
