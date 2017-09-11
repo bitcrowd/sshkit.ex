@@ -4,7 +4,7 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...HEAD
 
 ### Deprecations:
 
@@ -16,12 +16,28 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...HEAD
 
 ### New features:
 
+* Put new features here
+
+### Fixes:
+
+* Put fixes here
+
+## `0.0.3` (2017-07-13)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...v0.0.3
+
+### New features:
+
+* Added support for uploading/downloading files via the `SSHKIT` main DSL [#32]
+* Added support for options that are shared between hosts [#61]
+* Improved documentation [#67]
 * Added support for passing an anonymous function to `SSH.connect` [#72]
 * Add support for passing a `dry_run` flag to `SSHKit.SSH.connect` [#79]
 
 ### Fixes:
 
-* Put fixes here
+* Properly return `{:error, "No host given."}` when trying to connect to a host which is `nil` [#70]
+* Improved unit and integration tests [#59] [#75] [#77]
 
 ## `0.0.2` (2017-06-23)
 

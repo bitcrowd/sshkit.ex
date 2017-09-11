@@ -1,7 +1,7 @@
 defmodule SSHKit.Mixfile do
   use Mix.Project
 
-  @version "0.0.2"
+  @version "0.0.3"
   @source "https://github.com/bitcrowd/sshkit.ex"
 
   def project do
