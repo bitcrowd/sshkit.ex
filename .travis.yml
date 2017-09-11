@@ -7,6 +7,9 @@ matrix:
     - elixir: 1.4
       otp_release: 19.1
       services: docker
+    - elixir: 1.5
+      otp_release: 20.0
+      services: docker
 before_install:
   - sudo apt-get update
   - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
