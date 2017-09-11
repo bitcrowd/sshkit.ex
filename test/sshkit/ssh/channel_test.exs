@@ -102,4 +102,27 @@ defmodule SSHKit.SSH.ChannelTest do
       assert eof(channel) == {:error, :closed}
     end
   end
+
+  describe "recv/2" do
+    test "timeout when no message within threshold", %{channel: channel} do
+      assert recv(channel, 1) == {:error, :timeout}
+    end
+
+    test "receive a message", %{channel: channel} do
+      conn    = channel.connection
+      message = {:ssh_cm, conn.ref, {:msg, channel.id}}
+      Kernel.send(self(), message)
+
+      assert recv(channel, 0) == {:ok, {:msg, channel}}
+    end
+
+    test "receive a message with wrong channel id", %{channel: channel} do
+      conn             = channel.connection
+      wrong_channel_id = 666
+      message          = {:ssh_cm, conn.ref, {:msg, wrong_channel_id}}
+      Kernel.send(self(), message)
+
+      assert recv(channel, 0) == {:error, :timeout}
+    end
+  end
 end

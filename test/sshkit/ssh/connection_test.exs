@@ -99,7 +99,7 @@ defmodule SSHKit.SSH.ConnectionTest do
   end
 
   describe "reopen/2" do
-    test "reopen a the same connection regardless if already open", %{ssh_modules: ssh_modules} do
+    test "reopen a connection regardless if already open", %{ssh_modules: ssh_modules} do
       conn = %Connection{
         host:        'foo.io',
         port:        22,
@@ -113,7 +113,7 @@ defmodule SSHKit.SSH.ConnectionTest do
       refute_received :closed_sandbox_connection
     end
 
-    test "reopen a the same connection on new port", %{ssh_modules: ssh_modules} do
+    test "reopen connection on new port", %{ssh_modules: ssh_modules} do
       options     = [port: 666, ssh_modules: ssh_modules]
       conn        = %Connection{
         host:        'foo.io',
