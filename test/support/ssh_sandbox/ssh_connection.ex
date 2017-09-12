@@ -25,6 +25,11 @@ defmodule SSHSandbox.SSHConnection do
       send self(), :closed_sandbox_connection
       :ok
     end
+
+    def adjust_window(_, _, _) do
+      send self(), :adjust_sandbox_channel_window
+      :ok
+    end
   end
 
   defmodule Timeout do

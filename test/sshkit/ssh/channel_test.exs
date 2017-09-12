@@ -149,4 +149,17 @@ defmodule SSHKit.SSH.ChannelTest do
       assert messages == {:messages, [msg]}
     end
   end
+
+  describe "adjust/2" do
+    test "error when setting the window size to a string", %{channel: channel} do
+      assert_raise FunctionClauseError, ~r/clause matching/, fn ->
+        adjust(channel, "hello")
+      end
+    end
+
+    test "adjust the window size", %{channel: channel} do
+      assert adjust(channel, 10) == :ok
+      assert_received :adjust_sandbox_channel_window
+    end
+  end
 end
