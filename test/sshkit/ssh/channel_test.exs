@@ -108,16 +108,14 @@ defmodule SSHKit.SSH.ChannelTest do
       assert recv(channel, 1) == {:error, :timeout}
     end
 
-    test "receive a message", %{channel: channel} do
-      conn    = channel.connection
-      message = {:ssh_cm, conn.ref, {:msg, channel.id}}
-      Kernel.send(self(), message)
+    test "receive a message", %{conn: conn, channel: channel} do
+      msg = {:ssh_cm, conn.ref, {:msg, channel.id}}
+      Kernel.send(self(), msg)
 
       assert recv(channel, 0) == {:ok, {:msg, channel}}
     end
 
-    test "receive a message with wrong channel id", %{channel: channel} do
-      conn             = channel.connection
+    test "receive a message with wrong channel id", %{conn: conn, channel: channel} do
       wrong_channel_id = 666
       message          = {:ssh_cm, conn.ref, {:msg, wrong_channel_id}}
       Kernel.send(self(), message)
@@ -131,22 +129,19 @@ defmodule SSHKit.SSH.ChannelTest do
       assert flush(channel, 0) == :ok
     end
 
-    test "flush multiple messages in channel", %{channel: channel} do
-      conn = channel.connection
+    test "flush multiple messages in channel", %{conn: conn, channel: channel} do
       Kernel.send(self(), {:ssh_cm, conn.ref, {:msg1, channel.id}})
       Kernel.send(self(), {:ssh_cm, conn.ref, {:msg2, channel.id}})
 
       assert flush(channel, 0) == :ok
     end
 
-    test "keep other messages in process", %{channel: channel} do
-      conn = channel.connection
-      msg  = {:ssh_cm, conn.ref, {:msg, 666}}
+    test "keep other messages in process", %{conn: conn, channel: channel} do
+      msg = {:ssh_cm, conn.ref, {:msg, 666}}
       Kernel.send(self(), msg)
-      messages = :erlang.process_info(self(), :messages)
 
       assert flush(channel, 0) == :ok
-      assert messages == {:messages, [msg]}
+      assert messages(self()) == [msg]
     end
   end
 
@@ -161,5 +156,23 @@ defmodule SSHKit.SSH.ChannelTest do
       assert adjust(channel, 10) == :ok
       assert_received :adjust_sandbox_channel_window
     end
+  end
+
+  describe "loop/4" do
+    test "terminate the loop and close the connection", %{conn: conn, channel: channel} do
+      msg = {:ssh_cm, conn.ref, {:msg, channel.id}}
+      Kernel.send(self(), msg)
+
+      assert messages(self()) == [msg]
+      assert loop(channel, 0, {:halt, :state}, fn -> nil end) == {:halted, :state}
+      assert_received :closed_sandbox_connection
+      assert messages(self()) == []
+    end
+  end
+
+  defp messages(pid) do
+    pid
+    |> Process.info(:messages)
+    |> elem(1)
   end
 end
