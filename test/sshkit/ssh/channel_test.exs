@@ -125,4 +125,28 @@ defmodule SSHKit.SSH.ChannelTest do
       assert recv(channel, 0) == {:error, :timeout}
     end
   end
+
+  describe "flush/2" do
+    test "flush when no messages in channel", %{channel: channel} do
+      assert flush(channel, 0) == :ok
+    end
+
+    test "flush multiple messages in channel", %{channel: channel} do
+      conn = channel.connection
+      Kernel.send(self(), {:ssh_cm, conn.ref, {:msg1, channel.id}})
+      Kernel.send(self(), {:ssh_cm, conn.ref, {:msg2, channel.id}})
+
+      assert flush(channel, 0) == :ok
+    end
+
+    test "keep other messages in process", %{channel: channel} do
+      conn = channel.connection
+      msg  = {:ssh_cm, conn.ref, {:msg, 666}}
+      Kernel.send(self(), msg)
+      messages = :erlang.process_info(self(), :messages)
+
+      assert flush(channel, 0) == :ok
+      assert messages == {:messages, [msg]}
+    end
+  end
 end
