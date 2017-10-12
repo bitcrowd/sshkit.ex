@@ -46,7 +46,7 @@ defmodule SSHKit.FunctionalAssertionHelpers do
   end
 
   def compare_command_output(conn, local, remote) do
-    local_output = local |> String.to_char_list |> :os.cmd |> to_string
+    local_output = local |> String.to_charlist |> :os.cmd |> to_string
     {:ok, [stdout: remote_output], 0} = SSH.run(conn, remote)
     assert local_output == remote_output
   end

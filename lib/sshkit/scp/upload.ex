@@ -168,6 +168,6 @@ defmodule SSHKit.SCP.Upload do
     value
     |> Bitwise.band(0o7777)
     |> Integer.to_string(8)
-    |> String.rjust(4, ?0)
+    |> String.pad_leading(4, "0")
   end
 end

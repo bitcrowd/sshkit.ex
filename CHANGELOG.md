@@ -6,6 +6,8 @@ Presented in reverse chronological order.
 
 https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...HEAD
 
+* Fix Elixir 1.5 String deprecations. Removes Elixir 1.2 and below support.
+
 ### Deprecations:
 
 * Put deprecations here
