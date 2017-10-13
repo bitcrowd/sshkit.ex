@@ -126,6 +126,19 @@ defmodule SSHKit.SSHTest do
   end
 
   describe "run/3" do
+    test "execute command on connection and return result",%{ssh_modules: ssh_modules} do
+      conn = %SSHKit.SSH.Connection{
+        host: 'test',
+        options: [user_interaction: false],
+        port: 22,
+        ref: :sandbox,
+        ssh_modules: ssh_modules
+      }
+
+      assert run(conn, "uptime") == {:ok, :result}
+      assert_received :exec_sandbox_connection
+    end
+
     @tag ssh_connection: :error
     test "error if Channel cannot be opened", %{ssh_modules: ssh_modules} do
       conn    = %SSHKit.SSH.Connection{
