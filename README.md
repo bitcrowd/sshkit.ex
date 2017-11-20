@@ -59,6 +59,16 @@ You can use SSHKit in your projects in two steps:
 
 SSHKit consists of three core modules:
 
+```
++--------------------+
+| SSHKit             |
++--------------------+
+|       | SSHKit.SCP |
+|       +------------+
+| SSHKit.SSH         |
++--------------------+
+```
+
 1. [**`SSHKit.SSH`**](https://hexdocs.pm/sshkit/SSHKit.SSH.html) provides
    convenience functions for working with SSH connections and for executing
    commands on remote hosts.
