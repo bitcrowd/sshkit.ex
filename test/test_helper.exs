@@ -1,15 +1,22 @@
-unless Docker.ready? do
-  IO.puts """
-  It seems like Docker isn't running?
+excluded = Application.get_env(:ex_unit, :exclude)
+included = Application.get_env(:ex_unit, :include)
 
-  Please check:
+unless (:functional in excluded) && !(:functional in included) do
+  unless Docker.ready? do
+    IO.puts """
+    It seems like Docker isn't running?
 
-  1. Docker is installed: `docker version`
-  2. On OS X and Windows: `docker-machine start`
-  3. Environment is set up: `eval $(docker-machine env)`
-  """
+    Please check:
 
-  exit({:shutdown, 1})
+    1. Docker is installed: `docker version`
+    2. On OS X and Windows: `docker-machine start`
+    3. Environment is set up: `eval $(docker-machine env)`
+    """
+
+    exit({:shutdown, 1})
+  end
+
+  Docker.build!("sshkit-test-sshd", "test/support/docker")
 end
 
 shasum_command = SystemCommands.shasum_cmd()
@@ -25,7 +32,5 @@ rescue
     """
     exit({:shutdown, 1})
 end
-
-Docker.build!("sshkit-test-sshd", "test/support/docker")
 
 ExUnit.start()
