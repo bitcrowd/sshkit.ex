@@ -27,11 +27,12 @@ defmodule SSHKit.SSH do
 
   Uses `SSHKit.SSH.Connection.open/2` to open a connection.
 
-  `options_or_function` can either be a list of ssh-options or a function. If it's a
-  list, it's considered to be a list of ssh-options as described in `Connection.open/2`. If
-  it's a function, then it's equivalent to calling `connect(host, [],
-  options_or_function)`. See the documentation for `open/3` for more information
-  on this function.
+  `options_or_function` can either be a list of options or a function.
+  If it is a list, it is considered to be a list of options as described in
+  `SSHKit.SSH.Connection.open/2`. If it is a function, then it is equivalent to
+  calling `connect(host, [], options_or_function)`.
+
+  See the documentation for `connect/3` for more information on this function.
 
   ## Example
 
@@ -46,20 +47,22 @@ defmodule SSHKit.SSH do
   @doc """
   Similar to `connect/2` but expects a function as its last argument.
 
-  The ssh-connection is opened, given to the function as an argument and
-  automatically closed after the function returns, regardless
-  if there was an error when executing the function.
+  The connection is opened, given to the function as an argument and
+  automatically closed after the function returns, regardless of any
+  errors raised while executing the function.
 
   Returns `{:ok, function_result}` in case of success,
   `{:error, reason}` otherwise.
 
   ## Examples
 
-      SSH.connect("eg.io", port: 2222, user: "me", fn conn ->
-        SCP.upload(conn, "list.txt")
-      end)
+  ```
+  SSH.connect("eg.io", port: 2222, user: "me", fn conn ->
+    SCP.upload(conn, "list.txt")
+  end)
+  ```
 
-  See `open/2` for the list of available `options`.
+  See `SSHKit.SSH.Connection.open/2` for the list of available `options`.
   """
   def connect(host, options, function) do
     case connect(host, options) do
@@ -106,6 +109,9 @@ defmodule SSHKit.SSH do
   * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
   * `:acc` - initial accumulator value used in the loop
 
+  Any other options will be passed on to `SSHKit.SSH.Channel.open/2` upon
+  when creating the channel for executing the command.
+
   ## Example
 
   ```
@@ -114,11 +120,12 @@ defmodule SSHKit.SSH do
   ```
   """
   def run(connection, command, options \\ []) do
-    timeout = Keyword.get(options, :timeout, :infinity)
-    acc = Keyword.get(options, :acc, {:cont, {[], nil}})
-    fun = Keyword.get(options, :fun, &capture/2)
+    {acc, options} = Keyword.pop(options, :acc, {:cont, {[], nil}})
+    {fun, options} = Keyword.pop(options, :fun, &capture/2)
 
-    with {:ok, channel} <- Channel.open(connection, timeout: timeout) do
+    timeout = Keyword.get(options, :timeout, :infinity)
+
+    with {:ok, channel} <- Channel.open(connection, options) do
       case Channel.exec(channel, command, timeout) do
         :success ->
           channel
@@ -132,7 +139,7 @@ defmodule SSHKit.SSH do
     end
   end
 
-  defp capture(message, state = {buffer, status}) do
+  defp capture(message, acc = {buffer, status}) do
     next = case message do
       {:data, _, 0, data} ->
         {[{:stdout, data} | buffer], status}
@@ -143,7 +150,7 @@ defmodule SSHKit.SSH do
       {:closed, _} ->
         {:ok, Enum.reverse(buffer), status}
       _ ->
-        state
+        acc
     end
 
     {:cont, next}
