@@ -1,146 +1,210 @@
 defmodule SSHKit.SSH.ConnectionTest do
   use ExUnit.Case, async: true
+  import Mox
 
   import SSHKit.SSH.Connection
-  alias SSHKit.SSH.Connection
 
-  setup context do
-    ssh_modules = %{ssh: SSHSandboxHelper.ssh(context)}
-    {:ok, [ssh_modules: ssh_modules]}
+  alias SSHKit.SSH.Connection
+  alias SSHKit.SSH.Connection.ImplMock
+
+  setup do
+    Mox.verify_on_exit!
+    {:ok, impl: ImplMock}
   end
 
   describe "open/2" do
-    test "open connection", %{ssh_modules: ssh_modules} do
-      options = [ssh_modules: ssh_modules]
-      conn    = %Connection{
-        host:        'foo.io',
-        options:     [user_interaction: false],
-        port:        22,
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+    test "opens a connection", %{impl: impl} do
+      impl |> expect(:connect, fn (host, port, opts, timeout) ->
+        assert host == 'test.io'
+        assert port == 22
+        assert opts == [user_interaction: false]
+        assert timeout == :infinity
+        {:ok, :connection_ref}
+      end)
+
+      {:ok, conn} = open("test.io", impl: impl)
+
+      assert conn == %Connection{
+        host:    'test.io',
+        port:    22,
+        options: [user_interaction: false],
+        ref:     :connection_ref,
+        impl:    impl
       }
-
-      assert open("foo.io", options) == {:ok, conn}
-      assert_received :opened_sandbox_connection
     end
 
-    test "open connection on different port with user and password", %{ssh_modules: ssh_modules} do
-      options = [port: 666, user: "me", password: "secret", ssh_modules: ssh_modules]
-      conn    = %Connection{
-        host:        'foo.io',
-        options:     [user_interaction: false, user: 'me', password: 'secret'],
-        port:        666,
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+    test "opens a connection on a different port with user and password", %{impl: impl} do
+      impl |> expect(:connect, fn (_, port, opts, _) ->
+        assert port == 666
+        assert opts[:user] == 'me'
+        assert opts[:password] == 'secret'
+        assert opts[:user_interaction] == false
+        {:ok, :ref_with_port_user_pass}
+      end)
+
+      {:ok, conn} = open("test.io", port: 666, user: "me", password: "secret", impl: impl)
+
+      assert conn == %Connection{
+        host:    'test.io',
+        port:    666,
+        options: [user_interaction: false, user: 'me', password: 'secret'],
+        ref:     :ref_with_port_user_pass,
+        impl:    impl
       }
-
-      assert open("foo.io", options) == {:ok, conn}
-      assert_received :opened_sandbox_connection
     end
 
-    test "open connection with user interaction option set to true", %{ssh_modules: ssh_modules} do
-      options = [user: "me", password: "secret", user_interaction: true, ssh_modules: ssh_modules]
-      conn = %Connection{
-        host:        'foo.io',
-        options:     [user: 'me', password: 'secret', user_interaction: true],
-        port:        22,
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+    test "opens a connection with user interaction option set to true", %{impl: impl} do
+      impl |> expect(:connect, fn (_, _, opts, _) ->
+        assert opts[:user] == 'me'
+        assert opts[:password] == 'secret'
+        assert opts[:user_interaction] == true
+        {:ok, :ref_with_user_interaction}
+      end)
+
+      options = [user: "me", password: "secret", user_interaction: true, impl: impl]
+
+      {:ok, conn} = open("test.io", options)
+
+      assert conn == %Connection{
+        host:    'test.io',
+        options: [user: 'me', password: 'secret', user_interaction: true],
+        port:    22,
+        ref:     :ref_with_user_interaction,
+        impl:    impl
       }
-
-      assert open("foo.io", options) == {:ok, conn}
-      assert_received :opened_sandbox_connection
     end
 
-    test "remove options irrelevant for connect/4", %{ssh_modules: ssh_modules} do
-      options = [port: 666, timeout: 1000, user: "me", password: "secret", ssh_modules: ssh_modules]
-      {:ok, conn} = open("foo.io", options)
-      option_keys = Keyword.keys(conn.options)
+    test "opens a connection with a specific timeout", %{impl: impl} do
+      impl |> expect(:connect, fn (_, _, _, timeout) ->
+        assert timeout == 3000
+        {:ok, :ref}
+      end)
 
-      refute :port in option_keys
-      refute :timeout in option_keys
-      refute :ssh_modules in option_keys
+      {:ok, _} = open("test.io", timeout: 3000, impl: impl)
     end
 
-    test "convert option values to Charlists", %{ssh_modules: ssh_modules} do
-      options = [user: "me", password: "secret", ssh_modules: ssh_modules]
-      {:ok, %Connection{options: conn_options}} = open("foo.io", options)
+    test "removes options irrelevant for connect/4", %{impl: impl} do
+      impl |> expect(:connect, fn (_, _, opts, _) ->
+        option_keys = Keyword.keys(opts)
 
-      assert {:user, 'me'} in conn_options
-      assert {:password, 'secret'} in conn_options
+        refute :port in option_keys
+        refute :timeout in option_keys
+        refute :impl in option_keys
+
+        {:ok, :ref}
+      end)
+
+      options = [port: 666, timeout: 1000, user: "me", password: "secret", impl: impl]
+
+      {:ok, _} = open("test.io", options)
     end
 
-    @tag ssh: :error
-    test "return error when connection cannot be opened", %{ssh_modules: ssh_modules} do
-      options = [ssh_modules: ssh_modules]
+    test "converts host to charlist", %{impl: impl} do
+      impl |> expect(:connect, fn (host, _, _, _) ->
+        assert host == 'test.io'
+        {:ok, :ref}
+      end)
 
-      assert open("foo.io", options) == {:error, :sandbox}
-      refute_received :opened_sandbox_connection
+      {:ok, _} = open("test.io", impl: impl)
     end
 
-    test "error if no host given" do
+    test "converts option values to charlists", %{impl: impl} do
+      impl |> expect(:connect, fn (_, _, opts, _) ->
+        assert {:user, 'me'} in opts
+        assert {:password, 'secret'} in opts
+        {:ok, :ref}
+      end)
+
+      {:ok, _} = open("test.io", user: "me", password: "secret", impl: impl)
+    end
+
+    test "returns an error when connection cannot be opened", %{impl: impl} do
+      impl |> expect(:connect, fn (_, _, _, _) ->
+        {:error, :failed}
+      end)
+
+      assert open("test.io", impl: impl) == {:error, :failed}
+    end
+
+    test "returns an error if no host is given" do
       assert open(nil) == {:error, "No host given."}
     end
   end
 
   describe "close/1" do
-    test "close a connection", %{ssh_modules: ssh_modules} do
+    test "closes a connection", %{impl: impl} do
+      impl |> expect(:close, fn ref ->
+        assert ref == :connection_ref
+        :ok
+      end)
+
       conn = %Connection{
-        host:        'foo.io',
-        port:        22,
-        options:     [user_interaction: false],
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+        host:    'foo.io',
+        port:    22,
+        options: [user_interaction: false],
+        ref:     :connection_ref,
+        impl:    impl
       }
 
       assert close(conn) == :ok
-      assert_received :closed_sandbox_connection
     end
   end
 
   describe "reopen/2" do
-    test "reopen a connection regardless if already open", %{ssh_modules: ssh_modules} do
+    test "opens a new connection with the same options as the existing connection", %{impl: impl} do
       conn = %Connection{
-        host:        'foo.io',
-        port:        22,
-        options:     [user_interaction: false, user: 'me', password: 'secret'],
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+        host:    'test.io',
+        port:    22,
+        options: [user_interaction: false, user: 'me'],
+        ref:     :connection_ref,
+        impl:    impl
       }
 
-      assert reopen(conn, ssh_modules: ssh_modules) == {:ok, conn}
-      assert_received :opened_sandbox_connection
-      refute_received :closed_sandbox_connection
+      impl |> expect(:connect, fn (host, port, opts, _) ->
+        assert host == conn.host
+        assert port == conn.port
+        assert opts == conn.options
+        {:ok, :new_connection_ref}
+      end)
+
+      new_conn = Map.put(conn, :ref, :new_connection_ref)
+
+      assert reopen(conn) == {:ok, new_conn}
     end
 
-    test "reopen connection on new port", %{ssh_modules: ssh_modules} do
-      options     = [port: 666, ssh_modules: ssh_modules]
-      conn        = %Connection{
-        host:        'foo.io',
-        port:        22,
-        options:     [user_interaction: false, user: 'me', password: 'secret'],
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+    test "reopens a connection on new port", %{impl: impl} do
+      conn = %Connection{
+        host:    'test.io',
+        port:    22,
+        options: [user_interaction: false, user: 'me'],
+        ref:     :connection_ref,
+        impl:    impl
       }
-      new_conn    = Map.merge(conn, %{port: 666})
 
-      assert reopen(conn, options) == {:ok, new_conn}
-      assert_received :opened_sandbox_connection
+      impl |> expect(:connect, fn (_, port, _, _) ->
+        assert port == 666
+        {:ok, :new_connection_ref}
+      end)
+
+      new_conn = Map.merge(conn, %{port: 666, ref: :new_connection_ref})
+
+      assert reopen(conn, port: 666) == {:ok, new_conn}
     end
 
-    @tag ssh: :error
-    test "error when unable to open connection", %{ssh_modules: ssh_modules} do
-      options     = [ssh_modules: ssh_modules]
-      conn        = %Connection{
-        host:        'foo.io',
-        port:        22,
-        options:     [user_interaction: false],
-        ref:         :sandbox,
-        ssh_modules: ssh_modules
+    test "errors when unable to open connection", %{impl: impl} do
+      conn = %Connection{
+        host:    'test.io',
+        port:    22,
+        options: [user_interaction: false],
+        ref:     :sandbox,
+        impl:    impl
       }
 
-      assert reopen(conn, options) == {:error, :sandbox}
-      refute_received :opened_sandbox_connection
+      impl |> expect(:connect, fn (_, _, _, _) ->
+        {:error, :failed}
+      end)
+
+      assert reopen(conn) == {:error, :failed}
     end
   end
 end

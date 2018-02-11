@@ -11,7 +11,7 @@ defmodule SSHKit.SSH.Channel do
 
   alias SSHKit.SSH.Channel
 
-  defstruct [:connection, :type, :id]
+  defstruct [:connection, :type, :id, impl: :ssh_connection]
 
   @doc """
   Opens a channel on an SSH connection.
@@ -31,12 +31,16 @@ defmodule SSHKit.SSH.Channel do
     timeout = Keyword.get(options, :timeout, :infinity)
     ini_window_size = Keyword.get(options, :initial_window_size, 128 * 1024)
     max_packet_size = Keyword.get(options, :max_packet_size, 32 * 1024)
-    ssh_connection  = ssh_connection_module(connection)
+    impl = Keyword.get(options, :impl, :ssh_connection)
 
-    case ssh_connection.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
-      {:ok, id} -> {:ok, %Channel{connection: connection, type: :session, id: id}}
+    case impl.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
+      {:ok, id} -> {:ok, build(connection, id, impl)}
       err -> err
     end
+  end
+
+  defp build(connection, id, impl) do
+    %Channel{connection: connection, type: :session, id: id, impl: impl}
   end
 
   @doc """
@@ -47,8 +51,7 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
   """
   def close(channel) do
-    ssh_connection = ssh_connection_module(channel.connection)
-    ssh_connection.close(channel.connection.ref, channel.id)
+    channel.impl.close(channel.connection.ref, channel.id)
   end
 
   @doc """
@@ -64,12 +67,13 @@ defmodule SSHKit.SSH.Channel do
   executing `command` on the remote.
   """
   def exec(channel, command, timeout \\ :infinity)
+
   def exec(channel, command, timeout) when is_binary(command) do
     exec(channel, to_charlist(command), timeout)
   end
+
   def exec(channel, command, timeout) do
-    ssh_connection = ssh_connection_module(channel.connection)
-    ssh_connection.exec(channel.connection.ref, channel.id, command, timeout)
+    channel.impl.exec(channel.connection.ref, channel.id, command, timeout)
   end
 
   @doc """
@@ -84,12 +88,14 @@ defmodule SSHKit.SSH.Channel do
   def send(channel, type \\ 0, data, timeout \\ :infinity)
 
   def send(channel, type, data, timeout) when is_binary(data) or is_list(data) do
-    ssh_connection = ssh_connection_module(channel.connection)
-    ssh_connection.send(channel.connection.ref, channel.id, type, data, timeout)
+    channel.impl.send(channel.connection.ref, channel.id, type, data, timeout)
   end
 
   def send(channel, type, data, timeout) do
-    Enum.each(data, fn datum -> :ok = send(channel, type, datum, timeout) end)
+    Enum.reduce_while(data, :ok, fn
+      (datum, :ok) -> {:cont, send(channel, type, datum, timeout)}
+      (_, err) -> {:halt, err}
+    end)
   end
 
   @doc """
@@ -100,8 +106,7 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.send_eof/2`](http://erlang.org/doc/man/ssh_connection.html#send_eof-2).
   """
   def eof(channel) do
-    ssh_connection = ssh_connection_module(channel.connection)
-    ssh_connection.send_eof(channel.connection.ref, channel.id)
+    channel.impl.send_eof(channel.connection.ref, channel.id)
   end
 
   @doc """
@@ -161,8 +166,7 @@ defmodule SSHKit.SSH.Channel do
   For more details, see [`:ssh_connection.adjust_window/3`](http://erlang.org/doc/man/ssh_connection.html#adjust_window-3).
   """
   def adjust(channel, size) when is_integer(size) do
-    ssh_connection = ssh_connection_module(channel.connection)
-    ssh_connection.adjust_window(channel.connection.ref, channel.id, size)
+    channel.impl.adjust_window(channel.connection.ref, channel.id, size)
   end
 
   @doc """
@@ -171,29 +175,29 @@ defmodule SSHKit.SSH.Channel do
 
   Expects an accumulator on each call that determines how to proceed:
 
-  1. `{:cont, state}`
+  1. `{:cont, acc}`
 
     The loop will wait for an inbound message. It will then pass the message and
-    current `state` to the looping function. `fun`'s return value is the
+    current `acc` to the looping function. `fun`'s return value is the
     accumulator for the next cycle.
 
-  2. `{:cont, message, state}`
+  2. `{:cont, message, acc}`
 
     Sends a message to the remote end of the channel before waiting for a
-    message as outlined in the `{:cont, state}` case above. `message` may be one
+    message as outlined in the `{:cont, acc}` case above. `message` may be one
     of the following:
 
       * `{0, data}` or `{1, data}` - sends normal or stderr data to the remote
       * `data` - is a shortcut for `{0, data}`
       * `:eof` - sends EOF
 
-  3. `{:halt, state}`
+  3. `{:halt, acc}`
 
-    Terminates the loop, returning `{:halted, state}`.
+    Terminates the loop, returning `{:halted, acc}`.
 
-  4. `{:suspend, state}`
+  4. `{:suspend, acc}`
 
-    Suspends the loop, returning `{:suspended, state, continuation}`.
+    Suspends the loop, returning `{:suspended, acc, continuation}`.
     `continuation` is a function that accepts a new accumulator value and that,
     when called, will resume the loop.
 
@@ -201,7 +205,7 @@ defmodule SSHKit.SSH.Channel do
   messages.
 
   Once the final `{:closed, channel}` message is received, the loop will
-  terminate and return `{:done, state}`. The channel will be closed if it has
+  terminate and return `{:done, acc}`. The channel will be closed if it has
   not been closed before.
   """
   def loop(channel, timeout \\ :infinity, acc, fun)
@@ -266,8 +270,4 @@ defmodule SSHKit.SSH.Channel do
   end
 
   defp ljust(_, _), do: :ok
-
-  defp ssh_connection_module(conn) do
-    Map.fetch!(conn.ssh_modules, :ssh_connection)
-  end
 end

@@ -8,7 +8,7 @@ defmodule SSHKit.Mixfile do
     [app: :sshkit,
      name: "sshkit",
      version: @version,
-     elixir: "~> 1.3",
+     elixir: "~> 1.5",
      elixirc_paths: elixirc_paths(Mix.env),
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -20,13 +20,14 @@ defmodule SSHKit.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :ssh]]
+    [extra_applications: [:logger, :ssh]]
   end
 
   defp deps do
     [{:credo, "~> 0.7", runtime: false, only: [:dev, :test]},
      {:ex_doc, "~> 0.14", runtime: false, only: [:dev]},
-     {:inch_ex, "~> 0.5", runtime: false, only: [:dev, :test]}]
+     {:inch_ex, "~> 0.5", runtime: false, only: [:dev, :test]},
+     {:mox, "~> 0.3", only: :test}]
   end
 
   defp description do
