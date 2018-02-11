@@ -329,7 +329,9 @@ defmodule SSHKit do
   and all options specified in `SSHKit.SCP.Upload.transfer/4`.
 
   ## Examples
-  Upload all files and folders in current directory to "/workspace".
+
+  Upload all files and folders in current directory to "/workspace":
+
   ```
   [:ok] =
     "my.remote-host.tld"
@@ -337,12 +339,14 @@ defmodule SSHKit do
     |> SSHKit.path("/workspace")
     |> SSHKit.upload(".", recursive: true)
   ```
-  Upload file to different name on host
+
+  Upload file to different name on host:
+
   ```
   [:ok] =
     "my.remote-host.tld"
     |> SSHKit.context
-    |> SSHKit.upload("some_file.txt", as: "other_file.txt" )
+    |> SSHKit.upload("some_file.txt", as: "other_file.txt")
   ```
   """
   def upload(context, path, options \\ []) do
@@ -350,7 +354,7 @@ defmodule SSHKit do
     remote_path = build_remote_path(context, as_path)
 
     run = fn host ->
-      {:ok, res} = SSH.connect host.name, host.options, fn(conn) ->
+      {:ok, res} = SSH.connect host.name, host.options, fn conn ->
         SCP.upload(conn, path, remote_path, options)
       end
       res
@@ -368,7 +372,9 @@ defmodule SSHKit do
   and all options specified in `SSHKit.SCP.Upload.transfer/4`.
 
   ## Examples
-  Download all files and folders in context directory to current working directory.
+
+  Download all files and folders in context directory to current working directory:
+
   ```
   [:ok] =
     "my.remote-host.tld"
@@ -376,12 +382,14 @@ defmodule SSHKit do
     |> SSHKit.path("/workspace")
     |> SSHKit.upload(".", recursive: true)
   ```
-  Download file to different local name.
+
+  Download file to different local name:
+
   ```
   [:ok] =
     "my.remote-host.tld"
     |> SSHKit.context
-    |> SSHKit.download("some_file.txt", as: "other_file.txt" )
+    |> SSHKit.download("some_file.txt", as: "other_file.txt")
   ```
   """
   def download(context, path, options \\ []) do
@@ -389,7 +397,7 @@ defmodule SSHKit do
     local = Keyword.get(options, :as, Path.basename(path))
 
     run = fn host ->
-      {:ok, res} = SSH.connect host.name, host.options, fn(conn) ->
+      {:ok, res} = SSH.connect host.name, host.options, fn conn ->
         SCP.download(conn, remote, local, options)
       end
       res

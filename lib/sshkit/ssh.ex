@@ -55,7 +55,7 @@ defmodule SSHKit.SSH do
 
   ## Examples
 
-      SSH.connect("eg.io", port: 2222, user: "me", fn(conn) ->
+      SSH.connect("eg.io", port: 2222, user: "me", fn conn ->
         SCP.upload(conn, "list.txt")
       end)
 
