@@ -244,9 +244,8 @@ defmodule SSHKitFunctionalTest do
   end
 
   defp create_context_hosts(hosts) do
-    Enum.map(hosts,
-      fn(h) ->
-        SSHKit.host(h.ip, Keyword.merge(@defaults, [port: h.port, user: h.user, password: h.password]))
-      end)
+    Enum.map(hosts, fn h ->
+      SSHKit.host(h.ip, Keyword.merge(@defaults, [port: h.port, user: h.user, password: h.password]))
+    end)
   end
 end
