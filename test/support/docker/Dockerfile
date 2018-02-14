@@ -1,4 +1,4 @@
-FROM alpine:3.5
+FROM alpine:3.7
 
 # Set up an Alpine Linux machine running an SSH server.
 # Autogenerate missing host keys.
