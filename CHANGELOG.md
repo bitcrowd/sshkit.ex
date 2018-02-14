@@ -45,6 +45,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 ### Fixes:
 
 * Fix error handling in `SSHKit.SSH.Channel.send/4` when sending stream data
+* Context properly handles the case where env is set to an empty map
 
 ## `0.0.3` (2017-07-13)
 
