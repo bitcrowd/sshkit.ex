@@ -42,5 +42,24 @@ defmodule SSHKit.ContextTest do
       assert command =~ ~r/export CI="true"/
       refute command =~ ~r/NODE_ENV/
     end
+
+    test "build with nil env" do
+
+      command =
+        %Context{@empty | env: nil}
+        |> Context.build("ls")
+
+
+      assert command == "/usr/bin/env ls"
+    end
+
+    test "build with empty env" do
+
+      command =
+        %Context{@empty | env: %{}}
+        |> Context.build("ls")
+
+      assert command == "/usr/bin/env ls"
+    end
   end
 end

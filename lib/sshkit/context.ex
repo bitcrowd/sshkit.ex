@@ -45,6 +45,7 @@ defmodule SSHKit.Context do
   defp sudo(command, username, groupname), do: "sudo -n -u #{username} -g #{groupname} -- sh -c #{shellquote(command)}"
 
   defp export(command, nil), do: command
+  defp export(command, env) when env == %{}, do: command
   defp export(command, env) do
     exports = Enum.map_join(env, " ", fn {name, value} -> "#{name}=\"#{value}\"" end)
     "(export #{exports} && #{command})"
