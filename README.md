@@ -8,7 +8,7 @@ built on top of Erlang’s SSH application.
 
 [Documentation for SSHKit is available online](https://hexdocs.pm/sshkit).
 
-## Usage (work in progress)
+## Usage
 
 SSHKit is designed to enable server task automation in a structured and
 repeatable way, e.g. in the context of deployment tools:
@@ -37,23 +37,16 @@ If you need more control, take a look at the
 
 ## Installation
 
-You can use SSHKit in your projects in two steps:
-
-1. Add `sshkit` to your `mix.exs` dependencies:
+Just add `sshkit` to your list of dependencies in `mix.exs`:
 
   ```elixir
   def deps do
-    [{:sshkit, "~> 0.0.3"}]
+    [{:sshkit, "~> 0.1"}]
   end
   ```
 
-2. List `sshkit` in your application dependencies:
-
-  ```elixir
-  def application do
-    [applications: [:sshkit]]
-  end
-  ```
+SSHKit should be automatically started unless the `:applications` key is set
+inside `def application` in your `mix.exs`. In such cases, you need to [remove the `:applications` key in favor of `:extra_applications`](https://elixir-lang.org/blog/2017/01/05/elixir-v1-4-0-released/#application-inference).
 
 ## Modules
 
