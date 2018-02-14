@@ -109,8 +109,8 @@ defmodule SSHKit.SSH do
   * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
   * `:acc` - initial accumulator value used in the loop
 
-  Any other options will be passed on to `SSHKit.SSH.Channel.open/2` upon
-  when creating the channel for executing the command.
+  Any other options will be passed on to `SSHKit.SSH.Channel.open/2` when
+  creating the channel for executing the command.
 
   ## Example
 
