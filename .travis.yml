@@ -23,7 +23,8 @@ before_install:
 
 script:
   - mix credo --strict
-  - mix test
+  - mix test --exclude functional
+  - mix test --only functional
 
 after_script:
   - mix inch.report
