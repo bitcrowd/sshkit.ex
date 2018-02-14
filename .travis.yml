@@ -5,7 +5,7 @@ language: elixir
 matrix:
   include:
     - elixir: 1.5
-      otp_release: 18.0
+      otp_release: 18.1
       services: docker
     - elixir: 1.5
       otp_release: 20.2
