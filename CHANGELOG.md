@@ -4,9 +4,9 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 
-* Fix Elixir 1.5 String deprecations. Removes Elixir 1.2 and below support.
+* Put high-level summary here
 
 ### Deprecations:
 
@@ -23,6 +23,28 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...HEAD
 ### Fixes:
 
 * Put fixes here
+
+## `0.1.0` (work in progress)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
+
+* Require Elixir 1.5+ and drop support for lower versions.
+* Fix Elixir 1.5 String deprecations.
+* Update installation instructions.
+* Introduce Mox for mocking in unit tests.
+* Improve and add unit tests.
+
+### Potentially breaking changes:
+
+* Remove `:dry_run` option for now. Planning to reintroduce at a higher level.
+
+### New features:
+
+* Put new features here
+
+### Fixes:
+
+* Fix error handling in `SSHKit.SSH.Channel.send/4` when sending stream data
 
 ## `0.0.3` (2017-07-13)
 
