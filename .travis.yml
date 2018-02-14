@@ -1,20 +1,29 @@
 language: elixir
+
+# Compatibility between Elixir and Erlang/OTP
+# https://hexdocs.pm/elixir/master/compatibility-and-deprecations.html
 matrix:
   include:
     - elixir: 1.5
-      otp_release: 18.3
+      otp_release: 18.0
       services: docker
     - elixir: 1.5
-      otp_release: 19.2
+      otp_release: 20.2
+      services: docker
+    - elixir: 1.6
+      otp_release: 19.0
       services: docker
     - elixir: 1.6
       otp_release: 20.2
       services: docker
+
 before_install:
   - sudo apt-get update
   - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+
 script:
   - mix credo --strict
   - mix test
+
 after_script:
   - mix inch.report
