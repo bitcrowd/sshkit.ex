@@ -135,7 +135,6 @@ defmodule SSHKit do
   context = SSHKit.context(hosts, options)
   ```
   """
-
   def context(hosts, shared_options \\ []) do
     hosts =
       hosts
