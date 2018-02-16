@@ -37,6 +37,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 ### Potentially breaking changes:
 
 * Remove `:dry_run` option for now. Planning to reintroduce at a higher level.
+* Set `-H` option for `sudo` in order to get the expected value for `HOME`
 
 ### New features:
 

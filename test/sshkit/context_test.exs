@@ -11,7 +11,7 @@ defmodule SSHKit.ContextTest do
         %Context{@empty | user: "me"}
         |> Context.build("whoami")
 
-      assert command == "sudo -n -u me -- sh -c '/usr/bin/env whoami'"
+      assert command == "sudo -H -n -u me -- sh -c '/usr/bin/env whoami'"
     end
 
     test "with group" do
@@ -19,7 +19,7 @@ defmodule SSHKit.ContextTest do
         %Context{@empty | group: "crew"}
         |> Context.build("id -g -n")
 
-      assert command == "sudo -n -g crew -- sh -c '/usr/bin/env id -g -n'"
+      assert command == "sudo -H -n -g crew -- sh -c '/usr/bin/env id -g -n'"
     end
 
     test "with user and group" do
@@ -27,7 +27,7 @@ defmodule SSHKit.ContextTest do
         %Context{@empty | user: "me", group: "crew"}
         |> Context.build("id")
 
-      assert command == "sudo -n -u me -g crew -- sh -c '/usr/bin/env id'"
+      assert command == "sudo -H -n -u me -g crew -- sh -c '/usr/bin/env id'"
     end
 
     test "with env" do
