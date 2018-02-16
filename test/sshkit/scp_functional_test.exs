@@ -1,5 +1,5 @@
 defmodule SSHKit.SCPFunctionalTest do
-  use SSHKit.FunctionalCase, async: false
+  use SSHKit.FunctionalCase, async: true
   import SSHKit.FunctionalAssertionHelpers
 
   alias SSHKit.SCP
