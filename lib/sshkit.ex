@@ -89,16 +89,17 @@ defmodule SSHKit do
   See `host/1` for additional ways of specifying host details.
   """
   def host(host, options \\ [])
+
   def host(name, options) when is_binary(name) do
     %Host{name: name, options: options}
   end
 
-  def host(%{name: name, options: options}, shared_options) do
-    %Host{name: name, options: Keyword.merge(shared_options, options)}
+  def host(%{name: name, options: options}, defaults) do
+    %Host{name: name, options: Keyword.merge(defaults, options)}
   end
 
-  def host({name, options}, shared_options) do
-    %Host{name: name, options: Keyword.merge(shared_options, options)}
+  def host({name, options}, defaults) do
+    %Host{name: name, options: Keyword.merge(defaults, options)}
   end
 
   @doc """
@@ -135,11 +136,12 @@ defmodule SSHKit do
   context = SSHKit.context(hosts, options)
   ```
   """
-  def context(hosts, shared_options \\ []) do
+  def context(hosts, defaults \\ []) do
     hosts =
       hosts
       |> List.wrap()
-      |> build_hosts(shared_options)
+      |> Enum.map(&host(&1, defaults))
+
     %Context{hosts: hosts}
   end
 
@@ -407,10 +409,5 @@ defmodule SSHKit do
 
   defp build_remote_path(context, path) do
     Path.absname(path, context.path || ".")
-  end
-
-  defp build_hosts(hosts, shared_options) do
-    build_host = &host(&1, shared_options)
-    Enum.map(hosts, build_host)
   end
 end
