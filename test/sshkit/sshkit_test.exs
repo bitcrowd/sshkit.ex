@@ -40,33 +40,82 @@ defmodule SSHKitTest do
   end
 
   describe "context/2" do
-    test "creates with list of binaries" do
-      hosts = ["10.0.0.1", "10.0.0.2", "10.0.0.3"]
-      context = SSHKit.context(hosts)
-
-      assert context == @context_simple
+    test "creates a context from a single hostname (binary)" do
+      context = SSHKit.context("10.0.0.1")
+      hosts = [%Host{name: "10.0.0.1", options: []}]
+      assert context == %Context{hosts: hosts}
     end
 
-    test "creates with list of Maps" do
-      hosts = [
-        %{name: "10.0.0.1", options: []},
-        %{name: "10.0.0.2", options: []},
-        %{name: "10.0.0.3", options: []}
-      ]
-      context = SSHKit.context(hosts)
-
-      assert context == @context_simple
+    test "creates a context from a single map with :name and :options" do
+      context = SSHKit.context(%{name: "10.0.0.1", options: [user: "me"]})
+      hosts = [%Host{name: "10.0.0.1", options: [user: "me"]}]
+      assert context == %Context{hosts: hosts}
     end
 
-    test "creates with mixed list" do
-      hosts = [
-        "10.0.0.1",
-        %{name: "10.0.0.2", options: []},
-        %Host{name: "10.0.0.3", options: []}
-      ]
-      context = SSHKit.context(hosts)
+    test "creates a context from a single tuple" do
+      context = SSHKit.context({"10.0.0.1", user: "me"})
+      hosts = [%Host{name: "10.0.0.1", options: [user: "me"]}]
+      assert context == %Context{hosts: hosts}
+    end
 
-      assert context == @context_simple
+    test "creates a context from a list of hostnames (binaries)" do
+      context = SSHKit.context(["10.0.0.1", "10.0.0.2"])
+
+      hosts = [
+        %Host{name: "10.0.0.1", options: []},
+        %Host{name: "10.0.0.2", options: []}
+      ]
+
+      assert context == %Context{hosts: hosts}
+    end
+
+    test "creates a context from a list of maps with :name and :options" do
+      context =
+        SSHKit.context([
+          %{name: "10.0.0.1", options: [user: "me"]},
+          %{name: "10.0.0.2", options: []}
+        ])
+
+      hosts = [
+        %Host{name: "10.0.0.1", options: [user: "me"]},
+        %Host{name: "10.0.0.2", options: []}
+      ]
+
+      assert context == %Context{hosts: hosts}
+    end
+
+    test "creates a context from a list of tuples" do
+      context =
+        SSHKit.context([
+          {"10.0.0.1", [user: "me"]},
+          {"10.0.0.2", []}
+        ])
+
+      hosts = [
+        %Host{name: "10.0.0.1", options: [user: "me"]},
+        %Host{name: "10.0.0.2", options: []}
+      ]
+
+      assert context == %Context{hosts: hosts}
+    end
+
+    test "creates a context from a mixed list" do
+      context =
+        SSHKit.context([
+          %Host{name: "10.0.0.4", options: [user: "me"]},
+          %{name: "10.0.0.3", options: [password: "three"]},
+          {"10.0.0.2", port: 2222},
+          "10.0.0.1"
+        ])
+
+      hosts = [
+        %Host{name: "10.0.0.4", options: [user: "me"]},
+        %Host{name: "10.0.0.3", options: [password: "three"]},
+        %Host{name: "10.0.0.2", options: [port: 2222]},
+        %Host{name: "10.0.0.1", options: []}
+      ]
+
+      assert context == %Context{hosts: hosts}
     end
 
     test "includes shared options" do
