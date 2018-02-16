@@ -296,7 +296,7 @@ defmodule SSHKit do
 
   ```
   [{:ok, output, 0}] =
-    "my.remote-host.tld"
+    "example.io"
     |> SSHKit.context()
     |> SSHKit.run("echo \"Hello World!\"")
 
@@ -324,10 +324,12 @@ defmodule SSHKit do
   @doc ~S"""
   Upload a file or files to the given context.
 
-  Returns a list of `:ok` or {:error, "reason"} - one for each host
+  Returns a list of `:ok` or `{:error, reason}` - one for each host.
 
-  Possible options are `as: "new_name"` (specify the name of the uploaded file/directory)
-  and all options specified in `SSHKit.SCP.Upload.transfer/4`.
+  Possible options are:
+
+  * `as: "remote.txt"` - specify the name of the uploaded file/directory
+  * all options accepted by `SSHKit.SCP.Upload.transfer/4`
 
   ## Examples
 
@@ -335,8 +337,8 @@ defmodule SSHKit do
 
   ```
   [:ok] =
-    "my.remote-host.tld"
-    |> SSHKit.context
+    "example.io"
+    |> SSHKit.context()
     |> SSHKit.path("/workspace")
     |> SSHKit.upload(".", recursive: true)
   ```
@@ -345,9 +347,9 @@ defmodule SSHKit do
 
   ```
   [:ok] =
-    "my.remote-host.tld"
-    |> SSHKit.context
-    |> SSHKit.upload("some_file.txt", as: "other_file.txt")
+    "example.io"
+    |> SSHKit.context()
+    |> SSHKit.upload("local.txt", as: "remote.txt")
   ```
   """
   def upload(context, path, options \\ []) do
@@ -367,10 +369,12 @@ defmodule SSHKit do
   @doc ~S"""
   Download a file or files from the given context.
 
-  Returns a list of `:ok` or {:error, "reason"} - one for each host
+  Returns a list of `:ok` or `{:error, reason}` - one for each host.
 
-  Possible options are `as: "new_name"` (specify the name of the downloaded file/directory)
-  and all options specified in `SSHKit.SCP.Upload.transfer/4`.
+  Possible options are:
+
+  * `as: "local.txt"` - specify the name of the downloaded file/directory
+  * all options accepted by `SSHKit.SCP.Upload.transfer/4`
 
   ## Examples
 
@@ -378,8 +382,8 @@ defmodule SSHKit do
 
   ```
   [:ok] =
-    "my.remote-host.tld"
-    |> SSHKit.context
+    "example.io"
+    |> SSHKit.context()
     |> SSHKit.path("/workspace")
     |> SSHKit.upload(".", recursive: true)
   ```
@@ -388,9 +392,9 @@ defmodule SSHKit do
 
   ```
   [:ok] =
-    "my.remote-host.tld"
-    |> SSHKit.context
-    |> SSHKit.download("some_file.txt", as: "other_file.txt")
+    "example.io"
+    |> SSHKit.context()
+    |> SSHKit.download("remote.txt", as: "local.txt")
   ```
   """
   def download(context, path, options \\ []) do
