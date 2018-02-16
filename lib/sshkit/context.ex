@@ -28,7 +28,7 @@ defmodule SSHKit.Context do
   "cd /var/www && /usr/bin/env ls"
 
   iex> %SSHKit.Context{user: "me"} |> SSHKit.Context.build("whoami")
-  "sudo -n -u me -- sh -c \\"/usr/bin/env whoami\\""
+  "sudo -H -n -u me -- sh -c '/usr/bin/env whoami'"
   ```
   """
   def build(context, command) do
@@ -40,9 +40,9 @@ defmodule SSHKit.Context do
   end
 
   defp sudo(command, nil, nil), do: command
-  defp sudo(command, username, nil), do: "sudo -n -u #{username} -- sh -c #{shellquote(command)}"
-  defp sudo(command, nil, groupname), do: "sudo -n -g #{groupname} -- sh -c #{shellquote(command)}"
-  defp sudo(command, username, groupname), do: "sudo -n -u #{username} -g #{groupname} -- sh -c #{shellquote(command)}"
+  defp sudo(command, username, nil), do: "sudo -H -n -u #{username} -- sh -c #{shellquote(command)}"
+  defp sudo(command, nil, groupname), do: "sudo -H -n -g #{groupname} -- sh -c #{shellquote(command)}"
+  defp sudo(command, username, groupname), do: "sudo -H -n -u #{username} -g #{groupname} -- sh -c #{shellquote(command)}"
 
   defp export(command, nil), do: command
   defp export(command, env) when env == %{}, do: command
