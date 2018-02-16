@@ -132,7 +132,7 @@ defmodule SSHKit do
 
   ```
   hosts = ["10.0.0.1", "10.0.0.2"]
-  options = [user: "admin", port: "2222"]
+  options = [user: "admin", port: 2222]
   context = SSHKit.context(hosts, options)
   ```
   """
