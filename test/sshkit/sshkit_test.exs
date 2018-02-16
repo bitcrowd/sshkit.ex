@@ -23,6 +23,22 @@ defmodule SSHKitTest do
                   ]}
   @options [user: "user"]
 
+  describe "host/2" do
+    test "creates a host from a hostname (binary) and options" do
+      assert SSHKit.host("10.0.0.1", user: "me") == %Host{name: "10.0.0.1", options: [user: "me"]}
+    end
+
+    test "creates a host from a map with :name and :options" do
+      input = %{name: "10.0.0.1", options: [user: "me"]}
+      assert SSHKit.host(input) == %Host{name: "10.0.0.1", options: [user: "me"]}
+    end
+
+    test "creates a host from a tuple" do
+      input = {"10.0.0.1", user: "me"}
+      assert SSHKit.host(input) == %Host{name: "10.0.0.1", options: [user: "me"]}
+    end
+  end
+
   describe "context/2" do
     test "creates with list of binaries" do
       hosts = ["10.0.0.1", "10.0.0.2", "10.0.0.3"]
