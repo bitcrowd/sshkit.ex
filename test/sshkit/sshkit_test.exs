@@ -128,6 +128,34 @@ defmodule SSHKitTest do
     end
   end
 
+  describe "path/2" do
+    test "sets the path for the context" do
+      context = SSHKit.path(@empty, "/var/www/app")
+      assert context.path == "/var/www/app"
+    end
+  end
+
+  describe "umask/2" do
+    test "sets the file permission mask for the context" do
+      context = SSHKit.umask(@empty, "077")
+      assert context.umask == "077"
+    end
+  end
+
+  describe "user/2" do
+    test "sets the user for the context" do
+      context = SSHKit.user(@empty, "meg")
+      assert context.user == "meg"
+    end
+  end
+
+  describe "group/2" do
+    test "sets the group for the context" do
+      context = SSHKit.group(@empty, "stripes")
+      assert context.group == "stripes"
+    end
+  end
+
   describe "env/2" do
     test "overwrites existing env" do
       context =
