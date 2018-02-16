@@ -4,7 +4,7 @@ defmodule SSHKitFunctionalTest do
   import SSHKit.FunctionalCaseHelpers
   import SSHKit.FunctionalAssertionHelpers
 
-  use SSHKit.FunctionalCase, async: false
+  use SSHKit.FunctionalCase, async: true
 
   @defaults [silently_accept_hosts: true, timeout: 5000]
 
