@@ -32,19 +32,7 @@ defmodule SSHKit.ContextTest do
       assert command =~ ~r/export CUSTOM="env variable"/
     end
 
-    test "build with overwritten env" do
-      command =
-        @empty
-        |> SSHKit.env(%{"NODE_ENV" => "production"})
-        |> SSHKit.env(%{"CI" => "true"})
-        |> Context.build("ls")
-
-      assert command =~ ~r/export CI="true"/
-      refute command =~ ~r/NODE_ENV/
-    end
-
     test "build with nil env" do
-
       command =
         %Context{@empty | env: nil}
         |> Context.build("ls")
@@ -54,7 +42,6 @@ defmodule SSHKit.ContextTest do
     end
 
     test "build with empty env" do
-
       command =
         %Context{@empty | env: %{}}
         |> Context.build("ls")

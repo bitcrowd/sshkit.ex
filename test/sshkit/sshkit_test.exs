@@ -4,6 +4,8 @@ defmodule SSHKitTest do
   alias SSHKit.Context
   alias SSHKit.Host
 
+  @empty %Context{hosts: []}
+
   @context_simple %Context{hosts: [
                     %Host{name: "10.0.0.1", options: []},
                     %Host{name: "10.0.0.2", options: []},
@@ -78,6 +80,17 @@ defmodule SSHKitTest do
       ]
       context = SSHKit.context(hosts, @options)
       assert context == expected_context
+    end
+  end
+
+  describe "env/2" do
+    test "overwrites existing env" do
+      context =
+        @empty
+        |> SSHKit.env(%{"NODE_ENV" => "production"})
+        |> SSHKit.env(%{"CI" => "true"})
+
+      assert context.env == %{"CI" => "true"}
     end
   end
 end
