@@ -36,7 +36,10 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 
 ### Potentially breaking changes:
 
-* Remove `:dry_run` option for now. Planning to reintroduce at a higher level.
+* Remove `:dry_run` option: Depending on how you're using SSHKit, "dry-run" could have a number of different meanings
+  * you may want to actually connect to the remote without changing anything or you may not want to establish a connection at all
+  * some steps in the flow you're dry-running may depend on things like directories created in a previous step which won't be there
+  * all in all, a "dry-run" feature is likely better handled at an application level which may know the dependencies between commands
 * Set `-H` option for `sudo` in order to get the expected value for `HOME`
 
 ### New features:
