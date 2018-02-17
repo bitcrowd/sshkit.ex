@@ -1,0 +1,1 @@
+sshkit test: remote file at /fixtures/remote_dir/other.txt

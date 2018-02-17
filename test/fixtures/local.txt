@@ -1,0 +1,1 @@
+sshkit test: local file at test/fixtures/local.txt

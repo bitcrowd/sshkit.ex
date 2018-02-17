@@ -137,7 +137,7 @@ defmodule SSHKitFunctionalTest do
   describe "upload/3" do
     @tag boot: 2
     test "sends a file", %{hosts: hosts} do
-      local = "test/fixtures/local_workspace/local_file.txt"
+      local = "test/fixtures/local.txt"
 
       context = SSHKit.context(create_context_hosts(hosts))
 
@@ -147,8 +147,8 @@ defmodule SSHKitFunctionalTest do
 
     @tag boot: 2
     test "recursive: true", %{hosts: [host | _] = hosts} do
-      local = "test/fixtures/local_workspace"
-      remote = "/home/#{host.user}/local_workspace"
+      local = "test/fixtures"
+      remote = "/home/#{host.user}/fixtures"
 
       context = SSHKit.context(create_context_hosts(hosts))
 
@@ -158,7 +158,7 @@ defmodule SSHKitFunctionalTest do
 
     @tag boot: 2
     test "preserve: true", %{hosts: hosts} do
-      local = "test/fixtures/local_workspace/local_file.txt"
+      local = "test/fixtures/local.txt"
       remote = Path.basename(local)
 
       context = SSHKit.context(create_context_hosts(hosts))
@@ -171,8 +171,8 @@ defmodule SSHKitFunctionalTest do
 
     @tag boot: 2
     test "recursive: true, preserve: true", %{hosts: [host | _] = hosts} do
-      local = "test/fixtures/local_workspace"
-      remote = "/home/#{host.user}/local_workspace"
+      local = "test/fixtures"
+      remote = "/home/#{host.user}/fixtures"
 
       context = SSHKit.context(create_context_hosts(hosts))
 
@@ -195,7 +195,7 @@ defmodule SSHKitFunctionalTest do
 
     @tag boot: 2
     test "gets a file", %{hosts: hosts, tmpdir: tmpdir} do
-      remote = "/fixtures/file.txt"
+      remote = "/fixtures/remote.txt"
       local = Path.join(tmpdir, Path.basename(remote))
 
       context = SSHKit.context(create_context_hosts(hosts))
@@ -217,7 +217,7 @@ defmodule SSHKitFunctionalTest do
 
     @tag boot: 2
     test "preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
-      remote = "/fixtures/file.txt"
+      remote = "/fixtures/remote.txt"
       local = Path.join(tmpdir, Path.basename(remote))
 
       context = SSHKit.context(create_context_hosts(hosts))
