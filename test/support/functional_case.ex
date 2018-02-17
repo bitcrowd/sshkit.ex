@@ -57,14 +57,8 @@ defmodule SSHKit.FunctionalCase do
     user = options[:user]
     password = options[:password]
 
-    if user != nil do
-      adduser!(host, user)
-      keygen!(host, user)
-    end
-
-    if user != nil && password != nil do
-      chpasswd!(host, user, password)
-    end
+    if user != nil, do: adduser!(host, user)
+    if user != nil && password != nil, do: chpasswd!(host, user, password)
 
     %Host{host | options: options}
   end
