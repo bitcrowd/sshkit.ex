@@ -9,9 +9,6 @@ defmodule SSHKit.FunctionalCase do
   @cmd "/usr/sbin/sshd"
   @args ["-D", "-e"]
 
-  @user "me"
-  @pass "pass"
-
   using do
     quote do
       import SSHKit.FunctionalCaseHelpers
@@ -21,41 +18,58 @@ defmodule SSHKit.FunctionalCase do
     end
   end
 
+  defmodule Host do
+    defstruct [:id, :name, options: []]
+  end
+
   setup tags do
-    count = Map.get(tags, :boot, 1)
-
-    conf = %{image: @image, cmd: @cmd, args: @args}
-    hosts = Enum.map(1..count, fn _ -> init(boot(conf)) end)
-
-    on_exit fn -> kill(hosts) end
-
+    specs = Map.get(tags, :boot, [])
+    hosts = Enum.map(specs, &start!/1)
+    on_exit(fn -> kill!(hosts) end)
     {:ok, hosts: hosts}
   end
 
-  def boot(config = %{image: image, cmd: cmd, args: args}) do
+  def start!(options) do
+    boot!(@image, @cmd, @args) |> init!(options)
+  end
+
+  def boot!(image, cmd, args) do
     id = Docker.run!(["--rm", "--publish-all", "--detach"], image, cmd, args)
 
-    ip = Docker.host
+    ip = Docker.host()
 
     port =
       "port"
       |> Docker.cmd!([id, "22/tcp"])
       |> String.split(":")
-      |> List.last
-      |> String.to_integer
+      |> List.last()
+      |> String.to_integer()
 
-    Map.merge(config, %{id: id, ip: ip, port: port})
+    %Host{id: id, name: ip, options: [port: port]}
   end
 
-  def init(host) do
-    adduser!(host, @user)
-    chpasswd!(host, @user, @pass)
-    keygen!(host, @user)
+  def init!(host, options) do
+    options =
+      host.options
+      |> Keyword.merge(silently_accept_hosts: true, timeout: 5000)
+      |> Keyword.merge(options)
 
-    Map.merge(host, %{user: @user, password: @pass})
+    user = options[:user]
+    password = options[:password]
+
+    if user != nil do
+      adduser!(host, user)
+      keygen!(host, user)
+    end
+
+    if user != nil && password != nil do
+      chpasswd!(host, user, password)
+    end
+
+    %Host{host | options: options}
   end
 
-  def kill(hosts) do
+  def kill!(hosts) do
     running = Enum.map(hosts, &(Map.get(&1, :id)))
     killed = Docker.kill!(running)
     diff = running -- killed

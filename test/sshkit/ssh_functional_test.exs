@@ -3,28 +3,20 @@ defmodule SSHKit.SSHFunctionalTest do
 
   alias SSHKit.SSH
 
-  @defaults [silently_accept_hosts: true]
+  @bootconf [user: "me", password: "pass"]
 
-  @tag boot: 1
-  test "opens a connection with username and password", %{hosts: [host]} do
-    options = [port: host.port, user: host.user, password: host.password]
-    {:ok, conn} = SSH.connect(host.ip, Keyword.merge(@defaults, options))
+  @tag boot: [@bootconf]
+  test "opens a connection with username and password, runs a command", %{hosts: [host]} do
+    {:ok, conn} = SSH.connect(host.name, host.options)
     {:ok, data, status} = SSH.run(conn, "id -un")
-
-    assert [stdout: "#{host.user}\n"] == data
+    assert [stdout: "#{host.options[:user]}\n"] == data
     assert 0 = status
   end
 
-  @tag boot: 1
-  test "opens a connection and runs an SSH command as a lambda function", %{hosts: [host]} do
-    options = @defaults ++ [port: host.port, user: host.user, password: host.password]
-    func    = fn(conn) -> SSH.run(conn, "id -un") end
-    result  = {:ok, [stdout: "me\n"], 0}
-
-    assert SSH.connect(host.ip, options, func) == {:ok, result}
-  end
-
-  test "returns error with nil host" do
-    assert {:error, _} = SSH.connect(nil)
+  @tag boot: [@bootconf]
+  test "opens a connection and runs a command in a lambda function", %{hosts: [host]} do
+    fun = fn conn -> SSH.run(conn, "id -un") end
+    result = {:ok, [stdout: "#{host.options[:user]}\n"], 0}
+    assert SSH.connect(host.name, host.options, fun) == {:ok, result}
   end
 end
