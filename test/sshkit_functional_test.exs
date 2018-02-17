@@ -184,59 +184,58 @@ defmodule SSHKitFunctionalTest do
   end
 
   describe "download/3" do
+    setup do
+      tmpdir = create_local_tmp_path()
+
+      :ok = File.mkdir!(tmpdir)
+      on_exit fn -> File.rm_rf(tmpdir) end
+
+      {:ok, tmpdir: tmpdir}
+    end
+
     @tag boot: 2
-    test "gets a file", %{hosts: hosts} do
+    test "gets a file", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures/file.txt"
-      local = Path.basename(remote)
-      File.cd!(System.tmp_dir, fn ->
-        on_exit fn -> File.rm(local) end
+      local = Path.join(tmpdir, Path.basename(remote))
 
-        context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(create_context_hosts(hosts))
 
-        assert [:ok, :ok] = SSHKit.download(context, remote)
-        assert verify_transfer(context, local, remote)
-      end)
+      assert [:ok, :ok] = SSHKit.download(context, remote, as: local)
+      assert verify_transfer(context, local, remote)
     end
 
     @tag boot: 1
-    test "recursive: true", %{hosts: hosts} do
+    test "recursive: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures"
-      local = Path.join(System.tmp_dir, "fixtures")
-      on_exit fn -> File.rm_rf(local) end
+      local = Path.join(tmpdir, "fixtures")
 
       context = SSHKit.context(create_context_hosts(hosts))
-      File.cd!(System.tmp_dir, fn ->
-        assert [:ok] = SSHKit.download(context, remote, recursive: true)
-        assert verify_transfer(context, local, remote)
-      end)
+
+      assert [:ok] = SSHKit.download(context, remote, recursive: true, as: local)
+      assert verify_transfer(context, local, remote)
     end
 
     @tag boot: 2
-    test "preserve: true", %{hosts: hosts} do
+    test "preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures/file.txt"
-      local = Path.join(System.tmp_dir, Path.basename(remote))
-      on_exit fn -> File.rm_rf(local) end
+      local = Path.join(tmpdir, Path.basename(remote))
 
       context = SSHKit.context(create_context_hosts(hosts))
 
-      File.cd!(System.tmp_dir, fn ->
-        assert [:ok, :ok] = SSHKit.download(context, remote, preserve: true)
-      end)
+      assert [:ok, :ok] = SSHKit.download(context, remote, preserve: true, as: local)
       assert verify_mode(context, local, remote)
       assert verify_atime(context, local, remote)
       assert verify_mtime(context, local, remote)
     end
 
     @tag boot: 1
-    test "recursive: true, preserve: true", %{hosts: hosts} do
+    test "recursive: true, preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures"
-      local = Path.join(System.tmp_dir, "fixtures")
-      on_exit fn -> File.rm_rf(local) end
+      local = Path.join(tmpdir, "fixtures")
 
       context = SSHKit.context(create_context_hosts(hosts))
-      File.cd!(System.tmp_dir, fn ->
-        assert [:ok] = SSHKit.download(context, remote, recursive: true, preserve: true)
-      end)
+
+      assert [:ok] = SSHKit.download(context, remote, recursive: true, preserve: true, as: local)
       assert verify_mode(context, local, remote)
       assert verify_atime(context, local, remote)
       assert verify_mtime(context, local, remote)
