@@ -14,6 +14,9 @@ defmodule SSHKit.FunctionalCase do
 
   using do
     quote do
+      import SSHKit.FunctionalCaseHelpers
+      import SSHKit.FunctionalAssertionHelpers
+
       @moduletag :functional
     end
   end
