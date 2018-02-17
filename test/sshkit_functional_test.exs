@@ -3,36 +3,22 @@ defmodule SSHKitFunctionalTest do
 
   use SSHKit.FunctionalCase, async: true
 
-  @defaults [silently_accept_hosts: true, timeout: 5000]
+  @bootconf [user: "me", password: "pass"]
 
-  def options(overrides) do
-    Keyword.merge(@defaults, overrides)
-  end
-
-  def build_context(host) do
-    overrides = [port: host.port, user: host.user, password: host.password]
-    SSHKit.context({host.ip, options(overrides)})
-  end
-
-  defp stdio(output, type) do
-    output
-    |> Keyword.get_values(type)
-    |> Enum.join()
-  end
-
-  def stdout(output), do: stdio(output, :stdout)
-  def stderr(output), do: stdio(output, :stderr)
-
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "connects", %{hosts: [host]} do
-    [{:ok, output, 0}] = SSHKit.run(build_context(host), "id -un")
+    [{:ok, output, 0}] =
+      host
+      |> SSHKit.context()
+      |> SSHKit.run("id -un")
+
     name = String.trim(stdout(output))
-    assert name == host.user
+    assert name == host.options[:user]
   end
 
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "runs commands", %{hosts: [host]} do
-    context = build_context(host)
+    context = SSHKit.context(host)
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
     assert status == 0, stderr(output)
@@ -47,11 +33,11 @@ defmodule SSHKitFunctionalTest do
     assert stderr(output) =~ "'does-not-exist': No such file or directory"
   end
 
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "env", %{hosts: [host]} do
     [{:ok, output, status}] =
       host
-      |> build_context()
+      |> SSHKit.context()
       |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
       |> SSHKit.run("env")
 
@@ -62,11 +48,11 @@ defmodule SSHKitFunctionalTest do
     assert output =~ ~r/PATH=.*\/\.rbenv\/shims:/
   end
 
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "umask", %{hosts: [host]} do
     context =
       host
-      |> build_context()
+      |> SSHKit.context()
       |> SSHKit.umask("077")
 
     [{:ok, _, 0}] = SSHKit.run(context, "mkdir my_dir")
@@ -81,11 +67,11 @@ defmodule SSHKitFunctionalTest do
     assert output =~ ~r/-rw-------\s+1\s+me\s+me\s+0.+my_file/
   end
 
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "path", %{hosts: [host]} do
     context =
       host
-      |> build_context()
+      |> SSHKit.context()
       |> SSHKit.path("/var/log")
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
@@ -94,15 +80,15 @@ defmodule SSHKitFunctionalTest do
     assert stdout(output) == "/var/log\n"
   end
 
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "user", %{hosts: [host]} do
-    add_user_to_group!(host, host.user, "passwordless-sudoers")
+    add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
 
     adduser!(host, "despicable_me")
 
     context =
       host
-      |> build_context()
+      |> SSHKit.context()
       |> SSHKit.user("despicable_me")
 
     [{:ok, output, status}] = SSHKit.run(context, "id -un")
@@ -111,9 +97,9 @@ defmodule SSHKitFunctionalTest do
     assert stdout(output) == "despicable_me\n"
   end
 
-  @tag boot: 1
+  @tag boot: [@bootconf]
   test "group", %{hosts: [host]} do
-    add_user_to_group!(host, host.user, "passwordless-sudoers")
+    add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
 
     adduser!(host, "gru")
     addgroup!(host, "villains")
@@ -121,7 +107,7 @@ defmodule SSHKitFunctionalTest do
 
     context =
       host
-      |> build_context()
+      |> SSHKit.context()
       |> SSHKit.user("gru")
       |> SSHKit.group("villains")
 
@@ -132,33 +118,33 @@ defmodule SSHKitFunctionalTest do
   end
 
   describe "upload/3" do
-    @tag boot: 2
+    @tag boot: [@bootconf, @bootconf]
     test "sends a file", %{hosts: hosts} do
       local = "test/fixtures/local.txt"
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
       assert [:ok, :ok] = SSHKit.upload(context, local)
       assert verify_transfer(context, local, Path.basename(local))
     end
 
-    @tag boot: 2
+    @tag boot: [@bootconf, @bootconf]
     test "recursive: true", %{hosts: [host | _] = hosts} do
       local = "test/fixtures"
-      remote = "/home/#{host.user}/fixtures"
+      remote = "/home/#{host.options[:user]}/fixtures"
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
       assert [:ok, :ok] = SSHKit.upload(context, local, recursive: true)
       assert verify_transfer(context, local, remote)
     end
 
-    @tag boot: 2
+    @tag boot: [@bootconf, @bootconf]
     test "preserve: true", %{hosts: hosts} do
       local = "test/fixtures/local.txt"
       remote = Path.basename(local)
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
       assert [:ok, :ok] = SSHKit.upload(context, local, preserve: true)
       assert verify_transfer(context, local, remote)
@@ -166,12 +152,12 @@ defmodule SSHKitFunctionalTest do
       assert verify_mtime(context, local, remote)
     end
 
-    @tag boot: 2
+    @tag boot: [@bootconf, @bootconf]
     test "recursive: true, preserve: true", %{hosts: [host | _] = hosts} do
       local = "test/fixtures"
-      remote = "/home/#{host.user}/fixtures"
+      remote = "/home/#{host.options[:user]}/fixtures"
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
       assert [:ok, :ok] = SSHKit.upload(context, local, recursive: true, preserve: true)
       assert verify_transfer(context, local, remote)
@@ -190,47 +176,47 @@ defmodule SSHKitFunctionalTest do
       {:ok, tmpdir: tmpdir}
     end
 
-    @tag boot: 2
+    @tag boot: [@bootconf]
     test "gets a file", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures/remote.txt"
       local = Path.join(tmpdir, Path.basename(remote))
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
-      assert [:ok, :ok] = SSHKit.download(context, remote, as: local)
+      assert [:ok] = SSHKit.download(context, remote, as: local)
       assert verify_transfer(context, local, remote)
     end
 
-    @tag boot: 1
+    @tag boot: [@bootconf]
     test "recursive: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures"
       local = Path.join(tmpdir, "fixtures")
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
       assert [:ok] = SSHKit.download(context, remote, recursive: true, as: local)
       assert verify_transfer(context, local, remote)
     end
 
-    @tag boot: 2
+    @tag boot: [@bootconf]
     test "preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures/remote.txt"
       local = Path.join(tmpdir, Path.basename(remote))
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
-      assert [:ok, :ok] = SSHKit.download(context, remote, preserve: true, as: local)
+      assert [:ok] = SSHKit.download(context, remote, preserve: true, as: local)
       assert verify_mode(context, local, remote)
       assert verify_atime(context, local, remote)
       assert verify_mtime(context, local, remote)
     end
 
-    @tag boot: 1
+    @tag boot: [@bootconf]
     test "recursive: true, preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures"
       local = Path.join(tmpdir, "fixtures")
 
-      context = SSHKit.context(create_context_hosts(hosts))
+      context = SSHKit.context(hosts)
 
       assert [:ok] = SSHKit.download(context, remote, recursive: true, preserve: true, as: local)
       assert verify_mode(context, local, remote)
@@ -239,9 +225,12 @@ defmodule SSHKitFunctionalTest do
     end
   end
 
-  defp create_context_hosts(hosts) do
-    Enum.map(hosts, fn h ->
-      SSHKit.host(h.ip, Keyword.merge(@defaults, [port: h.port, user: h.user, password: h.password]))
-    end)
+  defp stdio(output, type) do
+    output
+    |> Keyword.get_values(type)
+    |> Enum.join()
   end
+
+  def stdout(output), do: stdio(output, :stdout)
+  def stderr(output), do: stdio(output, :stderr)
 end
