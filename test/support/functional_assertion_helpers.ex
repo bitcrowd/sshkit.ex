@@ -52,6 +52,12 @@ defmodule SSHKit.FunctionalAssertionHelpers do
   end
 
   def create_local_tmp_path do
-    Path.join(System.tmp_dir, "test_#{16 |> :crypto.strong_rand_bytes |> Base.url_encode64 |> binary_part(0, 16)}")
+    rand =
+      16
+      |> :crypto.strong_rand_bytes()
+      |> Base.url_encode64()
+      |> binary_part(0, 16)
+
+    Path.join(System.tmp_dir(), "sshkit-test-#{rand}")
   end
 end
