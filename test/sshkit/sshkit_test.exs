@@ -101,7 +101,7 @@ defmodule SSHKitTest do
       assert context == %Context{hosts: hosts}
     end
 
-    test "includes shared options" do
+    test "includes default options" do
       context =
         [{"10.0.0.1", user: "me"}, "10.0.0.2"]
         |> SSHKit.context(port: 2222)
@@ -114,7 +114,7 @@ defmodule SSHKitTest do
       assert context == %Context{hosts: hosts}
     end
 
-    test "does not override host options with shared options" do
+    test "default options do not override host options" do
       context =
         [{"10.0.0.1", user: "other"}, "10.0.0.2"]
         |> SSHKit.context(user: "me")
