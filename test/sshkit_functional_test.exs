@@ -5,116 +5,118 @@ defmodule SSHKitFunctionalTest do
 
   @bootconf [user: "me", password: "pass"]
 
-  @tag boot: [@bootconf]
-  test "connects", %{hosts: [host]} do
-    [{:ok, output, 0}] =
-      host
-      |> SSHKit.context()
-      |> SSHKit.run("id -un")
+  describe "run/2" do
+    @tag boot: [@bootconf]
+    test "connects as the login user and runs commands", %{hosts: [host]} do
+      [{:ok, output, 0}] =
+        host
+        |> SSHKit.context()
+        |> SSHKit.run("id -un")
 
-    name = String.trim(stdout(output))
-    assert name == host.options[:user]
-  end
+      name = String.trim(stdout(output))
+      assert name == host.options[:user]
+    end
 
-  @tag boot: [@bootconf]
-  test "runs commands", %{hosts: [host]} do
-    context = SSHKit.context(host)
+    @tag boot: [@bootconf]
+    test "runs commands and returns their output and exit status", %{hosts: [host]} do
+      context = SSHKit.context(host)
 
-    [{:ok, output, status}] = SSHKit.run(context, "pwd")
-    assert status == 0
-    assert stdout(output) == "/home/me\n"
+      [{:ok, output, status}] = SSHKit.run(context, "pwd")
+      assert status == 0
+      assert stdout(output) == "/home/me\n"
 
-    [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
-    assert status == 1
-    assert stderr(output) =~ "ls: non-existing: No such file or directory"
+      [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
+      assert status == 1
+      assert stderr(output) =~ "ls: non-existing: No such file or directory"
 
-    [{:ok, output, status}] = SSHKit.run(context, "does-not-exist")
-    assert status == 127
-    assert stderr(output) =~ "'does-not-exist': No such file or directory"
-  end
+      [{:ok, output, status}] = SSHKit.run(context, "does-not-exist")
+      assert status == 127
+      assert stderr(output) =~ "'does-not-exist': No such file or directory"
+    end
 
-  @tag boot: [@bootconf]
-  test "env", %{hosts: [host]} do
-    [{:ok, output, status}] =
-      host
-      |> SSHKit.context()
-      |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
-      |> SSHKit.run("env")
+    @tag boot: [@bootconf]
+    test "with env", %{hosts: [host]} do
+      [{:ok, output, status}] =
+        host
+        |> SSHKit.context()
+        |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
+        |> SSHKit.run("env")
 
-    assert status == 0
+      assert status == 0
 
-    output = stdout(output)
-    assert output =~ "NODE_ENV=production"
-    assert output =~ ~r/PATH=.*\/\.rbenv\/shims:/
-  end
+      output = stdout(output)
+      assert output =~ "NODE_ENV=production"
+      assert output =~ ~r/PATH=.*\/\.rbenv\/shims:/
+    end
 
-  @tag boot: [@bootconf]
-  test "umask", %{hosts: [host]} do
-    context =
-      host
-      |> SSHKit.context()
-      |> SSHKit.umask("077")
+    @tag boot: [@bootconf]
+    test "with umask", %{hosts: [host]} do
+      context =
+        host
+        |> SSHKit.context()
+        |> SSHKit.umask("077")
 
-    [{:ok, _, 0}] = SSHKit.run(context, "mkdir my_dir")
-    [{:ok, _, 0}] = SSHKit.run(context, "touch my_file")
+      [{:ok, _, 0}] = SSHKit.run(context, "mkdir my_dir")
+      [{:ok, _, 0}] = SSHKit.run(context, "touch my_file")
 
-    [{:ok, output, status}] = SSHKit.run(context, "ls -la")
+      [{:ok, output, status}] = SSHKit.run(context, "ls -la")
 
-    assert status == 0
+      assert status == 0
 
-    output = stdout(output)
-    assert output =~ ~r/drwx--S---\s+2\s+me\s+me\s+4096.+my_dir/
-    assert output =~ ~r/-rw-------\s+1\s+me\s+me\s+0.+my_file/
-  end
+      output = stdout(output)
+      assert output =~ ~r/drwx--S---\s+2\s+me\s+me\s+4096.+my_dir/
+      assert output =~ ~r/-rw-------\s+1\s+me\s+me\s+0.+my_file/
+    end
 
-  @tag boot: [@bootconf]
-  test "path", %{hosts: [host]} do
-    context =
-      host
-      |> SSHKit.context()
-      |> SSHKit.path("/var/log")
+    @tag boot: [@bootconf]
+    test "with path", %{hosts: [host]} do
+      context =
+        host
+        |> SSHKit.context()
+        |> SSHKit.path("/var/log")
 
-    [{:ok, output, status}] = SSHKit.run(context, "pwd")
+      [{:ok, output, status}] = SSHKit.run(context, "pwd")
 
-    assert status == 0
-    assert stdout(output) == "/var/log\n"
-  end
+      assert status == 0
+      assert stdout(output) == "/var/log\n"
+    end
 
-  @tag boot: [@bootconf]
-  test "user", %{hosts: [host]} do
-    add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
+    @tag boot: [@bootconf]
+    test "with user", %{hosts: [host]} do
+      add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
 
-    adduser!(host, "despicable_me")
+      adduser!(host, "despicable_me")
 
-    context =
-      host
-      |> SSHKit.context()
-      |> SSHKit.user("despicable_me")
+      context =
+        host
+        |> SSHKit.context()
+        |> SSHKit.user("despicable_me")
 
-    [{:ok, output, status}] = SSHKit.run(context, "id -un")
+      [{:ok, output, status}] = SSHKit.run(context, "id -un")
 
-    assert status == 0
-    assert stdout(output) == "despicable_me\n"
-  end
+      assert status == 0
+      assert stdout(output) == "despicable_me\n"
+    end
 
-  @tag boot: [@bootconf]
-  test "group", %{hosts: [host]} do
-    add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
+    @tag boot: [@bootconf]
+    test "with group", %{hosts: [host]} do
+      add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
 
-    adduser!(host, "gru")
-    addgroup!(host, "villains")
-    add_user_to_group!(host, "gru", "villains")
+      adduser!(host, "gru")
+      addgroup!(host, "villains")
+      add_user_to_group!(host, "gru", "villains")
 
-    context =
-      host
-      |> SSHKit.context()
-      |> SSHKit.user("gru")
-      |> SSHKit.group("villains")
+      context =
+        host
+        |> SSHKit.context()
+        |> SSHKit.user("gru")
+        |> SSHKit.group("villains")
 
-    [{:ok, output, status}] = SSHKit.run(context, "id -gn")
+      [{:ok, output, status}] = SSHKit.run(context, "id -gn")
 
-    assert status == 0
-    assert stdout(output) == "villains\n"
+      assert status == 0
+      assert stdout(output) == "villains\n"
+    end
   end
 
   describe "upload/3" do
