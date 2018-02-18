@@ -21,7 +21,7 @@ defmodule SSHKitFunctionalTest do
     context = SSHKit.context(host)
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
-    assert status == 0, stderr(output)
+    assert status == 0
     assert stdout(output) == "/home/me\n"
 
     [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
@@ -41,7 +41,7 @@ defmodule SSHKitFunctionalTest do
       |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH", "NODE_ENV" => "production"})
       |> SSHKit.run("env")
 
-    assert status == 0, stderr(output)
+    assert status == 0
 
     output = stdout(output)
     assert output =~ "NODE_ENV=production"
@@ -60,7 +60,7 @@ defmodule SSHKitFunctionalTest do
 
     [{:ok, output, status}] = SSHKit.run(context, "ls -la")
 
-    assert status == 0, stderr(output)
+    assert status == 0
 
     output = stdout(output)
     assert output =~ ~r/drwx--S---\s+2\s+me\s+me\s+4096.+my_dir/
@@ -76,7 +76,7 @@ defmodule SSHKitFunctionalTest do
 
     [{:ok, output, status}] = SSHKit.run(context, "pwd")
 
-    assert status == 0, stderr(output)
+    assert status == 0
     assert stdout(output) == "/var/log\n"
   end
 
@@ -93,7 +93,7 @@ defmodule SSHKitFunctionalTest do
 
     [{:ok, output, status}] = SSHKit.run(context, "id -un")
 
-    assert status == 0, stderr(output)
+    assert status == 0
     assert stdout(output) == "despicable_me\n"
   end
 
@@ -113,13 +113,13 @@ defmodule SSHKitFunctionalTest do
 
     [{:ok, output, status}] = SSHKit.run(context, "id -gn")
 
-    assert status == 0, stderr(output)
+    assert status == 0
     assert stdout(output) == "villains\n"
   end
 
   describe "upload/3" do
     @tag boot: [@bootconf, @bootconf]
-    test "sends a file", %{hosts: hosts} do
+    test "uploads a file", %{hosts: hosts} do
       local = "test/fixtures/local.txt"
 
       context = SSHKit.context(hosts)
