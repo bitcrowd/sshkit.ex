@@ -28,14 +28,14 @@ defmodule SSHKit.SCP.Upload do
     new(local, remote, options) |> exec(connection)
   end
 
-  defp new(local, remote, options \\ []) do
+  def new(local, remote, options \\ []) do
     local = Path.expand(local)
     state = {:next, Path.dirname(local), [[Path.basename(local)]], []}
     handler = connection_handler(options)
     %__MODULE__{local: local, remote: remote, state: state, handler: handler, options: options}
   end
 
-  defp exec(%{local: local, options: options} = upload, connection) do
+  def exec(%{local: local, options: options} = upload, connection) do
     recursive = Keyword.get(options, :recursive, false)
 
     if !recursive && File.dir?(local) do
@@ -48,7 +48,8 @@ defmodule SSHKit.SCP.Upload do
   defp start(%{remote: remote, state: state, handler: handler, options: options}, connection) do
     timeout = Keyword.get(options, :timeout, :infinity)
     command = Command.build(:upload, remote, options)
-    SSH.run(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler)
+    ssh = Keyword.get(options, :ssh, SSH)
+    ssh.run(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler)
   end
 
   @normal 0

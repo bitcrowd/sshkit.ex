@@ -15,6 +15,8 @@ defmodule SSHKit.SSH.Connection do
 
   defstruct [:host, :port, :options, :ref, impl: :ssh]
 
+  @type t :: __MODULE__
+
   @default_impl_options [user_interaction: false]
   @default_connect_options [port: 22, timeout: :infinity, impl: :ssh]
 
