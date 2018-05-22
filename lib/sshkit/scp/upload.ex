@@ -6,6 +6,8 @@ defmodule SSHKit.SCP.Upload do
   alias SSHKit.SCP.Command
   alias SSHKit.SSH
 
+  defstruct [:local, :remote, :state, :handler, options: []]
+
   @doc """
   Uploads a local file or directory to a remote host.
 
@@ -23,23 +25,30 @@ defmodule SSHKit.SCP.Upload do
   ```
   """
   def transfer(connection, local, remote, options \\ []) do
-    recursive = Keyword.get(options, :recursive, false)
+    new(local, remote, options) |> exec(connection)
+  end
+
+  defp new(local, remote, options \\ []) do
     local = Path.expand(local)
+    state = {:next, Path.dirname(local), [[Path.basename(local)]], []}
+    handler = connection_handler(options)
+    %__MODULE__{local: local, remote: remote, state: state, handler: handler, options: options}
+  end
+
+  defp exec(%{local: local, options: options} = upload, connection) do
+    recursive = Keyword.get(options, :recursive, false)
 
     if !recursive && File.dir?(local) do
       {:error, "SCP option :recursive not specified, but local file is a directory (#{local})"}
     else
-      start(connection, local, remote, options)
+      start(upload, connection)
     end
   end
 
-  defp start(connection, local, remote, options) do
+  defp start(%{remote: remote, state: state, handler: handler, options: options}, connection) do
     timeout = Keyword.get(options, :timeout, :infinity)
     command = Command.build(:upload, remote, options)
-    handler = connection_handler(options)
-
-    ini = {:next, Path.dirname(local), [[Path.basename(local)]], []}
-    SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
+    SSH.run(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler)
   end
 
   @normal 0
