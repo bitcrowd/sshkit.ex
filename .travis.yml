@@ -17,6 +17,9 @@ matrix:
       otp_release: 20.2
       services: docker
 
+before_script:
+  - chmod -R g-w test/fixtures # y u no work as expected travis?
+
 script:
   - mix credo --strict
   - mix test --exclude functional

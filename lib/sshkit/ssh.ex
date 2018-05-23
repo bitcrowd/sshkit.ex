@@ -40,6 +40,7 @@ defmodule SSHKit.SSH do
   {:ok, conn} = SSHKit.SSH.connect("eg.io", port: 2222, user: "me", timeout: 1000)
   ```
   """
+  @callback connect(binary(), keyword() | fun()) :: {:ok, Connection.t} | {:error, any()}
   def connect(host, options_or_function \\ [])
   def connect(host, function) when is_function(function), do: connect(host, [], function)
   def connect(host, options) when is_list(options), do: Connection.open(host, options)
@@ -87,6 +88,7 @@ defmodule SSHKit.SSH do
   :ok = SSHKit.SSH.close(conn)
   ```
   """
+  @callback close(Connection.t) :: :ok
   def close(connection) do
     Connection.close(connection)
   end
@@ -119,6 +121,7 @@ defmodule SSHKit.SSH do
   IO.inspect(output)
   ```
   """
+  @callback run(Connection.t, binary(), keyword()) :: any()
   def run(connection, command, options \\ []) do
     {acc, options} = Keyword.pop(options, :acc, {:cont, {[], nil}})
     {fun, options} = Keyword.pop(options, :fun, &capture/2)

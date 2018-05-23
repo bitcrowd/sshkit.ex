@@ -24,3 +24,5 @@ defmodule SSHKit.SSH.Channel.Impl do
 end
 
 Mox.defmock(SSHKit.SSH.Channel.ImplMock, for: SSHKit.SSH.Channel.Impl)
+
+Mox.defmock(SSHKit.SSHMock, for: SSHKit.SSH)

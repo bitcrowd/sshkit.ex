@@ -6,6 +6,8 @@ defmodule SSHKit.SCP.Upload do
   alias SSHKit.SCP.Command
   alias SSHKit.SSH
 
+  defstruct [:local, :remote, :state, :handler, options: []]
+
   @doc """
   Uploads a local file or directory to a remote host.
 
@@ -23,23 +25,65 @@ defmodule SSHKit.SCP.Upload do
   ```
   """
   def transfer(connection, local, remote, options \\ []) do
-    recursive = Keyword.get(options, :recursive, false)
+    local
+    |> new(remote, options)
+    |> exec(connection)
+  end
+
+  @doc """
+  Configures the upload of a local file or directory to a remote host.
+
+  ## Options
+
+  * `:verbose` - let the remote scp process be verbose, default `false`
+  * `:recursive` - set to `true` for copying directories, default `false`
+  * `:preserve` - preserve timestamps, default `false`
+  * `:timeout` - timeout in milliseconds, default `:infinity`
+
+  ## Example
+
+  ```
+  iex(1)> SSHKit.SCP.Upload.new(".", "/home/code/sshkit", recursive: true)
+  %SSHKit.SCP.Upload{
+    handler: #Function<1.78222439/2 in SSHKit.SCP.Upload.connection_handler/1>,
+    local: "/Users/sshkit/code/sshkit.ex",
+    options: [recursive: true],
+    remote: "/home/code/sshkit",
+    state: {:next, "/Users/sshkit/code", [["sshkit.ex"]], []}
+  }
+  ```
+  """
+  def new(local, remote, options \\ []) do
     local = Path.expand(local)
+    state = {:next, Path.dirname(local), [[Path.basename(local)]], []}
+    handler = connection_handler(options)
+    %__MODULE__{local: local, remote: remote, state: state, handler: handler, options: options}
+  end
+
+  @doc """
+  Executes an upload of a local file or directory to a remote host.
+
+  ## Example
+
+  ```
+  :ok = SSHKit.SCP.Upload.exec(upload, conn)
+  ```
+  """
+  def exec(upload = %{local: local, options: options}, connection) do
+    recursive = Keyword.get(options, :recursive, false)
 
     if !recursive && File.dir?(local) do
       {:error, "SCP option :recursive not specified, but local file is a directory (#{local})"}
     else
-      start(connection, local, remote, options)
+      start(upload, connection)
     end
   end
 
-  defp start(connection, local, remote, options) do
+  defp start(%{remote: remote, state: state, handler: handler, options: options}, connection) do
     timeout = Keyword.get(options, :timeout, :infinity)
     command = Command.build(:upload, remote, options)
-    handler = connection_handler(options)
-
-    ini = {:next, Path.dirname(local), [[Path.basename(local)]], []}
-    SSH.run(connection, command, timeout: timeout, acc: {:cont, ini}, fun: handler)
+    ssh = Keyword.get(options, :ssh, SSH)
+    ssh.run(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler)
   end
 
   @normal 0
