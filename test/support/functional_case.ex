@@ -13,6 +13,7 @@ defmodule SSHKit.FunctionalCase do
     quote do
       import SSHKit.FunctionalCaseHelpers
       import SSHKit.FunctionalAssertionHelpers
+      import SSHKit.AssertionHelpers
 
       @moduletag :functional
     end

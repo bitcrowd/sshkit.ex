@@ -52,14 +52,4 @@ defmodule SSHKit.FunctionalAssertionHelpers do
     {:ok, [stdout: remote_output], 0} = SSH.run(conn, remote)
     assert local_output == remote_output
   end
-
-  def create_local_tmp_path do
-    rand =
-      16
-      |> :crypto.strong_rand_bytes()
-      |> Base.url_encode64()
-      |> binary_part(0, 16)
-
-    Path.join(System.tmp_dir(), "sshkit-test-#{rand}")
-  end
 end

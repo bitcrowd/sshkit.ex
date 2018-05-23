@@ -82,7 +82,9 @@ defmodule SSHKit.SCPFunctionalTest do
     @tag boot: [@bootconf]
     test "preserve: true", %{hosts: [host]} do
       remote = "/fixtures/remote.txt"
+
       local = create_local_tmp_path()
+      IO.inspect local
       on_exit fn -> File.rm(local) end
 
       SSH.connect host.name, host.options, fn conn ->
