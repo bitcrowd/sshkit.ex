@@ -41,6 +41,9 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
   * some steps in the flow you're dry-running may depend on things like directories created in a previous step which won't be there
   * all in all, a "dry-run" feature is likely better handled at an application level which may know the dependencies between commands
 * Set `-H` option for `sudo` in order to get the expected value for `HOME`
+* Export context environment variables directly before the supplied command in `SSHKit.Context.build/2`
+  * this could potentially result in different behavior for code that sets environment variables consumed by the other commands in the context
+  * those cases should be rare though and the new behavior seems closer to what most would expect when using contexts
 
 ### New features:
 
@@ -52,6 +55,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 
 * Fix error handling in `SSHKit.SSH.Channel.send/4` when sending stream data
 * Context properly handles the case where env is set to an empty map
+* Fix environment variables export in contexts with user, group, umask, path and env
 
 ## `0.0.3` (2017-07-13)
 

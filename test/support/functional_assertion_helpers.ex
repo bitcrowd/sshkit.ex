@@ -1,6 +1,8 @@
 defmodule SSHKit.FunctionalAssertionHelpers do
   @moduledoc false
+
   import ExUnit.Assertions
+
   alias SSHKit.Context
   alias SSHKit.SSH
 

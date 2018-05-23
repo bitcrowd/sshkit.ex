@@ -23,18 +23,16 @@ defmodule SSHKit.Context do
 
   ## Examples
 
-  ```
-  iex> %SSHKit.Context{path: "/var/www"} |> SSHKit.Context.build("ls")
-  "cd /var/www && /usr/bin/env ls"
+      iex> %SSHKit.Context{path: "/var/www"} |> SSHKit.Context.build("ls")
+      "cd /var/www && /usr/bin/env ls"
 
-  iex> %SSHKit.Context{user: "me"} |> SSHKit.Context.build("whoami")
-  "sudo -H -n -u me -- sh -c '/usr/bin/env whoami'"
-  ```
+      iex> %SSHKit.Context{user: "me"} |> SSHKit.Context.build("whoami")
+      "sudo -H -n -u me -- sh -c '/usr/bin/env whoami'"
   """
   def build(context, command) do
     "/usr/bin/env #{command}"
-    |> sudo(context.user, context.group)
     |> export(context.env)
+    |> sudo(context.user, context.group)
     |> umask(context.umask)
     |> cd(context.path)
   end
