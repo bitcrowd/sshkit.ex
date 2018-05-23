@@ -121,5 +121,20 @@ defmodule SSHKit.SCP.UploadTest do
       closed_msg = {:closed, @chan}
       assert {:cont, :ok} == handler.(closed_msg, eof_state)
     end
+
+    test "aggregates warnings in the state", %{upload: %Upload{handler: handler, state: {name, cwd, stack, _errs} = state}} do
+      error_msg = "error part 1 error part 2 error part 3"
+
+      msg1 = {:data, @chan, 0, <<1, "error part 1 ">>}
+      warning_state1 = {:warning, state, "error part 1 "}
+      assert {:cont, warning_state1} == handler.(msg1, state)
+
+      msg2 = {:data, @chan, 0, <<"error part 2 ">>}
+      warning_state2 = {:warning, state, "error part 1 error part 2 "}
+      assert {:cont, warning_state2} == handler.(msg2, warning_state1)
+
+      msg3 = {:data, @chan, 0, <<"error part 3\n">>}
+      assert {:cont, {name, cwd, stack, [error_msg]}} == handler.(msg3, warning_state2)
+    end
   end
 end
