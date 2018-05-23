@@ -6,6 +6,8 @@ defmodule SSHKit.SCP.Download do
   alias SSHKit.SCP.Command
   alias SSHKit.SSH
 
+  defstruct [:remote, :local, :state, :handler, options: []]
+
   @doc """
   Downloads a file or directory from a remote host.
 
@@ -23,16 +25,22 @@ defmodule SSHKit.SCP.Download do
   ```
   """
   def transfer(connection, remote, local, options \\ []) do
-    start(connection, remote, Path.expand(local), options)
+    remote
+    |> new(local, options)
+    |> exec(connection)
   end
 
-  defp start(connection, remote, local, options) do
+  def new(remote, local, options \\ []) do
+    handler = connection_handler(options)
+    state = {:next, local, [], %{}, <<>>}
+    %__MODULE__{remote: remote, local: local, state: state, handler: handler, options: options}
+  end
+
+  def exec(%{remote: remote, options: options, handler: handler, state: state}, connection) do
     timeout = Keyword.get(options, :timeout, :infinity)
     command = Command.build(:download, remote, options)
-    handler = connection_handler(options)
-
-    ini = {:next, local, [], %{}, <<>>}
-    SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
+    ssh = Keyword.get(options, :ssh, SSH)
+    ssh.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, state}, fun: handler)
   end
 
   defp connection_handler(options) do
