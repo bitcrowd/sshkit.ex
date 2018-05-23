@@ -7,8 +7,6 @@ defmodule SSHKit.SCP.UploadTest do
 
   @local "test/fixtures/local_dir"
   @remote "/home/test/code"
-  @conn %SSHKit.SSH.Connection{}
-  @chan %SSHKit.SSH.Channel{}
 
   describe "new/3" do
     test "returns a new upload struct" do
@@ -36,25 +34,29 @@ defmodule SSHKit.SCP.UploadTest do
   end
 
   describe "exec/2" do
-    test "returns error when trying to upload a directory non-recursively" do
-      upload = Upload.new(@local, @remote, recursive: false)
-      assert {:error, _msg} = Upload.exec(upload, @conn)
+    setup do
+      {:ok, conn: %SSHKit.SSH.Connection{}}
     end
 
-    test "uses the provided timeout option" do
+    test "returns error when trying to upload a directory non-recursively", %{conn: conn} do
+      upload = Upload.new(@local, @remote, recursive: false)
+      assert {:error, _msg} = Upload.exec(upload, conn)
+    end
+
+    test "uses the provided timeout option", %{conn: conn} do
       upload = Upload.new(@local, @remote, recursive: true, timeout: 55, ssh: SSHMock)
       SSHMock |> expect(:run, fn (_, _, timeout: timeout, acc: {:cont, _}, fun: _) ->
         assert timeout == 55
         {:ok, :success}
       end)
 
-      assert {:ok, :success} = Upload.exec(upload, @conn)
+      assert {:ok, :success} = Upload.exec(upload, conn)
     end
 
-    test "performs an upload" do
+    test "performs an upload", %{conn: conn} do
       upload = Upload.new(@local, @remote, recursive: true, ssh: SSHMock)
       SSHMock |> expect(:run, fn (connection, command, timeout: timeout, acc: {:cont, state}, fun: handler) ->
-        assert connection == @conn
+        assert connection == conn
         assert command == SSHKit.SCP.Command.build(:upload, upload.remote, upload.options)
         assert timeout == :infinity
         assert state == upload.state
@@ -62,91 +64,94 @@ defmodule SSHKit.SCP.UploadTest do
         {:ok, :success}
       end)
 
-      assert {:ok, :success} = Upload.exec(upload, @conn)
+      assert {:ok, :success} = Upload.exec(upload, conn)
     end
   end
 
   describe "exec handler" do
     setup do
-      {:ok, upload: Upload.new(@local, @remote), msg: {:data, @chan, 0, <<0>>}}
+      channel = %SSHKit.SSH.Channel{}
+      ack_message = {:data, channel, 0, <<0>>}
+      {:ok, upload: Upload.new(@local, @remote), ack: ack_message, channel: channel}
     end
 
-    test "recurses into directories", %{upload: upload, msg: msg} do
+    test "recurses into directories", %{upload: upload, ack: ack} do
       %Upload{handler: handler, state: {:next, cwd, [["local_dir"]], []} = state} = upload
       next_path = Path.join(cwd, "local_dir")
 
-      assert {:cont, 'D0755 0 local_dir\n', {:next, ^next_path, [["other.txt"], []], []}} = handler.(msg, state)
+      assert {:cont, 'D0755 0 local_dir\n', {:next, ^next_path, [["other.txt"], []], []}} = handler.(ack, state)
     end
 
-    test "create files in the current directory", %{upload: %Upload{handler: handler}, msg: msg} do
+    test "create files in the current directory", %{upload: %Upload{handler: handler}, ack: ack} do
       local_expanded = @local |> Path.expand()
       state = {:next, local_expanded, [["other.txt"], []], []}
-      assert {:cont, 'C0644 61 other.txt\n', {:write, "other.txt", %File.Stat{}, ^local_expanded, [[], []], []}} = handler.(msg, state)
+      assert {:cont, 'C0644 61 other.txt\n', {:write, "other.txt", %File.Stat{}, ^local_expanded, [[], []], []}} = handler.(ack, state)
     end
 
-    test "writes files in the current directory", %{upload: %Upload{handler: handler}, msg: msg} do
+    test "writes files in the current directory", %{upload: %Upload{handler: handler}, ack: ack} do
       local_expanded = @local |> Path.expand() |> Path.join("local_dir")
       state = {:write, "other.txt", %File.Stat{}, local_expanded, [[], []], []}
       fs = File.stream!(Path.join(local_expanded, "other.txt"), [], 16_384)
       write_state = {:cont, Stream.concat(fs, [<<0>>]), {:next, local_expanded, [[], []], []}}
 
-      assert write_state == handler.(msg, state)
+      assert write_state == handler.(ack, state)
     end
 
-    test "moves upwards in the directory hierachy", %{upload: %Upload{handler: handler}, msg: msg} do
+    test "moves upwards in the directory hierachy", %{upload: %Upload{handler: handler}, ack: ack} do
       local_dir = @local |> Path.expand() |> Path.join("local_dir")
       local_expanded = @local |> Path.expand()
       state = {:next, local_dir, [[], []], []}
 
-      assert {:cont, 'E\n', {:next, ^local_expanded, [[]], []}} = handler.(msg, state)
+      assert {:cont, 'E\n', {:next, ^local_expanded, [[]], []}} = handler.(ack, state)
     end
 
-    test "finalizes the upload", %{upload: %Upload{handler: handler}, msg: msg} do
+    test "finalizes the upload", %{upload: %Upload{handler: handler}, ack: ack, channel: channel} do
       local_expanded = @local |> Path.expand()
       state = {:next, local_expanded, [[]], []}
 
-      assert {:cont, :eof, done_state} = handler.(msg, state)
+      assert {:cont, :eof, done_state} = handler.(ack, state)
       assert done_state == {:done, nil, []}
 
-      exit_msg = {:exit_status, @chan, 0}
+      exit_msg = {:exit_status, channel, 0}
       assert {:cont, exit_state} = handler.(exit_msg, done_state)
       assert exit_state == {:done, 0, []}
 
-      eof_msg = {:eof, @chan}
+      eof_msg = {:eof, channel}
       assert {:cont, eof_state} = handler.(eof_msg, exit_state)
       assert eof_state == {:done, 0, []}
 
-      closed_msg = {:closed, @chan}
+      closed_msg = {:closed, channel}
       assert {:cont, :ok} == handler.(closed_msg, eof_state)
     end
 
-    test "aggregates warnings in the state", %{upload: %Upload{handler: handler, state: {name, cwd, stack, _errs} = state}} do
+    test "aggregates warnings in the state", %{upload: %Upload{handler: handler, state: state}, channel: channel} do
       error_msg = "error part 1 error part 2 error part 3"
+      {name, cwd, stack, _errs} = state
 
-      msg1 = {:data, @chan, 0, <<1, "error part 1 ">>}
+      msg1 = {:data, channel, 0, <<1, "error part 1 ">>}
       state1 = {:warning, state, "error part 1 "}
       assert {:cont, state1} == handler.(msg1, state)
 
-      msg2 = {:data, @chan, 0, <<"error part 2 ">>}
+      msg2 = {:data, channel, 0, <<"error part 2 ">>}
       state2 = {:warning, state, "error part 1 error part 2 "}
       assert {:cont, state2} == handler.(msg2, state1)
 
-      msg3 = {:data, @chan, 0, <<"error part 3\n">>}
+      msg3 = {:data, channel, 0, <<"error part 3\n">>}
       assert {:cont, {name, cwd, stack, [error_msg]}} == handler.(msg3, state2)
     end
 
-    test "aggregates connection errors in the state and halts", %{upload: %Upload{handler: handler, state: state}} do
+    test "aggregates connection errors in the state and halts", %{upload: %Upload{handler: handler, state: state}, channel: channel} do
       error_msg = "error part 1 error part 2 error part 3"
 
-      msg1 = {:data, @chan, 0, <<2, "error part 1 ">>}
+      msg1 = {:data, channel, 0, <<2, "error part 1 ">>}
       state1 = {:fatal, state, "error part 1 "}
       assert {:cont, state1} == handler.(msg1, state)
 
-      msg2 = {:data, @chan, 0, <<"error part 2 ">>}
+      msg2 = {:data, channel, 0, <<"error part 2 ">>}
       state2 = {:fatal, state, "error part 1 error part 2 "}
       assert {:cont, state2} == handler.(msg2, state1)
 
-      msg3 = {:data, @chan, 0, <<"error part 3\n">>}
+      msg3 = {:data, channel, 0, <<"error part 3\n">>}
       assert {:halt, {:error, error_msg}} == handler.(msg3, state2)
     end
   end
