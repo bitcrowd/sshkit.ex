@@ -1,25 +1,29 @@
 defmodule SSHKit.FunctionalCaseHelpers do
   @moduledoc false
 
-  def adduser!(_host = %{id: id}, username) do
-    Docker.exec!([], id, "adduser", ["-D", username])
+  def exec!(_host = %{id: id}, command, args \\ []) do
+    Docker.exec!([], id, command, args)
   end
 
-  def addgroup!(_host = %{id: id}, groupname) do
-    Docker.exec!([], id, "addgroup", [groupname])
+  def adduser!(host, username) do
+    exec!(host, "adduser", ["-D", username])
   end
 
-  def add_user_to_group!(_host = %{id: id}, username, groupname) do
-    Docker.exec!([], id, "addgroup", [username, groupname])
+  def addgroup!(host, groupname) do
+    exec!(host, "addgroup", [groupname])
   end
 
-  def chpasswd!(_host = %{id: id}, username, password) do
+  def add_user_to_group!(host, username, groupname) do
+    exec!(host, "addgroup", [username, groupname])
+  end
+
+  def chpasswd!(host, username, password) do
     command = "echo #{username}:#{password} | chpasswd 2>&1"
-    Docker.exec!([], id, "sh", ["-c", command])
+    exec!(host, "sh", ["-c", command])
   end
 
-  def keygen!(_host = %{id: id}, username) do
-    Docker.exec!([], id, "sh", ["-c", "ssh-keygen -b 1024 -f /tmp/#{username} -N '' -C \"#{username}@$(hostname)\""])
-    Docker.exec!([], id, "sh", ["-c", "cat /tmp/#{username}.pub > /home/#{username}/.ssh/authorized_keys"])
+  def keygen!(host, username) do
+    exec!(host, "sh", ["-c", "ssh-keygen -b 1024 -f /tmp/#{username} -N '' -C \"#{username}@$(hostname)\""])
+    exec!(host, "sh", ["-c", "cat /tmp/#{username}.pub > /home/#{username}/.ssh/authorized_keys"])
   end
 end
