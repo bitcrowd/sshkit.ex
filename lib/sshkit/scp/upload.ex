@@ -30,6 +30,29 @@ defmodule SSHKit.SCP.Upload do
     |> exec(connection)
   end
 
+  @doc """
+  Configures the upload of a local file or directory to a remote host.
+
+  ## Options
+
+  * `:verbose` - let the remote scp process be verbose, default `false`
+  * `:recursive` - set to `true` for copying directories, default `false`
+  * `:preserve` - preserve timestamps, default `false`
+  * `:timeout` - timeout in milliseconds, default `:infinity`
+
+  ## Example
+
+  ```
+  iex(1)> SSHKit.SCP.Upload.new(".", "/home/code/sshkit", recursive: true)
+  %SSHKit.SCP.Upload{
+    handler: #Function<1.78222439/2 in SSHKit.SCP.Upload.connection_handler/1>,
+    local: "/Users/sshkit/code/sshkit.ex",
+    options: [recursive: true],
+    remote: "/home/code/sshkit",
+    state: {:next, "/Users/sshkit/code", [["sshkit.ex"]], []}
+  }
+  ```
+  """
   def new(local, remote, options \\ []) do
     local = Path.expand(local)
     state = {:next, Path.dirname(local), [[Path.basename(local)]], []}
@@ -37,6 +60,15 @@ defmodule SSHKit.SCP.Upload do
     %__MODULE__{local: local, remote: remote, state: state, handler: handler, options: options}
   end
 
+  @doc """
+  Executes uploading a local file or directory to a remote host.
+
+  ## Example
+
+  ```
+  :ok = SSHKit.SCP.Upload.exec(upload, conn)
+  ```
+  """
   def exec(upload = %{local: local, options: options}, connection) do
     recursive = Keyword.get(options, :recursive, false)
 
