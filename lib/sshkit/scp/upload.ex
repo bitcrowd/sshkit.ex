@@ -25,7 +25,9 @@ defmodule SSHKit.SCP.Upload do
   ```
   """
   def transfer(connection, local, remote, options \\ []) do
-    new(local, remote, options) |> exec(connection)
+    local
+    |> new(remote, options)
+    |> exec(connection)
   end
 
   def new(local, remote, options \\ []) do
@@ -35,7 +37,7 @@ defmodule SSHKit.SCP.Upload do
     %__MODULE__{local: local, remote: remote, state: state, handler: handler, options: options}
   end
 
-  def exec(%{local: local, options: options} = upload, connection) do
+  def exec(upload = %{local: local, options: options}, connection) do
     recursive = Keyword.get(options, :recursive, false)
 
     if !recursive && File.dir?(local) do
