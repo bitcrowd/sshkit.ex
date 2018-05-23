@@ -126,15 +126,30 @@ defmodule SSHKit.SCP.UploadTest do
       error_msg = "error part 1 error part 2 error part 3"
 
       msg1 = {:data, @chan, 0, <<1, "error part 1 ">>}
-      warning_state1 = {:warning, state, "error part 1 "}
-      assert {:cont, warning_state1} == handler.(msg1, state)
+      state1 = {:warning, state, "error part 1 "}
+      assert {:cont, state1} == handler.(msg1, state)
 
       msg2 = {:data, @chan, 0, <<"error part 2 ">>}
-      warning_state2 = {:warning, state, "error part 1 error part 2 "}
-      assert {:cont, warning_state2} == handler.(msg2, warning_state1)
+      state2 = {:warning, state, "error part 1 error part 2 "}
+      assert {:cont, state2} == handler.(msg2, state1)
 
       msg3 = {:data, @chan, 0, <<"error part 3\n">>}
-      assert {:cont, {name, cwd, stack, [error_msg]}} == handler.(msg3, warning_state2)
+      assert {:cont, {name, cwd, stack, [error_msg]}} == handler.(msg3, state2)
+    end
+
+    test "aggregates connection errors in the state and halts", %{upload: %Upload{handler: handler, state: state}} do
+      error_msg = "error part 1 error part 2 error part 3"
+
+      msg1 = {:data, @chan, 0, <<2, "error part 1 ">>}
+      state1 = {:fatal, state, "error part 1 "}
+      assert {:cont, state1} == handler.(msg1, state)
+
+      msg2 = {:data, @chan, 0, <<"error part 2 ">>}
+      state2 = {:fatal, state, "error part 1 error part 2 "}
+      assert {:cont, state2} == handler.(msg2, state1)
+
+      msg3 = {:data, @chan, 0, <<"error part 3\n">>}
+      assert {:halt, {:error, error_msg}} == handler.(msg3, state2)
     end
   end
 end
