@@ -44,7 +44,9 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 
 ### New features:
 
-* Put new features here
+* Split the SCP file upload into a setup and an execution step:
+  * add `SCP.Upload.new/3` and `SCP.Upload.exec/2`
+  * `SCP.Upload.transfer/4` still works as before
 
 ### Fixes:
 
