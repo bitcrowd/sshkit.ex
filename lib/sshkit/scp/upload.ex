@@ -61,7 +61,7 @@ defmodule SSHKit.SCP.Upload do
   end
 
   @doc """
-  Executes uploading a local file or directory to a remote host.
+  Executes an upload of a local file or directory to a remote host.
 
   ## Example
 
