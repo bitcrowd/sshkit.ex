@@ -173,7 +173,7 @@ defmodule SSHKitFunctionalTest do
       tmpdir = create_local_tmp_path()
 
       :ok = File.mkdir!(tmpdir)
-      on_exit fn -> File.rm_rf(tmpdir) end
+      on_exit(fn -> File.rm_rf(tmpdir) end)
 
       {:ok, tmpdir: tmpdir}
     end

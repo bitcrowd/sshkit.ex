@@ -15,7 +15,7 @@ defmodule SSHKit.Context do
 
   import SSHKit.Utils
 
-  defstruct [hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil]
+  defstruct hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil
 
   @doc """
   Compiles an executable command string for running the given `command`
@@ -40,12 +40,19 @@ defmodule SSHKit.Context do
   end
 
   defp sudo(command, nil, nil), do: command
-  defp sudo(command, username, nil), do: "sudo -H -n -u #{username} -- sh -c #{shellquote(command)}"
-  defp sudo(command, nil, groupname), do: "sudo -H -n -g #{groupname} -- sh -c #{shellquote(command)}"
-  defp sudo(command, username, groupname), do: "sudo -H -n -u #{username} -g #{groupname} -- sh -c #{shellquote(command)}"
+
+  defp sudo(command, username, nil),
+    do: "sudo -H -n -u #{username} -- sh -c #{shellquote(command)}"
+
+  defp sudo(command, nil, groupname),
+    do: "sudo -H -n -g #{groupname} -- sh -c #{shellquote(command)}"
+
+  defp sudo(command, username, groupname),
+    do: "sudo -H -n -u #{username} -g #{groupname} -- sh -c #{shellquote(command)}"
 
   defp export(command, nil), do: command
   defp export(command, env) when env == %{}, do: command
+
   defp export(command, env) do
     exports = Enum.map_join(env, " ", fn {name, value} -> "#{name}=\"#{value}\"" end)
     "(export #{exports} && #{command})"

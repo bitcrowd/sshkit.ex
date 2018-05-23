@@ -48,25 +48,43 @@ defmodule SSHKit.SCP.Upload do
   defp connection_handler(options) do
     fn message, state ->
       case message do
-        {:data, _, 0, <<@warning, data :: binary>>} -> warning(options, state, data)
-        {:data, _, 0, <<@fatal, data :: binary>>} -> fatal(options, state, data)
+        {:data, _, 0, <<@warning, data::binary>>} ->
+          warning(options, state, data)
+
+        {:data, _, 0, <<@fatal, data::binary>>} ->
+          fatal(options, state, data)
+
         {:data, _, 0, <<@normal>>} ->
           handle_data(state, options)
+
         {:data, _, 0, data} ->
           handle_error_data(state, options, data)
-        {:exit_status, _, status} -> exited(options, state, status)
-        {:eof, _} -> eof(options, state)
-        {:closed, _} -> closed(options, state)
+
+        {:exit_status, _, status} ->
+          exited(options, state, status)
+
+        {:eof, _} ->
+          eof(options, state)
+
+        {:closed, _} ->
+          closed(options, state)
       end
     end
   end
 
   defp handle_data(state, options) do
     case state do
-      {:next, cwd, stack, errs} -> next(options, cwd, stack, errs)
-      {:directory, name, stat, cwd, stack, errs} -> directory(options, name, stat, cwd, stack, errs)
-      {:regular, name, stat, cwd, stack, errs} -> regular(options, name, stat, cwd, stack, errs)
-      {:write, name, stat, cwd, stack, errs} -> write(options, name, stat, cwd, stack, errs)
+      {:next, cwd, stack, errs} ->
+        next(options, cwd, stack, errs)
+
+      {:directory, name, stat, cwd, stack, errs} ->
+        directory(options, name, stat, cwd, stack, errs)
+
+      {:regular, name, stat, cwd, stack, errs} ->
+        regular(options, name, stat, cwd, stack, errs)
+
+      {:write, name, stat, cwd, stack, errs} ->
+        write(options, name, stat, cwd, stack, errs)
     end
   end
 
@@ -89,10 +107,11 @@ defmodule SSHKit.SCP.Upload do
     path = Path.join(cwd, name)
     stat = File.stat!(path, time: :posix)
 
-    stack = case stat.type do
-      :directory -> [File.ls!(path) | [rest | dirs]]
-      :regular -> [rest | dirs]
-    end
+    stack =
+      case stat.type do
+        :directory -> [File.ls!(path) | [rest | dirs]]
+        :regular -> [rest | dirs]
+      end
 
     if Keyword.get(options, :preserve, false) do
       time(options, stat.type, name, stat, cwd, stack, errs)
@@ -129,7 +148,8 @@ defmodule SSHKit.SCP.Upload do
   end
 
   defp exited(_, {_, _, _, errs}, status) do
-    {:halt, {:error, "SCP exited before completing the transfer (#{status}): #{Enum.join(errs, ", ")}"}}
+    {:halt,
+     {:error, "SCP exited before completing the transfer (#{status}): #{Enum.join(errs, ", ")}"}}
   end
 
   defp eof(_, state) do

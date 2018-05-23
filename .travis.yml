@@ -18,6 +18,7 @@ matrix:
       services: docker
 
 script:
+  - mix format --check-formatted
   - mix credo --strict
   - mix test --exclude functional
   - mix test --only functional
