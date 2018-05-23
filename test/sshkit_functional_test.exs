@@ -25,13 +25,13 @@ defmodule SSHKitFunctionalTest do
       assert status == 0
       assert stdout(output) == "/home/me\n"
 
-      [{:ok, output, status}] = SSHKit.run(context, "ls non-existing")
+      [{:ok, output, status}] = SSHKit.run(context, "ls nonexistent")
       assert status == 1
-      assert stderr(output) =~ "ls: non-existing: No such file or directory"
+      assert stderr(output) =~ "ls: nonexistent: No such file or directory"
 
-      [{:ok, output, status}] = SSHKit.run(context, "does-not-exist")
+      [{:ok, output, status}] = SSHKit.run(context, "nonexistent")
       assert status == 127
-      assert stderr(output) =~ "'does-not-exist': No such file or directory"
+      assert stderr(output) =~ "'nonexistent': No such file or directory"
     end
 
     @tag boot: [@bootconf]
@@ -45,8 +45,8 @@ defmodule SSHKitFunctionalTest do
       assert status == 0
 
       output = stdout(output)
-      assert output =~ "NODE_ENV=production"
-      assert output =~ ~r/PATH=.*\/\.rbenv\/shims:/
+      assert output =~ ~r/^NODE_ENV=production$/m
+      assert output =~ ~r/^PATH=\/home\/me\/.rbenv\/shims:.*$/m
     end
 
     @tag boot: [@bootconf]
@@ -64,8 +64,8 @@ defmodule SSHKitFunctionalTest do
       assert status == 0
 
       output = stdout(output)
-      assert output =~ ~r/drwx--S---\s+2\s+me\s+me\s+4096.+my_dir/
-      assert output =~ ~r/-rw-------\s+1\s+me\s+me\s+0.+my_file/
+      assert output =~ ~r/^drwx--S---\s+2\s+me\s+me\s+4096.+\smy_dir$/m
+      assert output =~ ~r/^-rw-------\s+1\s+me\s+me\s+0.+\smy_file$/m
     end
 
     @tag boot: [@bootconf]
@@ -84,7 +84,6 @@ defmodule SSHKitFunctionalTest do
     @tag boot: [@bootconf]
     test "with user", %{hosts: [host]} do
       add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
-
       adduser!(host, "despicable_me")
 
       context =
