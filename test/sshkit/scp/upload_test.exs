@@ -43,7 +43,7 @@ defmodule SSHKit.SCP.UploadTest do
 
     test "uses the provided timeout option" do
       upload = Upload.new(@local, @remote, recursive: true, timeout: 55, ssh: SSHMock)
-      SSHMock |> expect(:run, fn(_, _, timeout: timeout, acc: {:cont, _}, fun: _) ->
+      SSHMock |> expect(:run, fn (_, _, timeout: timeout, acc: {:cont, _}, fun: _) ->
         assert timeout == 55
         {:ok, :success}
       end)
@@ -53,7 +53,7 @@ defmodule SSHKit.SCP.UploadTest do
 
     test "performs an upload" do
       upload = Upload.new(@local, @remote, recursive: true, ssh: SSHMock)
-      SSHMock |> expect(:run, fn(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler) ->
+      SSHMock |> expect(:run, fn (connection, command, timeout: timeout, acc: {:cont, state}, fun: handler) ->
         assert connection == @conn
         assert command == SSHKit.SCP.Command.build(:upload, upload.remote, upload.options)
         assert timeout == :infinity
@@ -81,8 +81,6 @@ defmodule SSHKit.SCP.UploadTest do
     test "create files in the current directory", %{upload: %Upload{handler: handler}, msg: msg} do
       local_expanded = @local |> Path.expand()
       state = {:next, local_expanded, [["other.txt"], []], []}
-
-
       assert {:cont, 'C0644 61 other.txt\n', {:write, "other.txt", %File.Stat{}, ^local_expanded, [[], []], []}} = handler.(msg, state)
     end
 
