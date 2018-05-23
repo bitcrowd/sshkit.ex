@@ -357,9 +357,11 @@ defmodule SSHKit do
     remote_path = build_remote_path(context, as_path)
 
     run = fn host ->
-      {:ok, res} = SSH.connect host.name, host.options, fn conn ->
-        SCP.upload(conn, path, remote_path, options)
-      end
+      {:ok, res} =
+        SSH.connect(host.name, host.options, fn conn ->
+          SCP.upload(conn, path, remote_path, options)
+        end)
+
       res
     end
 
@@ -402,9 +404,11 @@ defmodule SSHKit do
     local = Keyword.get(options, :as, Path.basename(path))
 
     run = fn host ->
-      {:ok, res} = SSH.connect host.name, host.options, fn conn ->
-        SCP.download(conn, remote, local, options)
-      end
+      {:ok, res} =
+        SSH.connect(host.name, host.options, fn conn ->
+          SCP.download(conn, remote, local, options)
+        end)
+
       res
     end
 

@@ -72,7 +72,9 @@ defmodule SSHKit.SSH do
         after
           :ok = close(conn)
         end
-      other -> other
+
+      other ->
+        other
     end
   end
 
@@ -131,8 +133,10 @@ defmodule SSHKit.SSH do
           channel
           |> Channel.loop(timeout, acc, fun)
           |> elem(1)
+
         :failure ->
           {:error, :failure}
+
         err ->
           err
       end
@@ -140,18 +144,23 @@ defmodule SSHKit.SSH do
   end
 
   defp capture(message, acc = {buffer, status}) do
-    next = case message do
-      {:data, _, 0, data} ->
-        {[{:stdout, data} | buffer], status}
-      {:data, _, 1, data} ->
-        {[{:stderr, data} | buffer], status}
-      {:exit_status, _, code} ->
-        {buffer, code}
-      {:closed, _} ->
-        {:ok, Enum.reverse(buffer), status}
-      _ ->
-        acc
-    end
+    next =
+      case message do
+        {:data, _, 0, data} ->
+          {[{:stdout, data} | buffer], status}
+
+        {:data, _, 1, data} ->
+          {[{:stderr, data} | buffer], status}
+
+        {:exit_status, _, code} ->
+          {buffer, code}
+
+        {:closed, _} ->
+          {:ok, Enum.reverse(buffer), status}
+
+        _ ->
+          acc
+      end
 
     {:cont, next}
   end

@@ -40,10 +40,13 @@ defmodule SSHKit.SCP.Download do
       case message do
         {:data, _, 0, data} ->
           process_data(state, data, options)
+
         {:exit_status, _, status} ->
           exited(options, state, status)
+
         {:eof, _} ->
           eof(options, state)
+
         {:closed, _} ->
           closed(options, state)
       end
@@ -54,6 +57,7 @@ defmodule SSHKit.SCP.Download do
     case state do
       {:next, path, stack, attrs, buffer} ->
         next(options, path, stack, attrs, buffer <> data)
+
       {:read, path, stack, attrs, buffer} ->
         read(options, path, stack, attrs, buffer <> data)
     end
@@ -192,7 +196,7 @@ defmodule SSHKit.SCP.Download do
     atime = :calendar.gregorian_seconds_to_datetime(@epoch + atime)
     mtime = :calendar.gregorian_seconds_to_datetime(@epoch + mtime)
     {:ok, file_info} = File.stat(path)
-    :ok = File.write_stat(path, %{file_info| mtime: mtime, atime: atime}, [:posix])
+    :ok = File.write_stat(path, %{file_info | mtime: mtime, atime: atime}, [:posix])
   end
 
   @tfmt ~S"(T)(0|[1-9]\d*) (0|[1-9]\d{0,5}) (0|[1-9]\d*) (0|[1-9]\d{0,5})"
@@ -205,14 +209,19 @@ defmodule SSHKit.SCP.Download do
     case Regex.run(@dfmt, value, capture: :all_but_first) do
       ["T", mtime, mtus, atime, atus] ->
         {"T", dec(mtime), dec(mtus), dec(atime), dec(atus)}
+
       [chr, _, _, name] when chr in ["C", "D"] and name in ["/", "..", "."] ->
         nil
+
       ["C", mode, len, name] ->
         {"C", oct(mode), dec(len), name}
+
       ["D", mode, len, name] ->
         {"D", oct(mode), dec(len), name}
+
       ["E"] ->
         {"E"}
+
       nil ->
         nil
     end

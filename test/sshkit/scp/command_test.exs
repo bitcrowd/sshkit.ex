@@ -63,7 +63,8 @@ defmodule SSHKit.SCP.CommandTest do
     end
 
     test "constructs preserving and recursive download commands" do
-      assert build(:download, @path, preserve: true, recursive: true) == "scp -f -p -r #{@escaped}"
+      assert build(:download, @path, preserve: true, recursive: true) ==
+               "scp -f -p -r #{@escaped}"
     end
   end
 end
