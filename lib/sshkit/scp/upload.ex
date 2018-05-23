@@ -192,9 +192,9 @@ defmodule SSHKit.SCP.Upload do
     {:cont, {:error, "SCP channel closed before completing the transfer"}}
   end
 
-  defp warning(_, state = {name, cwd, stack, errs}, buffer) do
+  defp warning(options, state = {name, cwd, [[_ | rest] | dirs], errs}, buffer) do
     if String.last(buffer) == "\n" do
-      {:cont, {name, cwd, stack, errs ++ [String.trim(buffer)]}}
+      next(options, cwd, [rest | dirs], errs ++ [String.trim(buffer)])
     else
       {:cont, {:warning, state, buffer}}
     end

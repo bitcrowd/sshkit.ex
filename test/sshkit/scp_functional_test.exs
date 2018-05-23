@@ -52,6 +52,17 @@ defmodule SSHKit.SCPFunctionalTest do
         assert verify_mtime(conn, local, remote)
       end
     end
+
+    @tag boot: [@bootconf], focus: true
+    test "uploads to nonexistent target directory (recursive: true)", %{hosts: [host]} do
+      local = "test/fixtures/local_dir"
+      remote = "/some/nonexistent/destination"
+
+      SSH.connect host.name, host.options, fn conn ->
+        assert {:error, msg} = SCP.upload(conn, local, remote, recursive: true)
+        assert msg =~ "scp: /some/nonexistent/destination: No such file or directory"
+      end
+    end
   end
 
   describe "download/4" do

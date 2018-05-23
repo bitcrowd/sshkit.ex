@@ -63,6 +63,7 @@ Thanks for your contributions:
 * Fix error handling in `SSHKit.SSH.Channel.send/4` when sending stream data
 * Context properly handles the case where env is set to an empty map
 * Fix environment variables export in contexts with user, group, umask, path and env
+* Fix SCP upload not making any progress after receiving a warning [#62]
 
 ## `0.0.3` (2017-07-13)
 
