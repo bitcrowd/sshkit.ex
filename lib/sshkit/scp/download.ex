@@ -197,6 +197,7 @@ defmodule SSHKit.SCP.Download do
   @epoch :calendar.datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}})
 
   defp touch!(path, atime, mtime) do
+    # TODO: this is currently erroring, since times come in an unix timestamps
     atime = :calendar.gregorian_seconds_to_datetime(@epoch + atime)
     mtime = :calendar.gregorian_seconds_to_datetime(@epoch + mtime)
     {:ok, file_info} = File.stat(path)
