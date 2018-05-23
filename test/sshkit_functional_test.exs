@@ -116,6 +116,35 @@ defmodule SSHKitFunctionalTest do
       assert status == 0
       assert stdout(output) == "villains\n"
     end
+
+    @tag boot: [@bootconf]
+    test "with path, umask, user, group and env", %{hosts: [host]} do
+      add_user_to_group!(host, host.options[:user], "passwordless-sudoers")
+
+      adduser!(host, "stuart")
+      addgroup!(host, "minions")
+      add_user_to_group!(host, "stuart", "minions")
+
+      context =
+        host
+        |> SSHKit.context()
+        |> SSHKit.path("/tmp")
+        |> SSHKit.user("stuart")
+        |> SSHKit.group("minions")
+        |> SSHKit.umask("077")
+        |> SSHKit.env(%{"INSTRUMENT" => "super-mega ukulele"})
+
+      [{:ok, output, status}] = SSHKit.run(context, "echo $INSTRUMENT > bag")
+
+      assert status == 0
+      assert output == []
+
+      info = exec!(host, "ls", ["-l", "/tmp/bag"])
+      assert info =~ ~r/^-rw-------\s+1\s+stuart\s+minions\s+.+\s+\/tmp\/bag$/m
+
+      content = exec!(host, "cat", ["/tmp/bag"])
+      assert content == "super-mega ukulele"
+    end
   end
 
   describe "upload/3" do

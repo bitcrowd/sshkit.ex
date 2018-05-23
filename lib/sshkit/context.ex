@@ -33,8 +33,8 @@ defmodule SSHKit.Context do
   """
   def build(context, command) do
     "/usr/bin/env #{command}"
-    |> sudo(context.user, context.group)
     |> export(context.env)
+    |> sudo(context.user, context.group)
     |> umask(context.umask)
     |> cd(context.path)
   end
