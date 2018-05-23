@@ -5,6 +5,8 @@ defmodule SSHKit.ContextTest do
 
   @empty %Context{hosts: []}
 
+  doctest Context
+
   describe "build/2" do
     test "with user" do
       command =
