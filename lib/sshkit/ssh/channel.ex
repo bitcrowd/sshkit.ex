@@ -77,6 +77,17 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
+  Allocates PTTY.
+
+  Returns `:success`.
+
+  For more details, see [`:ssh_connection.ptty_alloc/4`](http://erlang.org/doc/man/ssh_connection.html#ptty_alloc-4).
+  """
+  def ptty(channel, options \\ [], timeout \\ :infinity) do
+    channel.impl.ptty_alloc(channel.connection.ref, channel.id, options, timeout)
+  end
+
+  @doc """
   Sends data across an open SSH channel.
 
   `data` may be an enumerable, e.g. a `File.Stream` or `IO.Stream`.
