@@ -18,6 +18,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 
 ### New features:
 
+* Added support for ptty allocation in channel module [#129]
 * Put new features here
 
 ### Fixes:

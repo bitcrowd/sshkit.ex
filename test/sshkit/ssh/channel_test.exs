@@ -108,6 +108,20 @@ defmodule SSHKit.SSH.ChannelTest do
     end
   end
 
+  describe "ptty/4" do
+    test "allocates ptty", %{chan: chan, impl: impl} do
+      impl |> expect(:ptty_alloc, fn (connection_ref, channel_id, options, timeout) ->
+        assert connection_ref == chan.connection.ref
+        assert channel_id == chan.id
+        assert options == []
+        assert timeout == :infinity
+        :success
+      end)
+
+      assert ptty(chan) == :success
+    end
+  end
+
   describe "send/4" do
     test "send binary data across channel", %{chan: chan, impl: impl} do
       impl |> expect(:send, sends(chan, 0, "binary data", :infinity, :ok))
