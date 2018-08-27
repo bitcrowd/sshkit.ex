@@ -321,6 +321,21 @@ defmodule SSHKit do
     Enum.map(context.hosts, run)
   end
 
+  def run(context, command, timeout \\ 10000, mode: :parallel) do
+    cmd = Context.build(context, command)
+
+    run = fn host ->
+      {:ok, conn} = SSH.connect(host.name, host.options)
+      res = SSH.run(conn, cmd)
+      :ok = SSH.close(conn)
+      res
+    end
+
+    Enum.map(context.hosts, fn h -> Task.async(fn -> run.(h) end) end)
+    |> Enum.map(fn n -> Task.await(n,timeout) end)
+    
+  end
+
   @doc ~S"""
   Upload a file or files to the given context.
 
