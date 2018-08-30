@@ -308,12 +308,12 @@ defmodule SSHKit do
   assert "Hello World!\n" == stdout
   ```
   """
-  def run(context, command, mode \\ :sequential) do
+  def run(context, command, mode \\ :sequential, timeout \\ :infinity) do
     cmd = Context.build(context, command)
 
     op = fn host ->
       {:ok, conn} = SSH.connect(host.name, host.options)
-      res = SSH.run(conn, cmd)
+      res = SSH.run(conn, cmd, [timeout: timeout])
       :ok = SSH.close(conn)
       res
     end
@@ -328,7 +328,7 @@ defmodule SSHKit do
   defp perform(hosts, op, :parallel) do
     hosts
     |> Enum.map(fn host -> Task.async(fn -> op.(host) end) end)
-    |> Enum.map(fn task -> Task.await(task) end)
+    |> Enum.map(fn task -> Task.await(task, :infinity) end)
   end
   
   @doc ~S"""
