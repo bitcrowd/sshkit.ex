@@ -330,7 +330,7 @@ defmodule SSHKit do
     |> Enum.map(fn host -> Task.async(fn -> op.(host) end) end)
     |> Enum.map(fn task -> Task.await(task, :infinity) end)
   end
-  
+
   @doc ~S"""
   Upload a file or files to the given context.
 
