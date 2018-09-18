@@ -18,14 +18,13 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 
 ### New features:
 
-* Added support for ptty allocation in channel module [#129]
 * Put new features here
 
 ### Fixes:
 
 * Put fixes here
 
-## `0.1.0` (work in progress)
+## `0.1.0` (2018-09-18)
 
 https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 
@@ -34,6 +33,12 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 * Update installation instructions.
 * Introduce Mox for mocking in unit tests.
 * Improve and add unit tests.
+
+Thanks for your contributions:
+
+* @Bugagazavr
+* @brienw
+* @holetse
 
 ### Potentially breaking changes:
 
@@ -51,6 +56,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0
 * Split the SCP file upload into a setup and an execution step:
   * add `SCP.Upload.new/3` and `SCP.Upload.exec/2`
   * `SCP.Upload.transfer/4` still works as before
+* Added support for ptty allocation in `SSH.Channel` module [#129]
 
 ### Fixes:
 
