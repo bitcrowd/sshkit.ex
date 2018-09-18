@@ -134,7 +134,7 @@ defmodule SSHKit.SCP.Upload do
     stat = File.stat!(path, time: :posix)
 
     stack = case stat.type do
-      :directory -> [File.ls!(path) | [rest | dirs]]
+      :directory -> [Enum.sort(File.ls!(path)) | [rest | dirs]]
       :regular -> [rest | dirs]
     end
 
