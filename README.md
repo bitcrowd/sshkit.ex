@@ -103,6 +103,16 @@ Hint: We've found functional tests to run significantly faster with
 [Docker Machine](https://docs.docker.com/machine/) compared to
 [Docker for Mac](https://docs.docker.com/docker-for-mac/) on OS X.
 
+## Releasing
+
+* make sure tests pass: `mix test`
+* increase version number keeping [semantic versioning](https://semver.org/) in mind
+* update [CHANGLOG.md](./CHANGELOG.md): create a new chapter for the current version, reset the `master` chapter to be the empty template again
+* commit your changes: `git commit -m"release 0.1.0"`
+* tag them with the version number as the tag title: e.g. `git tag v0.1.0`
+* push your version-commit and tag: `git push --tags`
+* publish the new release to hex.pm: `mix hex.publish`. Find the hex.pm login in the bitcrowd password store.
+
 ## Contributing
 
 We welcome everyone to contribute to SSHKit and help us tackle existing issues!
