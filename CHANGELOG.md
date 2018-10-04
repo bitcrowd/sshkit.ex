@@ -23,6 +23,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 ### Fixes:
 
 * Put fixes here
+* Improved documentation about our release process
 
 ## `0.1.0` (2018-09-18)
 
