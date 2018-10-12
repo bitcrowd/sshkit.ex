@@ -23,8 +23,8 @@ defmodule SSHKit.SCP do
   ```
   """
 
-  alias SSHKit.SCP.Upload
   alias SSHKit.SCP.Download
+  alias SSHKit.SCP.Upload
 
   @doc """
   Uploads a local file or directory to a remote host.
