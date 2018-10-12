@@ -343,7 +343,7 @@ defmodule SSHKit do
     |> SSHKit.upload(".", recursive: true)
   ```
 
-  Upload file to different name on host:
+  Upload a file to a different name on the remote host:
 
   ```
   [:ok] =
@@ -374,7 +374,7 @@ defmodule SSHKit do
   Possible options are:
 
   * `as: "local.txt"` - specify the name of the downloaded file/directory
-  * all options accepted by `SSHKit.SCP.Upload.transfer/4`
+  * all options accepted by `SSHKit.SCP.Download.transfer/4`
 
   ## Examples
 
@@ -385,10 +385,10 @@ defmodule SSHKit do
     "example.io"
     |> SSHKit.context()
     |> SSHKit.path("/workspace")
-    |> SSHKit.upload(".", recursive: true)
+    |> SSHKit.download(".", recursive: true)
   ```
 
-  Download file to different local name:
+  Download a file to a different local name:
 
   ```
   [:ok] =
