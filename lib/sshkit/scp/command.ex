@@ -20,8 +20,7 @@ defmodule SSHKit.SCP.Command do
   defp flag(command, options) do
     @flags
     |> Enum.filter(fn {key, _} -> Keyword.get(options, key, false) end)
-    |> Enum.map(fn {_, flag} -> flag end)
-    |> Enum.into([command])
+    |> Enum.into([command], fn {_, flag} -> flag end)
     |> Enum.join(" ")
   end
 

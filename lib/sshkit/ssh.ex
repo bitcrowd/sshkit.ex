@@ -19,8 +19,8 @@ defmodule SSHKit.SSH do
   ```
   """
 
-  alias SSHKit.SSH.Connection
   alias SSHKit.SSH.Channel
+  alias SSHKit.SSH.Connection
 
   @doc """
   Establishes a connection to an SSH server.
