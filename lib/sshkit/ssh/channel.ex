@@ -39,6 +39,22 @@ defmodule SSHKit.SSH.Channel do
     end
   end
 
+  def subsystem(channel, subsystem, options \\ []) do
+    timeout = Keyword.get(options, :timeout, :infinity)
+    impl = Keyword.get(options, :impl, :ssh_connection)
+
+    case impl.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout) do
+      :success ->
+        :ok
+
+      :failure ->
+        {:error, :failure}
+
+      err ->
+        err
+    end
+  end
+
   defp build(connection, id, impl) do
     %Channel{connection: connection, type: :session, id: id, impl: impl}
   end
