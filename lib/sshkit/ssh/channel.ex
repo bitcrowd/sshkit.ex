@@ -39,6 +39,15 @@ defmodule SSHKit.SSH.Channel do
     end
   end
 
+  @doc """
+  Activates a subsystem on a channel.
+
+  On success, returns `:ok`. On failure, returns `{:error, reason}`.
+
+  For more details, see [`:ssh_connection.subsystem/4`](http://erlang.org/doc/man/ssh_connection.html#subsystem-4).
+  """
+  @spec subsystem(channel :: struct(), subsystem :: String.t(), options :: list()) ::
+          :ok | {:error, reason :: String.t()}
   def subsystem(channel, subsystem, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
     impl = Keyword.get(options, :impl, :ssh_connection)

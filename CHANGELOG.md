@@ -76,6 +76,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...v0.0.3
 * Improved documentation [#67]
 * Added support for passing an anonymous function to `SSH.connect` [#72]
 * Add support for passing a `dry_run` flag to `SSHKit.SSH.connect` [#79]
+* Add support for `:ssh_connection.subsystem/4`
 
 ### Fixes:
 
