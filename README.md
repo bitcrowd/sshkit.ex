@@ -17,15 +17,19 @@ repeatable way, e.g. in the context of deployment tools:
 hosts = ["1.eg.io", {"2.eg.io", port: 2222}]
 
 context =
-  SSHKit.context(hosts)
+  SSHKit.context()
   |> SSHKit.path("/var/www/phx")
   |> SSHKit.user("deploy")
   |> SSHKit.group("deploy")
   |> SSHKit.umask("022")
   |> SSHKit.env(%{"NODE_ENV" => "production"})
 
-:ok = SSHKit.upload(context, ".", recursive: true)
-:ok = SSHKit.run(context, "yarn install")
+{:ok, conn} = SSHKit.connect(hosts)
+
+{:ok, conn} = SSHKit.upload(conn, context, ".", recursive: true)
+{:ok, conn} = SSHKit.run(conn, context, "yarn install")
+
+{:ok, _} = SSHKit.close(conn)
 ```
 
 The [`SSHKit`](https://hexdocs.pm/sshkit/SSHKit.html) module documentation has
