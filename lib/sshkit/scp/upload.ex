@@ -6,7 +6,7 @@ defmodule SSHKit.SCP.Upload do
   alias SSHKit.SCP.Command
   alias SSHKit.SSH
 
-  defstruct [:local, :remote, :state, :handler, options: []]
+  defstruct [:command, :source, :state, :handler, options: []]
 
   @doc """
   Uploads a local file or directory to a remote host.
@@ -21,12 +21,12 @@ defmodule SSHKit.SCP.Upload do
   ## Example
 
   ```
-  :ok = SSHKit.SCP.Upload.transfer(conn, ".", "/home/code/sshkit", recursive: true)
+  :ok = SSHKit.SCP.Upload.transfer(conn, "scp -t -r /home/code/sshkit", ".", recursive: true)
   ```
   """
-  def transfer(connection, local, remote, options \\ []) do
-    local
-    |> new(remote, options)
+  def transfer(connection, command, source, options \\ []) do
+    command
+    |> init(source, options)
     |> exec(connection)
   end
 
@@ -43,21 +43,21 @@ defmodule SSHKit.SCP.Upload do
   ## Example
 
   ```
-  iex(1)> SSHKit.SCP.Upload.new(".", "/home/code/sshkit", recursive: true)
+  iex(1)> SSHKit.SCP.Upload.init("scp -t -r /home/code/sshkit", ".", recursive: true)
   %SSHKit.SCP.Upload{
+    command: "scp -t -r /home/code/sshkit",
     handler: #Function<1.78222439/2 in SSHKit.SCP.Upload.connection_handler/1>,
-    local: "/Users/sshkit/code/sshkit.ex",
     options: [recursive: true],
-    remote: "/home/code/sshkit",
+    source: "/Users/sshkit/code/sshkit.ex",
     state: {:next, "/Users/sshkit/code", [["sshkit.ex"]], []}
   }
   ```
   """
-  def new(local, remote, options \\ []) do
-    local = Path.expand(local)
-    state = {:next, Path.dirname(local), [[Path.basename(local)]], []}
+  def init(command, source, options \\ []) do
+    source = Path.expand(source)
+    state = {:next, Path.dirname(source), [[Path.basename(source)]], []}
     handler = connection_handler(options)
-    %__MODULE__{local: local, remote: remote, state: state, handler: handler, options: options}
+    %__MODULE__{command: command, source: source, state: state, handler: handler, options: options}
   end
 
   @doc """
@@ -69,19 +69,18 @@ defmodule SSHKit.SCP.Upload do
   :ok = SSHKit.SCP.Upload.exec(upload, conn)
   ```
   """
-  def exec(upload = %{local: local, options: options}, connection) do
+  def exec(upload = %{source: source, options: options}, connection) do
     recursive = Keyword.get(options, :recursive, false)
 
-    if !recursive && File.dir?(local) do
-      {:error, "SCP option :recursive not specified, but local file is a directory (#{local})"}
+    if !recursive && File.dir?(source) do
+      {:error, "SCP option :recursive not specified, but local file is a directory (#{source})"}
     else
       start(upload, connection)
     end
   end
 
-  defp start(%{remote: remote, state: state, handler: handler, options: options}, connection) do
+  defp start(%{command: command, state: state, handler: handler, options: options}, connection) do
     timeout = Keyword.get(options, :timeout, :infinity)
-    command = Command.build(:upload, remote, options)
     ssh = Keyword.get(options, :ssh, SSH)
     ssh.run(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler)
   end

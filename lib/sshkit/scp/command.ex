@@ -25,6 +25,6 @@ defmodule SSHKit.SCP.Command do
   end
 
   defp at(command, path) do
-    "#{command} #{shellescape(path)}"
+    String.trim("#{command} #{shellescape(path)}")
   end
 end

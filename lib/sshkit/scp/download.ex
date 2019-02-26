@@ -19,19 +19,18 @@ defmodule SSHKit.SCP.Download do
   ## Example
 
   ```
-  :ok = SSHKit.SCP.Download.transfer(conn, "/home/code/sshkit", "downloads", recursive: true)
+  :ok = SSHKit.SCP.Download.transfer(conn, "scp -f -r /home/code/sshkit", "downloads", recursive: true)
   ```
   """
-  def transfer(connection, remote, local, options \\ []) do
-    start(connection, remote, Path.expand(local), options)
+  def transfer(connection, command, target, options \\ []) do
+    start(connection, command, Path.expand(target), options)
   end
 
-  defp start(connection, remote, local, options) do
+  defp start(connection, command, target, options) do
     timeout = Keyword.get(options, :timeout, :infinity)
-    command = Command.build(:download, remote, options)
     handler = connection_handler(options)
 
-    ini = {:next, local, [], %{}, <<>>}
+    ini = {:next, target, [], %{}, <<>>}
     SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
   end
 

@@ -8,6 +8,9 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 
 * Put high-level summary here
 
+* The `SSHKit.download/3` and `SSHKit.upload/3` functions are now fully context-aware
+* They will respect the `user`, `env`, `path`… values set in the context
+
 ### Deprecations:
 
 * Put deprecations here
@@ -15,6 +18,8 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 ### Potentially breaking changes:
 
 * Put potentially breaking changes here
+
+* The interfaces for the `SSHKit.SCP` and `SSHKit.SCP.{Download, Upload}` modules have changed
 
 ### New features:
 

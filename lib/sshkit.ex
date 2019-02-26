@@ -352,13 +352,15 @@ defmodule SSHKit do
     |> SSHKit.upload("local.txt", as: "remote.txt")
   ```
   """
-  def upload(context, path, options \\ []) do
-    as_path = Keyword.get(options, :as, Path.basename(path))
-    remote_path = build_remote_path(context, as_path)
+  def upload(context, source, options \\ []) do
+    target = Keyword.get(options, :as, Path.basename(source))
+
+    # credo:disable-for-next-line Credo.Check.Design.AliasUsage
+    cmd = Context.build(context, SCP.Command.build(:upload, target, options))
 
     run = fn host ->
       {:ok, res} = SSH.connect host.name, host.options, fn conn ->
-        SCP.upload(conn, path, remote_path, options)
+        SCP.upload(conn, cmd, source, options)
       end
       res
     end
@@ -397,21 +399,19 @@ defmodule SSHKit do
     |> SSHKit.download("remote.txt", as: "local.txt")
   ```
   """
-  def download(context, path, options \\ []) do
-    remote = build_remote_path(context, path)
-    local = Keyword.get(options, :as, Path.basename(path))
+  def download(context, source, options \\ []) do
+    target = Keyword.get(options, :as, Path.basename(source))
+
+    # credo:disable-for-next-line Credo.Check.Design.AliasUsage
+    cmd = Context.build(context, SCP.Command.build(:download, source, options))
 
     run = fn host ->
       {:ok, res} = SSH.connect host.name, host.options, fn conn ->
-        SCP.download(conn, remote, local, options)
+        SCP.download(conn, cmd, target, options)
       end
       res
     end
 
     Enum.map(context.hosts, run)
-  end
-
-  defp build_remote_path(context, path) do
-    Path.absname(path, context.path || ".")
   end
 end
