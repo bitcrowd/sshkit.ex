@@ -5,6 +5,8 @@ defmodule SSHKit.SCP.Command do
 
   @flags [verbose: "-v", preserve: "-p", recursive: "-r"]
 
+  def build(direction, path, options \\ [])
+
   def build(:upload, path, options) do
     scp("-t", path, options)
   end
@@ -14,7 +16,7 @@ defmodule SSHKit.SCP.Command do
   end
 
   defp scp(mode, path, options) do
-    "scp #{mode}" |> flag(options) |> at(path)
+    "scp #{mode}" |> flag(options) |> at(path) |> String.trim()
   end
 
   defp flag(command, options) do
