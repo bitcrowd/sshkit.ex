@@ -105,13 +105,16 @@ Hint: We've found functional tests to run significantly faster with
 
 ## Releasing
 
-* make sure tests pass: `mix test`
-* increase version number keeping [semantic versioning](https://semver.org/) in mind
-* update [CHANGLOG.md](./CHANGELOG.md): create a new chapter for the current version, reset the `master` chapter to be the empty template again
-* commit your changes: `git commit -m"release 0.1.0"`
-* tag them with the version number as the tag title: e.g. `git tag v0.1.0`
-* push your version-commit and tag: `git push --tags`
-* publish the new release to hex.pm: `mix hex.publish`. Find the hex.pm login in the bitcrowd password store.
+* Make sure tests pass: `mix test`.
+* Increase version number keeping [semantic versioning](https://semver.org/) in mind.
+* Update [CHANGLOG.md](./CHANGELOG.md):
+  * Create a new section for the current version.
+  * Reset the `master` chapter to empty template.
+* Commit your changes: `git commit -m "Release 0.1.0"`.
+* Tag them with the version number as the tag title: `git tag v0.1.0`.
+* Push your commit and tag: `git push --tags`.
+* Publish the new release to hex.pm: `mix hex.publish`.
+  * You can find the hex.pm credentials in the bitcrowd password store.
 
 ## Contributing
 
