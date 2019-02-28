@@ -1,5 +1,6 @@
 defmodule SSHKit.SCP.UploadTest do
   use ExUnit.Case, async: true
+
   import Mox
 
   alias SSHKit.SCP.Command
@@ -9,34 +10,30 @@ defmodule SSHKit.SCP.UploadTest do
   @source "test/fixtures/local_dir"
   @target "/home/test/code"
 
-  describe "init/3" do
+  describe "init/2" do
     test "returns a new upload struct" do
       upload = Upload.init(@source, @target)
-      source_expanded = @source |> Path.expand()
-      assert %Upload{source: ^source_expanded, target: @target} = upload
-    end
-
-    test "returns a new upload struct with options" do
-      options = [recursive: true]
-      upload = Upload.init(@source, @target, options)
-      assert %Upload{options: ^options} = upload
-    end
-
-    test "upload struct has initial state" do
-      %Upload{state: state} = Upload.init(@source, @target)
-      current_directory = @source |> Path.expand() |> Path.dirname()
-      assert state == {:next, current_directory, [["local_dir"]], []}
-    end
-
-    test "upload struct has a handler function" do
-      %Upload{handler: handler} = Upload.init(@source, @target)
-      assert is_function(handler)
+      assert %Upload{source: @source target: @target} = upload
     end
   end
 
-  describe "exec/2" do
+  describe "init/3" do
+    test "returns a new upload struct with options" do
+      upload = Upload.init(@source, @target, [recursive: true])
+      assert %Upload{source: @source target: @target} = upload
+      assert %Upload{options: [recursive: true]} = upload
+    end
+  end
+
+  describe "start/2" do
     setup do
       {:ok, conn: %SSHKit.SSH.Connection{}}
+    end
+
+    test "initializes the upload state" do
+      %Upload{state: state} = Upload.init(@source, @target)
+      cwd = @source |> Path.expand() |> Path.dirname()
+      assert state == {:next, cwd, [["local_dir"]], []}
     end
 
     test "allows modifying the executed scp command", %{conn: conn} do

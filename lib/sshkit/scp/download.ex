@@ -1,225 +1,255 @@
 defmodule SSHKit.SCP.Download do
-  @moduledoc false
+  @moduledoc """
+  TODO
+  """
 
   require Bitwise
 
   alias SSHKit.SCP.Command
-  alias SSHKit.SSH
+  alias SSHKit.SCP.Directive
+  alias SSHKit.SCP.Download
+  alias SSHKit.SSH.Channel
+
+  defstruct [:source, :target, :options, channel: nil, state: nil, cwd: nil, stack: nil]
+
+  # TODO: Close channel whenever error is returned and we don't expect the channel to be closed yet.
 
   @doc """
-  Downloads a file or directory from a remote host.
-
-  ## Options
-
-  * `:verbose` - let the remote scp process be verbose, default `false`
-  * `:recursive` - set to `true` for copying directories, default `false`
-  * `:preserve` - preserve timestamps, default `false`
-  * `:timeout` - timeout in milliseconds, default `:infinity`
-
-  ## Example
-
-  ```
-  :ok = SSHKit.SCP.Download.transfer(conn, "/home/code/sshkit", "downloads", recursive: true)
-  ```
+  TODO
   """
-  def transfer(connection, source, target, options \\ []) do
-    start(connection, source, Path.expand(target), options)
+  def init(source, target, options \\ []) do
+    %Download{source: source, target: Path.expand(target), options: options}
   end
 
-  defp start(connection, source, target, options) do
-    timeout = Keyword.get(options, :timeout, :infinity)
+  @doc """
+  TODO
+  """
+  def start(%Download{} = download, connection) do
+    with {:ok, download} <- prepare(download),
+         {:ok, download} <- exec(download, connection) do
+      ack(download)
+    end
+  end
+
+  defp prepare(%Download{target: target} = download) do
+    {:ok, %{download | state: :cont, cwd: target, stack: []}}
+  end
+
+  defp exec(%Download{source: source, options: options} = download, connection) do
+    command = Command.build(:download, source, options)
+
     map_cmd = Keyword.get(options, :map_cmd, &(&1))
-    command = map_cmd.(Command.build(:download, source, options))
-    handler = connection_handler(options)
+    command = map_cmd.(command)
 
-    ini = {:next, target, [], %{}, <<>>}
-    SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
-  end
+    with {:ok, channel} <- Channel.open(connection) do # TODO: Pass channel open options?
+      case Channel.exec(channel, command) do # TODO: Pass channel exec options?
+        :success ->
+          {:ok, %{download | channel: channel}}
 
-  defp connection_handler(options) do
-    fn message, state ->
-      case message do
-        {:data, _, 0, data} ->
-          process_data(state, data, options)
-        {:exit_status, _, status} ->
-          exited(options, state, status)
-        {:eof, _} ->
-          eof(options, state)
-        {:closed, _} ->
-          closed(options, state)
+        :failure ->
+          {:error, :failure} # TODO: Better error
+
+        err ->
+          err
       end
     end
   end
 
-  defp process_data(state, data, options) do
-    case state do
-      {:next, path, stack, attrs, buffer} ->
-        next(options, path, stack, attrs, buffer <> data)
-      {:read, path, stack, attrs, buffer} ->
-        read(options, path, stack, attrs, buffer <> data)
+  defp ack(%Download{channel: channel} = download) do
+    with :ok <- Channel.send(channel, <<0>>), do: {:ok, download}
+  end
+
+  @doc """
+  TODO
+  """
+  def continue(%Download{channel: channel} = download, timeout \\ :infinity) do
+    with {:ok, message} <- Channel.recv(channel, timeout), do: process(download, message)
+  end
+
+  @doc """
+  TODO
+  """
+  def process(download, message)
+
+  def process(%Download{channel: channel} = download, {:data, channel, 0, data}) do
+    case download.state do
+      {:recv, _, _} -> next(download, data)
+      {:read, _, _} -> read(download, data)
+      :cont -> next(%{download | state: {:recv, "", nil}}, data)
     end
   end
 
-  defp next(options, path, stack, attrs, buffer) do
+  def process(%Download{channel: channel} = download, {:eof, channel}) do
+    {:ok, download}
+  end
+
+  def process(%Download{channel: channel} = download, {:exit_status, channel, status}) do
+    {:ok, %{download | state: {:exited, status}}}
+  end
+
+  def process(%Download{channel: channel, stack: stack} = download, {:closed, channel}) do
+    case download.state do
+      {:exited, 0} when stack == [] ->
+        {:ok, %{download | state: :done}}
+
+      {:exited, status} when status != 0 ->
+        {:error, "SCP exited with non-zero status (#{status})"} # TODO: Better error
+
+      _ ->
+        {:error, "SCP channel closed before completing the transfer"} # TODO: Better error
+    end
+  end
+
+  defp next(%Download{state: {:recv, buffer, times}} = download, data) do
+    buffer = buffer <> data
+
     if String.last(buffer) == "\n" do
-      case dirparse(buffer) do
-        {"T", mtime, _, atime, _} -> time(options, path, stack, attrs, mtime, atime)
-        {"C", mode, len, name} -> regular(options, path, stack, attrs, mode, len, name)
-        {"D", mode, _, name} -> directory(options, path, stack, attrs, mode, name)
-        {"E"} -> up(options, path, stack)
-        _ -> {:halt, {:error, "Invalid SCP directive received: #{buffer}"}}
+      case Directive.decode(buffer) do
+        {:time, mtime, atime} -> time(download, mtime, atime)
+        {:directory, mode, name} -> create(download, {:directory, name, mode, times})
+        {:regular, mode, size, name} -> create(download, {:regular, name, mode, size, times})
+        {:up} -> up(download)
+        _ -> {:error, "Invalid SCP directive received: #{buffer}"} # TODO: Better error
       end
     else
-      {:cont, {:next, path, stack, attrs, buffer}}
+      {:ok, %{download | state: {:recv, buffer, times}}}
     end
   end
 
-  defp time(_, path, stack, attrs, mtime, atime) do
-    attrs = Map.merge(attrs, %{atime: atime, mtime: mtime})
-    {:cont, <<0>>, {:next, path, stack, attrs, <<>>}}
+  defp time(%Download{channel: channel} = download, mtime, atime) do
+    with {:ok, download} <- ack(download) do
+      {:ok, %{download | state: {:recv, "", {mtime, atime}}}}
+    end
   end
 
-  defp directory(options, path, stack, attrs, mode, name) do
-    target = if File.dir?(path), do: Path.join(path, name), else: path
+  defp create(%Download{channel: channel} = download, {:directory, name, mode, times}) do
+    path = Path.join(download.cwd, name)
 
-    preserve? = Keyword.get(options, :preserve, false)
-    exists? = File.exists?(target)
+    # TODO ??
+    # path = if File.dir?(path), do: Path.join(path, name), else: path
 
-    stat = if exists?, do: File.stat!(target), else: nil
+    stat = case File.stat(path) do
+      {:ok, st} -> st
+      _ -> nil
+    end
 
-    if exists? do
-      :ok = File.chmod!(target, Bitwise.bor(stat.mode, 0o700))
+    preserve? = Keyword.get(download.options, :preserve, false)
+    exists? = stat != nil
+
+    prepare = if exists? do
+      &File.chmod(&1, Bitwise.bor(stat.mode, 0o700))
     else
-      :ok = File.mkdir!(target)
+      &File.mkdir(&1)
     end
 
     mode = if exists? && !preserve?, do: stat.mode, else: mode
-    attrs = Map.put(attrs, :mode, mode)
+    stack = [{:directory, name, mode, times} | download.stack]
 
-    {:cont, <<0>>, {:next, target, [attrs | stack], %{}, <<>>}}
+    with :ok <- prepare.(path),
+         {:ok, download} <- ack(download) do
+      {:ok, %{download | state: :cont, cwd: path, stack: stack}}
+    end
   end
 
-  defp regular(options, path, stack, attrs, mode, length, name) do
-    target = if File.dir?(path), do: Path.join(path, name), else: path
+  defp create(%Download{channel: channel} = download, {:regular, name, mode, size, times}) do
+    path = Path.join(download.cwd, name)
 
-    preserve? = Keyword.get(options, :preserve, false)
-    exists? = File.exists?(target)
+    # TODO: Path exists and is dir?
+    # path = if File.dir?(path), do: Path.join(path, name), else: path
 
-    stat = if exists?, do: File.stat!(target), else: nil
-
-    if exists? do
-      :ok = File.chmod!(target, Bitwise.bor(stat.mode, 0o200))
+    stat = case File.stat(path) do
+      {:ok, st} -> st
+      _ -> nil
     end
 
-    device = File.open!(target, [:write, :binary])
+    preserve? = Keyword.get(download.options, :preserve, false)
+    exists? = stat != nil
+
+    prepare = if exists? do
+      &File.chmod(&1, Bitwise.bor(stat.mode, 0o200))
+    else
+      fn _ -> :ok end
+    end
 
     mode = if exists? && !preserve?, do: stat.mode, else: mode
+    stack = [{:regular, name, mode, size, times} | download.stack]
 
-    attrs =
-      attrs
-      |> Map.put(:mode, mode)
-      |> Map.put(:device, device)
-      |> Map.put(:length, length)
-      |> Map.put(:written, 0)
-
-    {:cont, <<0>>, {:read, target, stack, attrs, <<>>}}
+    with :ok <- prepare.(path),
+         {:ok, device} <- File.open(path, [:write, :binary]),
+         {:ok, download} <- ack(download) do
+      {:ok, %{download | state: {:read, device, {0, size}}, stack: stack}}
+    end
   end
 
-  defp read(options, path, stack, attrs, buffer) do
-    %{device: device, length: length, written: written} = attrs
+  defp read(%Download{channel: channel} = download, data) do
+    {:read, device, {written, size}} = download.state
 
-    {buffer, written} =
-      if written < length do
-        count = min(byte_size(buffer), length - written)
-        <<chunk::binary-size(count), rest::binary>> = buffer
-        :ok = IO.binwrite(device, chunk)
-        {rest, written + count}
+    count = min(byte_size(data), size - written)
+    <<chunk::binary-size(count), remainder::binary>> = data
+
+    with :ok <- IO.binwrite(device, chunk) do
+      written = written + count
+
+      if written == size && remainder == <<0>> do
+        [{:regular, name, mode, _, times} | stack] = download.stack
+        path = Path.join(download.cwd, name)
+
+        with :ok <- File.close(device),
+             :ok <- File.chmod(path, mode),
+             :ok <- touch(path, times), # apply times if preserve
+             {:ok, download} <- ack(download) do
+          {:ok, %{download | state: :cont, stack: stack}}
+        end
       else
-        {buffer, written}
+        {:ok, %{download | state: {:read, device, {written, size}}}}
       end
-
-    if written == length && buffer == <<0>> do
-      :ok = File.close(device)
-
-      :ok = File.chmod!(path, attrs[:mode])
-
-      if Keyword.get(options, :preserve, false) do
-        :ok = touch!(path, attrs[:atime], attrs[:mtime])
-      end
-
-      {:cont, <<0>>, {:next, Path.dirname(path), stack, %{}, <<>>}}
-    else
-      {:cont, {:read, path, stack, Map.put(attrs, :written, written), <<>>}}
     end
   end
 
-  defp up(options, path, [attrs | rest]) do
-    :ok = File.chmod!(path, attrs[:mode])
-
-    if Keyword.get(options, :preserve, false) do
-      :ok = touch!(path, attrs[:atime], attrs[:mtime])
-    end
-
-    {:cont, <<0>>, {:next, Path.dirname(path), rest, %{}, <<>>}}
+  defp up(%Download{stack: []} = download) do
+    {:error, "Nowhere to go"} # TODO: Error message
   end
 
-  defp exited(_, {_, _, [], _, _}, status) do
-    {:cont, {:done, status}}
-  end
+  defp up(%Download{channel: channel, stack: [head | stack]} = download) do
+    {:directory, name, mode, times} = head
 
-  defp exited(_, {_, _, _, _, _}, status) do
-    {:halt, {:error, "SCP exited before completing the transfer (#{status})"}}
-  end
+    # TODO: Apply any mode changes and timestamps
+    # TODO: Update cwd and stack
 
-  defp eof(_, state) do
-    {:cont, state}
-  end
+    # cwd = Path.dirname(download.cwd)
 
-  defp closed(_, {:done, 0}) do
-    {:cont, :ok}
-  end
-
-  defp closed(_, {:done, status}) do
-    {:cont, {:error, "SCP exited with non-zero exit code #{status}"}}
-  end
-
-  defp closed(_, _) do
-    {:cont, {:error, "SCP channel closed before completing the transfer"}}
-  end
-
-  @epoch :calendar.datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}})
-
-  defp touch!(path, atime, mtime) do
-    atime = :calendar.gregorian_seconds_to_datetime(@epoch + atime)
-    mtime = :calendar.gregorian_seconds_to_datetime(@epoch + mtime)
-    {:ok, file_info} = File.stat(path)
-    :ok = File.write_stat(path, %{file_info| mtime: mtime, atime: atime}, [:posix])
-  end
-
-  @tfmt ~S"(T)(0|[1-9]\d*) (0|[1-9]\d{0,5}) (0|[1-9]\d*) (0|[1-9]\d{0,5})"
-  @ffmt ~S"(C|D)([0-7]{4}) (0|[1-9]\d*) ([^/]+)"
-  @efmt ~S"(E)"
-
-  @dfmt ~r/\A(?|#{@efmt}|#{@tfmt}|#{@ffmt})\n\z/
-
-  defp dirparse(value) do
-    case Regex.run(@dfmt, value, capture: :all_but_first) do
-      ["T", mtime, mtus, atime, atus] ->
-        {"T", dec(mtime), dec(mtus), dec(atime), dec(atus)}
-      [chr, _, _, name] when chr in ["C", "D"] and name in ["/", "..", "."] ->
-        nil
-      ["C", mode, len, name] ->
-        {"C", oct(mode), dec(len), name}
-      ["D", mode, len, name] ->
-        {"D", oct(mode), dec(len), name}
-      ["E"] ->
-        {"E"}
-      nil ->
-        nil
+    with {:ok, download} <- ack(download) do
+      {:ok, %{download | state: :cont, cwd: Path.dirname(download.cwd), stack: stack}}
     end
   end
 
-  defp int(value, base), do: String.to_integer(value, base)
-  defp dec(value), do: int(value, 10)
-  defp oct(value), do: int(value, 8)
+  defp touch(path, {mtime, atime}) do
+    :ok # TODO
+  end
+
+  defp touch(path, _) do
+    :ok
+  end
+
+  @doc """
+  TODO
+  """
+  def loop(%Download{} = download) do
+    case continue(download) do
+      {:ok, download} ->
+        if done?(download), do: :ok, else: loop(download)
+
+      err ->
+        err
+    end
+  end
+
+  @doc """
+  TODO
+  """
+  def done?(download)
+
+  def done?(%Download{state: :done}), do: true
+
+  def done?(%Download{state: _}), do: false
 end
