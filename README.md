@@ -126,6 +126,18 @@ Open a [pull request][pulls] when you are ready to contribute.
 If you are planning to contribute documentation, please check
 [the best practices for writing documentation][writing-docs].
 
+## Thanks
+
+SSHKit is inspired by [SSHKit for Ruby](https://github.com/capistrano/sshkit)
+which is part of the fantastic [Capistrano](https://github.com/capistrano) project.
+
+It deliberately departs from its role model with regard to its API
+given the very different nature of the two programming languages.
+
+If you are looking for an Elixir deployment tool similar to Capistrano,
+take a look at [Bootleg](https://github.com/labzero/bootleg)
+which is based on top of SSHKit.
+
 ## License
 
 SSHKit source code is released under the MIT License.
