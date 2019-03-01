@@ -111,8 +111,10 @@ Hint: We've found functional tests to run significantly faster with
   * Create a new section for the current version.
   * Reset the `master` chapter to empty template.
 * Commit your changes: `git commit -m "Release 0.1.0"`.
-* Tag them with the version number as the tag title: `git tag v0.1.0`.
-* Push your commit and tag: `git push --tags`.
+* Tag the commit with the version number: `git tag -a v0.1.0`.
+  * Annotate the tag with the respective section from [CHANGLOG.md](./CHANGELOG.md) *(in a git-compatible format)*.
+* Push your commit: `git push`.
+* Push the tag: `git push origin v0.1.0`
 * Publish the new release to hex.pm: `mix hex.publish`.
   * You can find the hex.pm credentials in the bitcrowd password store.
 
