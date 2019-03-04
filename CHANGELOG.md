@@ -25,6 +25,32 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 * Put fixes here
 * Improved documentation about our release process
 
+## `0.2.0` (2019-??-??)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...v0.2.0
+
+* Put high-level summary here
+
+* The `SSHKit.download/3` and `SSHKit.upload/3` functions are now fully context-aware [#121]
+* They will respect the `user`, `env`, `path`… values set in the context
+
+### Deprecations:
+
+* Put deprecations here
+
+### Potentially breaking changes:
+
+* Put potentially breaking changes here
+
+### New features:
+
+* Put new features here
+
+### Fixes:
+
+* Put fixes here
+* Improved documentation about our release process
+
 ## `0.1.0` (2018-09-18)
 
 https://github.com/bitcrowd/sshkit.ex/compare/v0.0.3...v0.1.0

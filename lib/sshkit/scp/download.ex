@@ -22,16 +22,17 @@ defmodule SSHKit.SCP.Download do
   :ok = SSHKit.SCP.Download.transfer(conn, "/home/code/sshkit", "downloads", recursive: true)
   ```
   """
-  def transfer(connection, remote, local, options \\ []) do
-    start(connection, remote, Path.expand(local), options)
+  def transfer(connection, source, target, options \\ []) do
+    start(connection, source, Path.expand(target), options)
   end
 
-  defp start(connection, remote, local, options) do
+  defp start(connection, source, target, options) do
     timeout = Keyword.get(options, :timeout, :infinity)
-    command = Command.build(:download, remote, options)
+    map_cmd = Keyword.get(options, :map_cmd, &(&1))
+    command = map_cmd.(Command.build(:download, source, options))
     handler = connection_handler(options)
 
-    ini = {:next, local, [], %{}, <<>>}
+    ini = {:next, target, [], %{}, <<>>}
     SSH.run(connection, command, timeout: timeout, acc: {:cont, <<0>>, ini}, fun: handler)
   end
 
