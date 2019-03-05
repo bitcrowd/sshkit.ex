@@ -5,7 +5,7 @@
 
 SSHKit is an Elixir toolkit for performing tasks on one or more servers, built on top of Erlang’s SSH application.
 
-[Documentation for SSHKit is available online](https://hexdocs.pm/sshkit).
+[Documentation for SSHKit is available online][docs].
 
 ## Usage
 
@@ -88,12 +88,12 @@ Hint: We've found functional tests to run significantly faster with [Docker Mach
 
 * Make sure tests pass: `mix test`.
 * Increase version number keeping [semantic versioning](https://semver.org/) in mind.
-* Update [CHANGLOG.md](./CHANGELOG.md):
+* Update [CHANGLOG.md][changelog]:
   * Create a new section for the current version.
   * Reset the `master` chapter to empty template.
 * Commit your changes: `git commit -m "Release 0.1.0"`.
 * Tag the commit with the version number: `git tag -a v0.1.0`.
-  * Annotate the tag with the respective section from [CHANGLOG.md](./CHANGELOG.md) *(in a git-compatible format)*.
+  * Annotate the tag with the respective section from [CHANGLOG.md][changelog] *(in a git-compatible format)*.
 * Push your commit: `git push`.
 * Push the tag: `git push origin v0.1.0`
 * Publish the new release to hex.pm: `mix hex.publish`.
@@ -119,8 +119,11 @@ If you are looking for an Elixir deployment tool similar to Capistrano, take a l
 
 SSHKit source code is released under the MIT License.
 
-Check the [LICENSE](LICENSE) file for more information.
+Check the [LICENSE][license] file for more information.
 
   [issues]: https://github.com/bitcrowd/sshkit.ex/issues
   [pulls]: https://github.com/bitcrowd/sshkit.ex/pulls
-  [writing-docs]: http://elixir-lang.org/docs/stable/elixir/writing-documentation.html
+  [docs]: https://hexdocs.pm/sshkit
+  [changelog]: ./CHANGELOG.md
+  [license]: ./LICENSE
+  [writing-docs]: https://hexdocs.pm/elixir/writing-documentation.html
