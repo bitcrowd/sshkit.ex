@@ -22,8 +22,8 @@ context =
   |> SSHKit.umask("022")
   |> SSHKit.env(%{"NODE_ENV" => "production"})
 
-:ok = SSHKit.upload(context, ".", recursive: true)
-:ok = SSHKit.run(context, "yarn install")
+[:ok, :ok] = SSHKit.upload(context, ".", recursive: true)
+[{:ok, _, 0}, {:ok, _, 0}] = SSHKit.run(context, "yarn install")
 ```
 
 The [`SSHKit`](https://hexdocs.pm/sshkit/SSHKit.html) module documentation has more guidance and examples for the DSL.

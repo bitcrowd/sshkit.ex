@@ -4,7 +4,6 @@ defmodule SSHKit do
 
   ```
   hosts = ["1.eg.io", {"2.eg.io", port: 2222}]
-  hosts = [%SSHKit.Host{name: "3.eg.io", options: [port: 2223]} | hosts]
 
   context =
     SSHKit.context(hosts)
@@ -14,8 +13,8 @@ defmodule SSHKit do
     |> SSHKit.umask("022")
     |> SSHKit.env(%{"NODE_ENV" => "production"})
 
-  :ok = SSHKit.upload(context, ".", recursive: true)
-  :ok = SSHKit.run(context, "yarn install", mode: :parallel)
+  [:ok, :ok] = SSHKit.upload(context, ".", recursive: true)
+  [{:ok, _, 0}, {:ok, _, 0}] = SSHKit.run(context, "yarn install", mode: :parallel)
   ```
   """
 
