@@ -24,6 +24,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
 
 * Put fixes here
 * Improved documentation about our release process
+* Fix an Elixir 1.8 deprecation warning (#147)
 
 ## `0.2.0` (2019-??-??)
 

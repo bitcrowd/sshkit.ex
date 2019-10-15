@@ -20,10 +20,12 @@ defmodule SSHKit.SCP.Command do
   end
 
   defp flag(command, options) do
-    @flags
-    |> Enum.filter(fn {key, _} -> Keyword.get(options, key, false) end)
-    |> Enum.into([command], fn {_, flag} -> flag end)
-    |> Enum.join(" ")
+    flags =
+      @flags
+      |> Enum.filter(fn {key, _} -> Keyword.get(options, key, false) end)
+      |> Enum.map(fn {_, flag} -> flag end)
+
+    Enum.join([command] ++ flags, " ")
   end
 
   defp at(command, path) do
