@@ -8,13 +8,13 @@ matrix:
       otp_release: 18.1
       services: docker
     - elixir: 1.5
-      otp_release: 20.2
+      otp_release: 20.3
       services: docker
     - elixir: 1.6
       otp_release: 19.0
       services: docker
     - elixir: 1.6
-      otp_release: 20.2
+      otp_release: 20.3
       services: docker
 
 before_script:
