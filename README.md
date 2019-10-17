@@ -87,10 +87,10 @@ Hint: We've found functional tests to run significantly faster with [Docker Mach
 ## Releasing
 
 * Make sure tests pass: `mix test`.
-* Increase version number keeping [semantic versioning](https://semver.org/) in mind.
+* Increase version number in `mix.exs`, keeping [semantic versioning](https://semver.org/) in mind.
 * Update [CHANGLOG.md][changelog]:
   * Create a new section for the current version.
-  * Reset the `master` chapter to empty template.
+  * Reset the `master` section to the empty template.
 * Commit your changes: `git commit -m "Release 0.1.0"`.
 * Tag the commit with the version number: `git tag -a v0.1.0`.
   * Annotate the tag with the respective section from [CHANGLOG.md][changelog] *(in a git-compatible format)*.
