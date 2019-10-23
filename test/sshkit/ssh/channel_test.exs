@@ -51,6 +51,36 @@ defmodule SSHKit.SSH.ChannelTest do
     end
   end
 
+  describe "subsystem/3" do
+    test "requests a subsystem", %{chan: chan, impl: impl} do
+      impl |> expect(:subsystem, fn (connection_ref, channel_id, subsystem, timeout) ->
+        assert connection_ref == chan.connection.ref
+        assert channel_id == chan.id
+        assert subsystem  == 'example-subsystem'
+        assert timeout == :infinity
+        :success
+      end)
+
+      :success = subsystem(chan, "example-subsystem", impl: impl)
+    end
+
+    test "returns a failure if the subsystem could not be initialized", %{chan: chan, impl: impl} do
+      impl |> expect(:subsystem, fn (_, _, _, _) ->
+        :failure
+      end)
+
+      :failure = subsystem(chan, "example-subsystem", impl: impl)
+    end
+
+    test "returns an error if the initialization times out", %{chan: chan, impl: impl} do
+      impl |> expect(:subsystem, fn (_, _, _, _) ->
+        {:error, :timeout}
+      end)
+
+      {:error, :timeout} = subsystem(chan, "example-subsystem", impl: impl)
+    end
+  end
+
   describe "close/1" do
     test "closes the channel", %{chan: chan, impl: impl} do
       impl |> expect(:close, fn (connection_ref, channel_id) ->
