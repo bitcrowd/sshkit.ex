@@ -16,6 +16,7 @@ defmodule SSHKit.SSH.Channel.Impl do
   @type chan :: integer()
 
   @callback session_channel(conn, integer(), integer(), timeout()) :: {:ok, chan} | {:error, any()}
+  @callback subsystem(conn, chan, charlist(), keyword()) :: :success | :failure | {:error, :timeout} | {:error, :closed}
   @callback close(conn, chan) :: :ok
   @callback exec(conn, chan, binary(), timeout()) :: :success | :failure | {:error, :timeout} | {:error, :closed}
   @callback ptty_alloc(conn, chan, keyword(), timeout()) :: :success | :failure | {:error, :timeout} | {:error, :closed}

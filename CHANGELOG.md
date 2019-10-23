@@ -25,6 +25,9 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
 ### Fixes:
 
 <!-- Put fixes here -->
+* Add support for initializing subsystems using `SSH.Channel.subsystem`
+  * Subsystems allow applications or functions to use SSH as a protocol.
+    Examples of this are SFTP and NETCONF over SSH.
 
 ## `0.2.0` (2019-10-17)
 
@@ -89,7 +92,6 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.0.2...v0.0.3
 * Improved documentation [#67]
 * Added support for passing an anonymous function to `SSH.connect` [#72]
 * Add support for passing a `dry_run` flag to `SSHKit.SSH.connect` [#79]
-* Add support for `:ssh_connection.subsystem/4`
 
 ### Fixes:
 
