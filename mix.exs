@@ -1,7 +1,7 @@
 defmodule SSHKit.Mixfile do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @source "https://github.com/bitcrowd/sshkit.ex"
 
   def project do
@@ -25,7 +25,7 @@ defmodule SSHKit.Mixfile do
 
   defp deps do
     [{:credo, "~> 0.7", runtime: false, only: [:dev, :test]},
-     {:ex_doc, "~> 0.18.4", runtime: false, only: [:dev]},
+     {:ex_doc, "~> 0.21.2", runtime: false, only: [:dev]},
      {:inch_ex, "~> 1.0", runtime: false, only: [:dev, :test]},
      {:mox, "~> 0.3", only: :test}]
   end

@@ -39,8 +39,8 @@ defmodule SSHKit.SCP do
   :ok = SSHKit.SCP.upload(conn, ".", "/home/code/sshkit", recursive: true)
   ```
   """
-  def upload(connection, local, remote, options \\ []) do
-    Upload.transfer(connection, local, remote, options)
+  def upload(connection, source, target, options \\ []) do
+    Upload.transfer(connection, source, target, options)
   end
 
   @doc """
@@ -56,7 +56,7 @@ defmodule SSHKit.SCP do
   :ok = SSHKit.SCP.download(conn, "/home/code/sshkit", "downloads", recursive: true)
   ```
   """
-  def download(connection, remote, local, options \\ []) do
-    Download.transfer(connection, remote, local, options)
+  def download(connection, source, target, options \\ []) do
+    Download.transfer(connection, source, target, options)
   end
 end

@@ -4,26 +4,39 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
 
-* Put high-level summary here
+<!-- Put high-level summary here -->
+
+<!-- Give thanks to contributors and mention them! -->
 
 ### Deprecations:
 
-* Put deprecations here
+<!-- Put deprecations here -->
 
 ### Potentially breaking changes:
 
-* Put potentially breaking changes here
+<!-- Put potentially breaking changes here -->
 
 ### New features:
 
-* Put new features here
+<!-- Put new features here -->
 
 ### Fixes:
 
-* Put fixes here
-* Improved documentation about our release process
+<!-- Put fixes here -->
+
+## `0.2.0` (2019-10-17)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.1.0...v0.2.0
+
+* The `SSHKit.download/3` and `SSHKit.upload/3` functions are now fully context-aware [#121]
+* They will respect the `user`, `env`, `path`… values set in the context
+
+### Fixes:
+
+* Improve documentation about our release process
+* Fix an Elixir 1.8 deprecation warning (#147)
 
 ## `0.1.0` (2018-09-18)
 

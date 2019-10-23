@@ -148,7 +148,8 @@ defmodule SSHKitFunctionalTest do
   end
 
   describe "upload/3" do
-    @tag boot: [@bootconf, @bootconf]
+    @describetag boot: [@bootconf, @bootconf]
+
     test "uploads a file", %{hosts: hosts} do
       local = "test/fixtures/local.txt"
 
@@ -158,7 +159,6 @@ defmodule SSHKitFunctionalTest do
       assert verify_transfer(context, local, Path.basename(local))
     end
 
-    @tag boot: [@bootconf, @bootconf]
     test "recursive: true", %{hosts: [host | _] = hosts} do
       local = "test/fixtures"
       remote = "/home/#{host.options[:user]}/fixtures"
@@ -169,7 +169,6 @@ defmodule SSHKitFunctionalTest do
       assert verify_transfer(context, local, remote)
     end
 
-    @tag boot: [@bootconf, @bootconf]
     test "preserve: true", %{hosts: hosts} do
       local = "test/fixtures/local.txt"
       remote = Path.basename(local)
@@ -182,7 +181,6 @@ defmodule SSHKitFunctionalTest do
       assert verify_mtime(context, local, remote)
     end
 
-    @tag boot: [@bootconf, @bootconf]
     test "recursive: true, preserve: true", %{hosts: [host | _] = hosts} do
       local = "test/fixtures"
       remote = "/home/#{host.options[:user]}/fixtures"
@@ -194,9 +192,26 @@ defmodule SSHKitFunctionalTest do
       assert verify_mode(context, local, remote)
       assert verify_mtime(context, local, remote)
     end
+
+    test "with context", %{hosts: hosts} do
+      local = "test/fixtures"
+      remote = "target" # path relative to context path
+
+      context =
+        hosts
+        |> SSHKit.context()
+        |> SSHKit.path("/tmp")
+
+      assert [:ok, :ok] = SSHKit.upload(context, local, recursive: true, preserve: true, as: remote)
+      assert verify_transfer(context, local, Path.join(context.path, remote))
+      assert verify_mode(context, local, Path.join(context.path, remote))
+      assert verify_mtime(context, local, Path.join(context.path, remote))
+    end
   end
 
   describe "download/3" do
+    @describetag boot: [@bootconf]
+
     setup do
       tmpdir = create_local_tmp_path()
 
@@ -206,7 +221,6 @@ defmodule SSHKitFunctionalTest do
       {:ok, tmpdir: tmpdir}
     end
 
-    @tag boot: [@bootconf]
     test "gets a file", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures/remote.txt"
       local = Path.join(tmpdir, Path.basename(remote))
@@ -217,7 +231,6 @@ defmodule SSHKitFunctionalTest do
       assert verify_transfer(context, local, remote)
     end
 
-    @tag boot: [@bootconf]
     test "recursive: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures"
       local = Path.join(tmpdir, "fixtures")
@@ -228,7 +241,6 @@ defmodule SSHKitFunctionalTest do
       assert verify_transfer(context, local, remote)
     end
 
-    @tag boot: [@bootconf]
     test "preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures/remote.txt"
       local = Path.join(tmpdir, Path.basename(remote))
@@ -241,7 +253,6 @@ defmodule SSHKitFunctionalTest do
       assert verify_mtime(context, local, remote)
     end
 
-    @tag boot: [@bootconf]
     test "recursive: true, preserve: true", %{hosts: hosts, tmpdir: tmpdir} do
       remote = "/fixtures"
       local = Path.join(tmpdir, "fixtures")
@@ -252,6 +263,21 @@ defmodule SSHKitFunctionalTest do
       assert verify_mode(context, local, remote)
       assert verify_atime(context, local, remote)
       assert verify_mtime(context, local, remote)
+    end
+
+    test "with context", %{hosts: hosts, tmpdir: tmpdir} do
+      remote = "fixtures" # path relative to context path
+      local = Path.join(tmpdir, "fixtures")
+
+      context =
+        hosts
+        |> SSHKit.context()
+        |> SSHKit.path("/")
+
+      assert [:ok] = SSHKit.download(context, remote, recursive: true, preserve: true, as: local)
+      assert verify_transfer(context, local, Path.join(context.path, remote))
+      assert verify_mode(context, local, Path.join(context.path, remote))
+      assert verify_mtime(context, local, Path.join(context.path, remote))
     end
   end
 
