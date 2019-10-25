@@ -39,6 +39,10 @@ defmodule SSHKit.SSH.Channel do
     end
   end
 
+  defp build(connection, id, impl) do
+    %Channel{connection: connection, type: :session, id: id, impl: impl}
+  end
+
   @doc """
   Activates a subsystem on a channel.
 
@@ -53,10 +57,6 @@ defmodule SSHKit.SSH.Channel do
     impl = Keyword.get(options, :impl, :ssh_connection)
 
     impl.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout)
-  end
-
-  defp build(connection, id, impl) do
-    %Channel{connection: connection, type: :session, id: id, impl: impl}
   end
 
   @doc """
