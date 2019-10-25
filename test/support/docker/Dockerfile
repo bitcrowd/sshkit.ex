@@ -27,8 +27,8 @@ RUN echo "%passwordless-sudoers ALL=(ALL:ALL) NOPASSWD: ALL" >> /etc/sudoers.d/y
 # Add fixture data for tests
 COPY fixtures /fixtures
 
-# Sets up a subsystem
-RUN echo "Subsystem greeting-subsystem echo Hello, who am I talking to?; while :; do read varname;echo It\'s nice to meet you \$varname;done" >> /etc/ssh/sshd_config
+# Set up a subsystem
+RUN echo "Subsystem greeting-subsystem echo Hello, who am I talking to?; while :; do read varname; echo It\'s nice to meet you \$varname; done" >> /etc/ssh/sshd_config
 
 # Run SSH daemon and expose the standard SSH port.
 EXPOSE 22
