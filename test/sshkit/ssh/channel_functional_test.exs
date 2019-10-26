@@ -12,22 +12,21 @@ defmodule SSHKit.SSH.ChannelFunctionalTest do
       {:ok, channel} = SSHKit.SSH.Channel.open(conn)
       :success = SSHKit.SSH.Channel.subsystem(channel, "greeting-subsystem")
 
+      assert readline(channel) == "Hello, who am I talking to?\n"
+
       SSHKit.SSH.Channel.send(channel, "Lorem\n")
 
-      [welcome_message, response_message, _] = get_messages(channel)
-
-      assert welcome_message == "Hello, who am I talking to?"
-      assert response_message == "It's nice to meet you Lorem"
+      assert readline(channel) == "It's nice to meet you Lorem\n"
     end
   end
 
-  defp get_messages(channel, message \\ "") do
+  defp readline(channel, message \\ "") do
     {:ok, {:data, _channel, _type, next_line}} = SSHKit.SSH.Channel.recv(channel)
 
-    if String.ends_with?(next_line, "Lorem\n") do
-      String.split("#{message}#{next_line}", "\n")
+    if String.ends_with?(next_line, "\n") do
+      "#{message}#{next_line}"
     else
-      get_messages(channel, "#{message}#{next_line}")
+      readline(channel, "#{message}#{next_line}")
     end
   end
 end
