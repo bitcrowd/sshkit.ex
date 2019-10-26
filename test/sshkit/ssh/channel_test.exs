@@ -64,6 +64,15 @@ defmodule SSHKit.SSH.ChannelTest do
       :success = subsystem(chan, "example-subsystem", impl: impl)
     end
 
+    test "requests a subsystem with a specific timeout",  %{chan: chan, impl: impl} do
+      impl |> expect(:subsystem, fn (_, _, _, timeout) ->
+        assert timeout == 3000
+        :success
+      end)
+
+      :success = subsystem(chan, "example-subsystem", timeout: 3000, impl: impl)
+    end
+
     test "returns a failure if the subsystem could not be initialized", %{chan: chan, impl: impl} do
       impl |> expect(:subsystem, fn (_, _, _, _) ->
         :failure
