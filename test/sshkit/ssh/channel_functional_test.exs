@@ -14,7 +14,7 @@ defmodule SSHKit.SSH.ChannelFunctionalTest do
 
       assert readline(channel) == "Hello, who am I talking to?\n"
 
-      SSHKit.SSH.Channel.send(channel, "Lorem\n")
+      :ok = SSHKit.SSH.Channel.send(channel, "Lorem\n")
 
       assert readline(channel) == "It's nice to meet you Lorem\n"
     end
