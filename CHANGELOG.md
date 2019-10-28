@@ -21,13 +21,24 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
 ### New features:
 
 <!-- Put new features here -->
-* Add support for initializing subsystems using `SSH.Channel.subsystem`
-  * Subsystems allow applications or functions to use SSH as a protocol.
-    Examples of this are SFTP and NETCONF over SSH.
 
 ### Fixes:
 
 <!-- Put fixes here -->
+
+## `0.3.0` (2019-10-28)
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...v0.3.0
+
+This version adds SSH subsystem support.
+
+Shout-out to @bartj3 🙌
+
+### New features:
+
+* Add support for initializing subsystems using `SSH.Channel.subsystem`
+  * Subsystems allow applications or functions to use SSH as a protocol.
+    Examples of this are SFTP and NETCONF over SSH.
 
 ## `0.2.0` (2019-10-17)
 
