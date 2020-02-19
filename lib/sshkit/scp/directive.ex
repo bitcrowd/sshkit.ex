@@ -1,5 +1,10 @@
 defmodule SSHKit.SCP.Directive do
-  @moduledoc false
+  @moduledoc """
+  - "D<mode> 0 <name>" create and enter a directory
+  - "C<mode> <length> <name>" create a file
+  - "E" leave directory and go up
+  - "T<mtime> 0 <atime> 0" preserve file timestamps
+  """
 
   require Bitwise
 
