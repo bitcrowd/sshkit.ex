@@ -307,12 +307,12 @@ defmodule SSHKit do
   assert "Hello World!\n" == stdout
   ```
   """
-  def run(context, command) do
+  def run(context, command, run_opts = [] \\ []) do
     cmd = Context.build(context, command)
 
     run = fn host ->
       {:ok, conn} = SSH.connect(host.name, host.options)
-      res = SSH.run(conn, cmd)
+      res = SSH.run(conn, cmd, run_opts)
       :ok = SSH.close(conn)
       res
     end
