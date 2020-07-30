@@ -41,6 +41,9 @@ defmodule SSHKit.SCP.Download do
       case message do
         {:data, _, 0, data} ->
           process_data(state, data, options)
+        {:data, _, _, data} ->
+          {:next, path, stack, attrs, _buffer} = state
+          next(options, path, stack, attrs, data)
         {:exit_status, _, status} ->
           exited(options, state, status)
         {:eof, _} ->
