@@ -159,6 +159,28 @@ defmodule SSHKitFunctionalTest do
       assert verify_transfer(context, local, Path.basename(local))
     end
 
+    test "uploads a file to a directory that does not exist", %{hosts: hosts} do
+      local = "test/fixtures/local.txt"
+
+      context =
+        hosts
+        |> SSHKit.context()
+        |> SSHKit.path("/otp/releases")
+
+      assert [error: _, error: _] = SSHKit.upload(context, local)
+    end
+
+    test "uploads a file to a directory we have no access to", %{hosts: hosts} do
+      local = "test/fixtures/local.txt"
+
+      context =
+        hosts
+        |> SSHKit.context()
+        |> SSHKit.path("/")
+
+      assert [error: _, error: _] = SSHKit.upload(context, local)
+    end
+
     test "recursive: true", %{hosts: [host | _] = hosts} do
       local = "test/fixtures"
       remote = "/home/#{host.options[:user]}/fixtures"
