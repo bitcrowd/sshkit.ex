@@ -107,6 +107,9 @@ defmodule SSHKit.SCP.Upload do
         {:data, _, 0, data} ->
           handle_error_data(state, options, data)
 
+        {:data, _, 1, data} ->
+          fatal(options, state, data)
+
         {:exit_status, _, status} ->
           exited(options, state, status)
 
@@ -221,6 +224,13 @@ defmodule SSHKit.SCP.Upload do
     else
       {:cont, {:warning, state, buffer}}
     end
+  end
+
+  # There are warnings that we don't understand correctly. If that is the case
+  # we treat them as errors.
+  # For example a permission denied error will be treated as such.
+  defp warning(options, state, buffer) do
+    fatal(options, state, buffer)
   end
 
   defp fatal(_, state, buffer) do
