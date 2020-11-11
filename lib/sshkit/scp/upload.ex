@@ -218,19 +218,16 @@ defmodule SSHKit.SCP.Upload do
     {:cont, {:error, "SCP channel closed before completing the transfer"}}
   end
 
-  defp warning(_, state = {name, cwd, stack, errs}, buffer) do
+  defp warning(options, {name, _file, _stat, cwd, stack, errs}, buffer) do
+    warning(options, {name, cwd, stack, errs}, buffer)
+  end
+
+  defp warning(options, state = {_name, cwd, stack, errs}, buffer) do
     if String.last(buffer) == "\n" do
-      {:cont, {name, cwd, stack, errs ++ [String.trim(buffer)]}}
+      next(options, cwd, stack, errs ++ [String.trim(buffer)])
     else
       {:cont, {:warning, state, buffer}}
     end
-  end
-
-  # There are warnings that we don't understand correctly. If that is the case
-  # we treat them as errors.
-  # For example a permission denied error will be treated as such.
-  defp warning(options, state, buffer) do
-    fatal(options, state, buffer)
   end
 
   defp fatal(_, state, buffer) do
