@@ -46,11 +46,22 @@ defmodule SSHKit.SCPFunctionalTest do
       local = "test/fixtures/"
       remote = "/home/#{host.options[:user]}/destination"
 
-      SSH.connect host.name, host.options, fn conn ->
+      SSH.connect(host.name, host.options, fn conn ->
         assert :ok = SCP.upload(conn, local, remote, recursive: true, preserve: true)
         assert verify_mode(conn, local, remote)
         assert verify_mtime(conn, local, remote)
-      end
+      end)
+    end
+
+    @tag boot: [@bootconf]
+    test "uploads to nonexistent target directory (recursive: true)", %{hosts: [host]} do
+      local = "test/fixtures/local_dir"
+      remote = "/some/nonexistent/destination"
+
+      SSH.connect(host.name, host.options, fn conn ->
+        assert {:error, msg} = SCP.upload(conn, local, remote, recursive: true)
+        assert msg =~ "scp: /some/nonexistent/destination: No such file or directory"
+      end)
     end
   end
 

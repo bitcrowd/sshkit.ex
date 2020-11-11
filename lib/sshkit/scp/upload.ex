@@ -216,15 +216,13 @@ defmodule SSHKit.SCP.Upload do
     {:cont, {:error, "SCP channel closed before completing the transfer"}}
   end
 
-  defp warning(options, state, buffer) do
-    if String.last(buffer) == "\n" do
-      case state do
-        {name, cwd, stack, errs} ->
-          {:cont, {name, cwd, stack, errs ++ [String.trim(buffer)]}}
+  defp warning(options, {name, _file, _stat, cwd, stack, errs}, buffer) do
+    warning(options, {name, cwd, stack, errs}, buffer)
+  end
 
-        {name, file, stat, cwd, stack, errs} ->
-          next(options, cwd, stack, errs ++ [String.trim(buffer)])
-      end
+  defp warning(options, {name, cwd, stack, errs} = state, buffer) do
+    if String.last(buffer) == "\n" do
+      next(options, cwd, stack, errs ++ [String.trim(buffer)])
     else
       {:cont, {:warning, state, buffer}}
     end
