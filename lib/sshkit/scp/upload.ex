@@ -81,7 +81,7 @@ defmodule SSHKit.SCP.Upload do
 
   defp start(%{target: target, state: state, handler: handler, options: options}, connection) do
     timeout = Keyword.get(options, :timeout, :infinity)
-    map_cmd = Keyword.get(options, :map_cmd, &(&1))
+    map_cmd = Keyword.get(options, :map_cmd, & &1)
     command = map_cmd.(Command.build(:upload, target, options))
     ssh = Keyword.get(options, :ssh, SSH)
     ssh.run(connection, command, timeout: timeout, acc: {:cont, state}, fun: handler)
@@ -95,18 +95,25 @@ defmodule SSHKit.SCP.Upload do
       case message do
         {:data, _, 0, <<@warning, data::binary>>} ->
           warning(options, state, data)
+
         {:data, _, 0, <<@fatal, data::binary>>} ->
           fatal(options, state, data)
+
         {:data, _, 0, <<@normal>>} ->
           handle_data(state, options)
+
         {:data, _, 0, data} ->
           handle_error_data(state, options, data)
+
         {:data, _, 1, data} ->
           fatal(options, state, data)
+
         {:exit_status, _, status} ->
           exited(options, state, status)
+
         {:eof, _} ->
           eof(options, state)
+
         {:closed, _} ->
           closed(options, state)
       end
@@ -115,10 +122,17 @@ defmodule SSHKit.SCP.Upload do
 
   defp handle_data(state, options) do
     case state do
-      {:next, cwd, stack, errs} -> next(options, cwd, stack, errs)
-      {:directory, name, stat, cwd, stack, errs} -> directory(options, name, stat, cwd, stack, errs)
-      {:regular, name, stat, cwd, stack, errs} -> regular(options, name, stat, cwd, stack, errs)
-      {:write, name, stat, cwd, stack, errs} -> write(options, name, stat, cwd, stack, errs)
+      {:next, cwd, stack, errs} ->
+        next(options, cwd, stack, errs)
+
+      {:directory, name, stat, cwd, stack, errs} ->
+        directory(options, name, stat, cwd, stack, errs)
+
+      {:regular, name, stat, cwd, stack, errs} ->
+        regular(options, name, stat, cwd, stack, errs)
+
+      {:write, name, stat, cwd, stack, errs} ->
+        write(options, name, stat, cwd, stack, errs)
     end
   end
 
@@ -141,10 +155,11 @@ defmodule SSHKit.SCP.Upload do
     path = Path.join(cwd, name)
     stat = File.stat!(path, time: :posix)
 
-    stack = case stat.type do
-      :directory -> [File.ls!(path) | [rest | dirs]]
-      :regular -> [rest | dirs]
-    end
+    stack =
+      case stat.type do
+        :directory -> [File.ls!(path) | [rest | dirs]]
+        :regular -> [rest | dirs]
+      end
 
     if Keyword.get(options, :preserve, false) do
       time(options, stat.type, name, stat, cwd, stack, errs)
@@ -181,7 +196,8 @@ defmodule SSHKit.SCP.Upload do
   end
 
   defp exited(_, {_, _, _, errs}, status) do
-    {:halt, {:error, "SCP exited before completing the transfer (#{status}): #{Enum.join(errs, ", ")}"}}
+    {:halt,
+     {:error, "SCP exited before completing the transfer (#{status}): #{Enum.join(errs, ", ")}"}}
   end
 
   defp eof(_, state) do
@@ -200,19 +216,18 @@ defmodule SSHKit.SCP.Upload do
     {:cont, {:error, "SCP channel closed before completing the transfer"}}
   end
 
-  defp warning(_, state = {name, cwd, stack, errs}, buffer) do
+  defp warning(options, state, buffer) do
     if String.last(buffer) == "\n" do
-      {:cont, {name, cwd, stack, errs ++ [String.trim(buffer)]}}
+      case state do
+        {name, cwd, stack, errs} ->
+          {:cont, {name, cwd, stack, errs ++ [String.trim(buffer)]}}
+
+        {name, file, stat, cwd, stack, errs} ->
+          next(options, cwd, stack, errs ++ [String.trim(buffer)])
+      end
     else
       {:cont, {:warning, state, buffer}}
     end
-  end
-
-  # There are warnings that we don't understand correctly. If that is the case
-  # we treat them as errors.
-  # For example a permission denied error will be treated as such.
-  defp warning(options, state, buffer) do
-    fatal(options, state, buffer)
   end
 
   defp fatal(_, state, buffer) do
