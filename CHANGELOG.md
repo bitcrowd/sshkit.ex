@@ -4,9 +4,11 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.3.0...HEAD
 
 <!-- Put high-level summary here -->
+
+* Drop SCP support, create alternative file transfer implementation
 
 <!-- Give thanks to contributors and mention them! -->
 

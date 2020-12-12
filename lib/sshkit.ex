@@ -18,7 +18,6 @@ defmodule SSHKit do
   ```
   """
 
-  alias SSHKit.SCP
   alias SSHKit.SSH
 
   alias SSHKit.Context
@@ -352,20 +351,7 @@ defmodule SSHKit do
   ```
   """
   def upload(context, source, options \\ []) do
-    options = Keyword.put(options, :map_cmd, &Context.build(context, &1))
-
-    target = Keyword.get(options, :as, Path.basename(source))
-
-    run = fn host ->
-      {:ok, res} =
-        SSH.connect(host.name, host.options, fn conn ->
-          SCP.upload(conn, source, target, options)
-        end)
-
-      res
-    end
-
-    Enum.map(context.hosts, run)
+    # TODO
   end
 
   @doc ~S"""
@@ -400,19 +386,6 @@ defmodule SSHKit do
   ```
   """
   def download(context, source, options \\ []) do
-    options = Keyword.put(options, :map_cmd, &Context.build(context, &1))
-
-    target = Keyword.get(options, :as, Path.basename(source))
-
-    run = fn host ->
-      {:ok, res} =
-        SSH.connect(host.name, host.options, fn conn ->
-          SCP.download(conn, source, target, options)
-        end)
-
-      res
-    end
-
-    Enum.map(context.hosts, run)
+    # TODO
   end
 end
