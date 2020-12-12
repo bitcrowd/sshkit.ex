@@ -2,7 +2,6 @@ defmodule SSHKit.Context do
   @moduledoc """
   A context encapsulates the environment for the execution of a task. That is:
 
-  * hosts to run the task on, see `SSHKit.context/2`
   * working directory to start in, see `SSHKit.path/2`
   * user to run as, see `SSHKit.user/2`
   * group, see `SSHKit.group/2`
@@ -15,7 +14,7 @@ defmodule SSHKit.Context do
 
   import SSHKit.Utils
 
-  defstruct hosts: [], env: nil, path: nil, umask: nil, user: nil, group: nil
+  defstruct env: nil, path: nil, umask: nil, user: nil, group: nil
 
   @doc """
   Compiles an executable command string for running the given `command`
