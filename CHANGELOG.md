@@ -8,8 +8,6 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.3.0...HEAD
 
 <!-- Put high-level summary here -->
 
-* Drop SCP support, create alternative file transfer implementation
-
 <!-- Give thanks to contributors and mention them! -->
 
 ### Deprecations:
@@ -28,6 +26,16 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.3.0...HEAD
 ### Fixes:
 
 <!-- Put fixes here -->
+
+## `1.0.0` (??)
+
+* Implement new top-level package API
+  * Explicitly establish, re-use and close connections
+  * Enable streaming data to and from a remote
+  * Make context optional
+* Replace SCP with an alternative file transfer implementation
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.3.0...v1.0.0
 
 ## `0.3.0` (2019-10-28)
 
