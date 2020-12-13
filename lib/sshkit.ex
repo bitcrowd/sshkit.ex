@@ -6,7 +6,7 @@ defmodule SSHKit do
   hosts = ["1.eg.io", {"2.eg.io", port: 2222}]
 
   context =
-    SSHKit.context(hosts)
+    SSHKit.context()
     |> SSHKit.path("/var/www/phx")
     |> SSHKit.user("deploy")
     |> SSHKit.group("deploy")
@@ -24,123 +24,67 @@ defmodule SSHKit do
   alias SSHKit.Host
 
   @doc """
-  Produces an `SSHKit.Host` struct holding the information
-  needed to connect to a (remote) host.
+  TODO
 
-  ## Examples
-
-  You can pass a map with hostname and options:
-
-  ```
-  host = SSHKit.host(%{name: "name.io", options: [port: 2222]})
-
-  # This means, that if you pass in a host struct,
-  # you'll get the same result. In particular:
-  host == SSHKit.host(host)
-  ```
-
-  …or, alternatively, a tuple with hostname and options:
-
-  ```
-  host = SSHKit.host({"name.io", port: 2222})
-  ```
-
-  See `host/2` for additional details and examples.
-  """
-  def host(%{name: name, options: options}) do
-    %Host{name: name, options: options}
-  end
-
-  def host({name, options}) do
-    %Host{name: name, options: options}
-  end
-
-  @doc """
-  Produces an `SSHKit.Host` struct holding the information
-  needed to connect to a (remote) host.
-
-  ## Examples
-
-  In its most basic version, you just pass a hostname and all other options
-  will use the defaults:
-
-  ```
-  host = SSHKit.host("name.io")
-  ```
-
-  If you wish to provide additional host options, e.g. a non-standard port,
-  you can pass a keyword list as the second argument:
-
-  ```
-  host = SSHKit.host("name.io", port: 2222)
-  ```
-
-  One or many of these hosts can then be used to create an execution context
-  in which commands can be executed:
-
-  ```
-  host
-  |> SSHKit.context()
-  |> SSHKit.run("echo \"That was fun\"")
-  ```
-
-  See `host/1` for additional ways of specifying host details.
-  """
-  def host(host, options \\ [])
-
-  def host(name, options) when is_binary(name) do
-    %Host{name: name, options: options}
-  end
-
-  def host(%{name: name, options: options}, defaults) do
-    %Host{name: name, options: Keyword.merge(defaults, options)}
-  end
-
-  def host({name, options}, defaults) do
-    %Host{name: name, options: Keyword.merge(defaults, options)}
-  end
-
-  @doc """
   Takes one or more (remote) hosts and creates an execution context in which
   remote commands can be run. Accepts any form of host specification also
   accepted by `host/1` and `host/2`, i.e. binaries, maps and 2-tuples.
+  """
+  def connect(host, options \\ []) do
+    SSH.connect(host, options)
+  end
+
+  def close(conn) do
+    SSH.close(conn)
+  end
+
+  def run(conn, command, options \\ []) do
+    SSH.run(conn, command, options)
+  end
+
+  def send(chan, type \\ 0, data) do
+    SSH.Channel.send(chan, type, data)
+  end
+
+  def stream(chan, acc, fun) do
+    {:ok, msg} = SSH.Channel.recv(chan) # TODO: timeout?
+
+    next =
+      case msg do
+        {:exit_signal, ^chan, signal, message, lang} ->
+          fun.({:signal, chan, signal, message, lang}, acc)
+
+        {:exit_status, ^chan, status} ->
+          fun.({:exit, chan, status}, acc)
+
+        {:data, ^chan, 0, data} ->
+          fun.({:stdout, chan, data}, acc)
+
+        {:data, ^chan, 1, data} ->
+          fun.({:stderr, chan, data}, acc)
+
+        {:eof, ^chan} ->
+          fun.({:eof, chan}, acc)
+
+        {:closed, ^chan} ->
+          fun.({:closed, chan}, acc)
+      end
+
+    case next do
+      {:cont, acc} -> stream(chan, acc, fun)
+      {:halt, acc} -> {:ok, acc}
+      other -> other
+    end
+  end
+
+  @doc """
+  Creates an execution context in which remote commands can be run.
 
   See `path/2`, `user/2`, `group/2`, `umask/2`, and `env/2`
   for details on how to derive variations of a context.
-
-  ## Example
-
-  Create an execution context for two hosts. Commands issued in this context
-  will be executed on both hosts.
-
-  ```
-  hosts = ["10.0.0.1", "10.0.0.2"]
-  context = SSHKit.context(hosts)
-  ```
-
-  Create a context for hosts with different connection options:
-
-  ```
-  hosts = [{"10.0.0.3", port: 2223}, %{name: "10.0.0.4", options: [port: 2224]}]
-  context = SSHKit.context(hosts)
-  ```
-
-  Any shared options can be specified in the second argument.
-  Here we add a user and port for all hosts.
-
-  ```
-  hosts = ["10.0.0.1", "10.0.0.2"]
-  options = [user: "admin", port: 2222]
-  context = SSHKit.context(hosts, options)
-  ```
   """
-  def context(hosts, defaults \\ []) do
-    hosts =
-      hosts
-      |> List.wrap()
-      |> Enum.map(&host(&1, defaults))
-
-    %Context{hosts: hosts}
+  def context() do
+    %Context{}
   end
 
   @doc """
@@ -153,10 +97,9 @@ defmodule SSHKit do
   Create `/var/www/app/config.json`:
 
   ```
-  "10.0.0.1"
-  |> SSHKit.context()
+  SSHKit.context()
   |> SSHKit.path("/var/www/app")
-  |> SSHKit.run("touch config.json")
+  |> SSHKit.run(conn, "touch config.json")
   ```
   """
   def path(context, path) do
@@ -261,62 +204,6 @@ defmodule SSHKit do
   """
   def env(context, map) do
     %Context{context | env: map}
-  end
-
-  @doc ~S"""
-  Executes a command in the given context.
-
-  Returns a list of tuples, one fore each host in the context.
-
-  The resulting tuples have the form `{:ok, output, exit_code}` –
-  as returned by `SSHKit.SSH.run/3`:
-
-  * `exit_code` is the number with which the executed command returned.
-
-      If everything went well, that usually is `0`.
-
-  * `output` is a keyword list of the output collected from the command.
-
-      It has the form:
-
-      ```
-      [
-        stdout: "output on standard out",
-        stderr: "output on standard error",
-        stdout: "some more normal output",
-        …
-      ]
-      ```
-
-  ## Example
-
-  Run a command and verify its output:
-
-  ```
-  [{:ok, output, 0}] =
-    "example.io"
-    |> SSHKit.context()
-    |> SSHKit.run("echo \"Hello World!\"")
-
-  stdout =
-    output
-    |> Keyword.get_values(:stdout)
-    |> Enum.join()
-
-  assert "Hello World!\n" == stdout
-  ```
-  """
-  def run(context, command) do
-    cmd = Context.build(context, command)
-
-    run = fn host ->
-      {:ok, conn} = SSH.connect(host.name, host.options)
-      res = SSH.run(conn, cmd)
-      :ok = SSH.close(conn)
-      res
-    end
-
-    Enum.map(context.hosts, run)
   end
 
   @doc ~S"""

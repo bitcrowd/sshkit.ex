@@ -109,9 +109,8 @@ defmodule SSHKit.SSH do
 
   ## Options
 
+  * TODO: disambiguate channel opening and exec options
   * `:timeout` - maximum wait time between messages, defaults to `:infinity`
-  * `:fun` - handler function passed to `SSHKit.SSH.Channel.loop/4`
-  * `:acc` - initial accumulator value used in the loop
 
   Any other options will be passed on to `SSHKit.SSH.Channel.open/2` when
   creating the channel for executing the command.
@@ -125,46 +124,19 @@ defmodule SSHKit.SSH do
   """
   @callback run(Connection.t(), binary(), keyword()) :: any()
   def run(connection, command, options \\ []) do
-    {acc, options} = Keyword.pop(options, :acc, {:cont, {[], nil}})
-    {fun, options} = Keyword.pop(options, :fun, &capture/2)
-
     timeout = Keyword.get(options, :timeout, :infinity)
 
     with {:ok, channel} <- Channel.open(connection, options) do
       case Channel.exec(channel, command, timeout) do
         :success ->
-          channel
-          |> Channel.loop(timeout, acc, fun)
-          |> elem(1)
+          {:ok, channel}
 
         :failure ->
           {:error, :failure}
 
-        err ->
-          err
+        error ->
+          error
       end
     end
-  end
-
-  defp capture(message, acc = {buffer, status}) do
-    next =
-      case message do
-        {:data, _, 0, data} ->
-          {[{:stdout, data} | buffer], status}
-
-        {:data, _, 1, data} ->
-          {[{:stderr, data} | buffer], status}
-
-        {:exit_status, _, code} ->
-          {buffer, code}
-
-        {:closed, _} ->
-          {:ok, Enum.reverse(buffer), status}
-
-        _ ->
-          acc
-      end
-
-    {:cont, next}
   end
 end
