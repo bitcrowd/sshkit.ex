@@ -46,35 +46,43 @@ defmodule SSHKit do
     SSH.Channel.send(chan, type, data)
   end
 
-  def stream(chan, acc, fun) do
-    {:ok, msg} = SSH.Channel.recv(chan) # TODO: timeout?
+  def stream(chan) do
+    Stream.unfold(:cont, fn
+      :cont ->
+        {:ok, msg} = SSH.Channel.recv(chan) # TODO: timeout?
 
-    next =
-      case msg do
-        {:exit_signal, ^chan, signal, message, lang} ->
-          fun.({:signal, chan, signal, message, lang}, acc)
+        value =
+          case msg do
+            {:exit_signal, ^chan, signal, message, lang} ->
+              {:signal, chan, signal, message, lang}
 
-        {:exit_status, ^chan, status} ->
-          fun.({:exit, chan, status}, acc)
+            {:exit_status, ^chan, status} ->
+              {:exit, chan, status}
 
-        {:data, ^chan, 0, data} ->
-          fun.({:stdout, chan, data}, acc)
+            {:data, ^chan, 0, data} ->
+              {:stdout, chan, data}
 
-        {:data, ^chan, 1, data} ->
-          fun.({:stderr, chan, data}, acc)
+            {:data, ^chan, 1, data} ->
+              {:stderr, chan, data}
 
-        {:eof, ^chan} ->
-          fun.({:eof, chan}, acc)
+            {:eof, ^chan} ->
+              {:eof, chan}
 
-        {:closed, ^chan} ->
-          fun.({:closed, chan}, acc)
-      end
+            {:closed, ^chan} ->
+              {:closed, chan}
+          end
 
-    case next do
-      {:cont, acc} -> stream(chan, acc, fun)
-      {:halt, acc} -> {:ok, acc}
-      other -> other
-    end
+        next =
+          case value do
+            {:closed, _} -> :halt
+            _ -> :cont
+          end
+
+        {value, next}
+
+      :halt ->
+        nil
+    end)
   end
 
   @doc """

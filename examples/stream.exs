@@ -1,34 +1,30 @@
-# TODO: Timeouts?
 # TODO: Multiple hosts?
 
 {:ok, conn} = SSHKit.connect("127.0.0.1", port: 2222, user: "deploy", password: "deploy", silently_accept_hosts: true)
 
 {:ok, chan} = SSHKit.run(conn, ~S(echo "Who's there?"; read msg; echo "Hello $msg!"))
 
-{:ok, out1} = SSHKit.stream(chan, "", fn {:stdout, ^chan, data}, buffer ->
-  tag = if String.ends_with?(data, "\n"), do: :halt, else: :cont
-  {tag, buffer <> data}
-end)
+IO.write("> ")
 
-out1
-|> String.trim()
-|> IO.puts()
+chan
+|> SSHKit.stream()
+|> Stream.map(fn {:stdout, ^chan, chunk} -> chunk end)
+|> Stream.each(&IO.write/1)
+|> Stream.take_while(fn chunk -> !String.ends_with?(chunk, "\n") end)
+|> Stream.run()
+
+IO.write("< SSHKit\n")
 
 :ok = SSHKit.send(chan, "SSHKit\n")
 
-{:ok, out2} = SSHKit.stream(chan, "", fn
-  {:stdout, ^chan, data}, buffer ->
-    {:cont, buffer <> data}
+IO.write("> ")
 
-  {:closed, ^chan}, buffer ->
-    {:halt, buffer}
-
-  _, buffer ->
-    {:cont, buffer}
-end)
-
-out2
-|> String.trim()
-|> IO.puts()
+# TODO: Timeouts?
+chan
+|> SSHKit.stream()
+|> Stream.filter(fn msg -> elem(msg, 0) == :stdout end)
+|> Stream.map(fn {:stdout, ^chan, chunk} -> chunk end)
+|> Stream.each(&IO.write/1)
+|> Stream.run()
 
 :ok = SSHKit.close(conn)
