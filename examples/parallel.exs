@@ -17,7 +17,7 @@ tasks =
       {:ok, chan} = SSHKit.run(conn, "uptime")
 
       chan
-      |> SSHKit.stream()
+      |> SSHKit.stream!()
       |> Enum.reduce(nil, fn
         {:stdout, chan, output}, acc ->
           IO.write("[#{label.(chan.connection)}] (stdout) #{output}")

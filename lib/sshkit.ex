@@ -47,7 +47,7 @@ defmodule SSHKit do
     SSH.Channel.send(chan, type, data)
   end
 
-  def stream(chan) do
+  def stream!(chan) do
     Stream.unfold(:cont, fn
       :cont ->
         {:ok, msg} = SSH.Channel.recv(chan) # TODO: timeout?

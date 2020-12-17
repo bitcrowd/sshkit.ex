@@ -5,7 +5,7 @@
 IO.write("> ")
 
 chan
-|> SSHKit.stream()
+|> SSHKit.stream!()
 |> Stream.map(fn {:stdout, ^chan, chunk} -> chunk end)
 |> Stream.each(&IO.write/1)
 |> Stream.take_while(fn chunk -> !String.ends_with?(chunk, "\n") end)
@@ -19,7 +19,7 @@ IO.write("> ")
 
 # TODO: Timeouts?
 chan
-|> SSHKit.stream()
+|> SSHKit.stream!()
 |> Stream.filter(fn msg -> elem(msg, 0) == :stdout end)
 |> Stream.map(fn {:stdout, ^chan, chunk} -> chunk end)
 |> Stream.each(&IO.write/1)
