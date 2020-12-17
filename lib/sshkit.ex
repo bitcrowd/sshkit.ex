@@ -22,6 +22,7 @@ defmodule SSHKit do
 
   alias SSHKit.Context
   alias SSHKit.Host
+  alias SSHKit.Upload
 
   @doc """
   TODO
@@ -245,8 +246,12 @@ defmodule SSHKit do
     |> SSHKit.upload("local.txt", as: "remote.txt")
   ```
   """
-  def upload(context, source, options \\ []) do
-    # TODO
+  def upload(conn, source, target, options \\ []) do
+    upload = Upload.init(source, target, options)
+
+    with {:ok, upload} <- Upload.start(upload, conn) do
+      Upload.loop(upload)
+    end
   end
 
   @doc ~S"""
@@ -280,7 +285,7 @@ defmodule SSHKit do
     |> SSHKit.download("remote.txt", as: "local.txt")
   ```
   """
-  def download(context, source, options \\ []) do
+  def download(conn, source, options \\ []) do
     # TODO
   end
 end
