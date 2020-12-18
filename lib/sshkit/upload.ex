@@ -60,29 +60,34 @@ defmodule SSHKit.Upload do
       case stat.type do
         :directory ->
           # TODO: Timeouts
-          :ok = :ssh_sftp.make_dir(channel, remote)
-          {:ok, names} = File.ls(path)
-          {:ok, %{upload | cwd: path, stack: [names | [rest | paths]]}}
+          with :ok <- :ssh_sftp.make_dir(channel, remote),
+               {:ok, names} <- File.ls(path) do
+            {:ok, %{upload | cwd: path, stack: [names | [rest | paths]]}}
+          end
 
         :regular ->
           # TODO: Timeouts
-          {:ok, handle} = :ssh_sftp.open(channel, remote, [:write, :binary])
-
-          path
-          |> File.stream!([], 16_384)
-          |> Stream.each(fn data -> :ok = :ssh_sftp.write(channel, handle, data) end)
-          |> Stream.run()
-
-          :ok = :ssh_sftp.close(channel, handle)
-          {:ok, %{upload | stack: [rest | paths]}}
+          with {:ok, handle} <- :ssh_sftp.open(channel, remote, [:write, :binary]),
+               :ok <- write(path, channel, handle),
+               :ok = :ssh_sftp.close(channel, handle) do
+            {:ok, %{upload | stack: [rest | paths]}}
+          end
 
         :symlink ->
-          nil
+          # TODO: http://erlang.org/doc/man/ssh_sftp.html#make_symlink-3
+          raise "not yet implemented"
 
         _ ->
           {:error, {:unkown_file_type, path}}
       end
     end
+  end
+
+  defp write(path, channel, handle) do
+    path
+    |> File.stream!([], 16_384)
+    |> Stream.map(fn data -> :ssh_sftp.write(channel, handle, data) end)
+    |> Enum.find(:ok, &(&1 != :ok))
   end
 
   # TODO: Make `loop` return a stream? Possibly rename to "stream" then
