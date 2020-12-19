@@ -12,29 +12,50 @@ SSHKit is an Elixir toolkit for performing tasks on one or more servers, built o
 SSHKit is designed to enable server task automation in a structured and repeatable way, e.g. in the context of deployment tools:
 
 ```elixir
-hosts = ["1.eg.io", {"2.eg.io", port: 2222}]
+{:ok, conn} = SSHKit.connect("eg.io", port: 2222)
+{:ok, chan} = SSHKit.run(conn, "apt-get update -y")
+:ok = SSHKit.flush(chan)
+:ok = SSHKit.close(conn)
+```
 
-{:ok, conn} = SSHKit.connect(hosts)
-
-{:ok, _} = SSHKit.run(conn, "apt-get update -y")
-
-{:ok, } = SSHKit.stream(chan)
+```elixir
+{:ok, conn} = SSHKit.connect("eg.io", port: 2222)
 
 context =
-  SSHKit.context()
-  |> SSHKit.path("/var/www/phx")
-  |> SSHKit.user("deploy")
-  |> SSHKit.group("deploy")
-  |> SSHKit.umask("022")
-  |> SSHKit.env(%{"NODE_ENV" => "production"})
+  SSHKit.Context.new()
+  |> SSHKit.Context.path("/var/www/phx")
+  |> SSHKit.Context.user("deploy")
+  |> SSHKit.Context.group("deploy")
+  |> SSHKit.Context.umask("022")
+  |> SSHKit.Context.env(%{"NODE_ENV" => "production"})
 
+# TODO: Track/report upload progress
 {:ok, _} = SSHKit.upload(conn, ".", recursive: true, context: context)
-
-# TODO: Receive upload status messages
 
 {:ok, chan} = SSHKit.run(conn, "yarn install", context: context)
 
-# TODO: Showcase streaming interface
+status =
+  chan
+  |> SSHKit.stream!()
+  |> Enum.reduce(nil, fn
+    {:stdout, ^chan, data}, status ->
+      IO.write(:stdio, data)
+      status
+
+    {:stderr, ^chan, data}, status ->
+      IO.write(:stderr, data)
+      status
+
+    {:exited, ^chan, status}, _ ->
+      status
+
+    _, status ->
+      status
+  end)
+
+if status != 0 do
+  IO.write(:stderr, "Non-zero exit code #{status}")
+end
 
 :ok = SSHKit.close(conn)
 ```

@@ -145,7 +145,7 @@ defmodule SSHKit.SSH.Channel do
 
   ## Messages
 
-  The message tuples returned by `recv/3` correspond to the underlying Erlang
+  The message tuples returned by `recv/2` correspond to the underlying Erlang
   channel messages with the channel id replaced by the SSHKit channel struct:
 
   * `{:data, channel, type, data}`
