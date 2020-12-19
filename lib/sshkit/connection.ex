@@ -1,6 +1,6 @@
-defmodule SSHKit.SSH.Connection do
+defmodule SSHKit.Connection do
   @moduledoc """
-  Defines a `SSHKit.SSH.Connection` struct representing a host connection.
+  Defines a `SSHKit.Connection` struct representing a host connection.
 
   A connection struct has the following fields:
 
@@ -10,7 +10,6 @@ defmodule SSHKit.SSH.Connection do
   * `ref` - the underlying `:ssh` connection ref
   """
 
-  alias SSHKit.SSH.Connection
   alias SSHKit.Utils
 
   defstruct [:host, :port, :options, :ref, impl: :ssh]
@@ -55,7 +54,7 @@ defmodule SSHKit.SSH.Connection do
     impl = details[:impl]
 
     case impl.connect(host, port, opts, timeout) do
-      {:ok, ref} -> {:ok, build(host, port, opts, ref, impl)}
+      {:ok, ref} -> {:ok, new(host, port, opts, ref, impl)}
       err -> err
     end
   end
@@ -76,8 +75,8 @@ defmodule SSHKit.SSH.Connection do
     {connect_options, impl_options}
   end
 
-  defp build(host, port, options, ref, impl) do
-    %Connection{host: host, port: port, options: options, ref: ref, impl: impl}
+  defp new(host, port, options, ref, impl) do
+    %__MODULE__{host: host, port: port, options: options, ref: ref, impl: impl}
   end
 
   @doc """
@@ -97,7 +96,7 @@ defmodule SSHKit.SSH.Connection do
   The timeout value of the original connection is discarded.
   Other connection options are reused and may be overridden.
 
-  Uses `open/2`.
+  Uses `SSHKit.Connection.open/2`.
 
   Returns `{:ok, conn}` or `{:error, reason}`.
   """

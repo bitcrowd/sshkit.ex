@@ -91,8 +91,8 @@ defmodule SSHKit.Upload do
   end
 
   # TODO: Make `loop` return a stream? Possibly rename to "stream" then
-  def loop(%__MODULE__{stack: []}) do
-    :ok
+  def loop(%__MODULE__{stack: []} = upload) do
+    {:ok, upload}
   end
 
   def loop(%__MODULE__{} = upload) do

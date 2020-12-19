@@ -18,9 +18,10 @@ defmodule SSHKit do
   ```
   """
 
-  alias SSHKit.SSH
-
+  alias SSHKit.Channel
+  alias SSHKit.Connection
   alias SSHKit.Context
+  alias SSHKit.Download
   alias SSHKit.Host
   alias SSHKit.Upload
 
@@ -31,26 +32,56 @@ defmodule SSHKit do
   remote commands can be run. Accepts any form of host specification also
   accepted by `host/1` and `host/2`, i.e. binaries, maps and 2-tuples.
   """
+  @spec connect(binary(), keyword()) :: {:ok, Connection.t()} | {:error, any()}
   def connect(host, options \\ []) do
-    SSH.connect(host, options)
+    Connection.open(host, options)
   end
 
+  @spec close(Connection.t()) :: :ok
   def close(conn) do
-    SSH.close(conn)
+    Connection.close(conn)
   end
 
-  def run(conn, command, options \\ []) do
-    SSH.run(conn, command, options)
-  end
-
+  # TODO: Accept :stdout (default) and :stderr (1) for type parameter?
+  # TODO: Add `send(chan, :eof)`?
   def send(chan, type \\ 0, data) do
-    SSH.Channel.send(chan, type, data)
+    Channel.send(chan, type, data)
+  end
+
+  # TODO: Do we need to expose lower-level channel operations here?
+  #
+  # * Send `eof`?
+  # * Subsystem
+  # * ppty
+  # * …
+  #
+  # Seems like `send` and `eof` should be enough for the intended high-level use cases.
+  # If more fine-grained control is needed, feel free to reach for the `SSHKit.Channel` module.
+
+  @spec exec(Connection.t(), binary(), keyword()) :: {:ok, Channel.t()} | {:error, any()}
+  def exec(conn, command, options \\ []) do
+    timeout = Keyword.get(options, :timeout, :infinity)
+
+    with {:ok, chan} <- Channel.open(conn, options) do
+      case Channel.exec(chan, command, timeout) do
+        :success ->
+          {:ok, chan}
+
+        :failure ->
+          {:error, :failure}
+
+        error ->
+          error
+      end
+    end
   end
 
   def stream!(chan) do
     Stream.unfold(:cont, fn
       :cont ->
-        {:ok, msg} = SSH.Channel.recv(chan) # TODO: timeout?
+        {:ok, msg} = Channel.recv(chan) # TODO: timeout?, TODO: handle {:error, reason} and raise custom error struct?
+
+        # TODO: Adjust channel window size?
 
         value =
           case msg do
@@ -120,8 +151,11 @@ defmodule SSHKit do
   def upload(conn, source, target, options \\ []) do
     upload = Upload.init(source, target, options)
 
-    with {:ok, upload} <- Upload.start(upload, conn) do
-      Upload.loop(upload)
+    # TODO: Close SFTP channel (Upload.stop/1) if there is an error
+    with {:ok, upload} <- Upload.start(upload, conn),
+         {:ok, upload} <- Upload.loop(upload),
+         {:ok, _} <- Upload.stop(upload) do
+      :ok
     end
   end
 

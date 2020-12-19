@@ -14,7 +14,7 @@ label = fn conn -> Enum.join([conn.host, conn.port], ":") end
 tasks =
   Enum.map(conns, fn conn ->
     Task.async(fn ->
-      {:ok, chan} = SSHKit.run(conn, "uptime")
+      {:ok, chan} = SSHKit.exec(conn, "uptime")
 
       chan
       |> SSHKit.stream!()

@@ -1,15 +1,13 @@
-defmodule SSHKit.SSH.Channel do
+defmodule SSHKit.Channel do
   @moduledoc """
-  Defines a `SSHKit.SSH.Channel` struct representing a connection channel.
+  Defines a `SSHKit.Channel` struct representing a connection channel.
 
   A channel struct has the following fields:
 
-  * `connection` - the underlying `SSHKit.SSH.Connection`
+  * `connection` - the underlying `SSHKit.Connection`
   * `type` - the type of the channel, i.e. `:session`
   * `id` - the unique channel id
   """
-
-  alias SSHKit.SSH.Channel
 
   defstruct [:connection, :type, :id, impl: :ssh_connection]
 
@@ -34,13 +32,13 @@ defmodule SSHKit.SSH.Channel do
     impl = Keyword.get(options, :impl, :ssh_connection)
 
     case impl.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
-      {:ok, id} -> {:ok, build(connection, id, impl)}
+      {:ok, id} -> {:ok, new(connection, id, impl)}
       err -> err
     end
   end
 
-  defp build(connection, id, impl) do
-    %Channel{connection: connection, type: :session, id: id, impl: impl}
+  defp new(connection, id, impl) do
+    %__MODULE__{connection: connection, type: :session, id: id, impl: impl}
   end
 
   @doc """

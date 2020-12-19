@@ -1,6 +1,6 @@
 {:ok, conn} = SSHKit.connect("127.0.0.1", port: 2222, user: "deploy", password: "deploy", silently_accept_hosts: true)
 
-{:ok, chan} = SSHKit.run(conn, ~S(echo "Who's there?"; read name; echo "Hello $name"))
+{:ok, chan} = SSHKit.exec(conn, ~S(echo "Who's there?"; read name; echo -n "Hello"; sleep 3; echo " $name"))
 
 IO.write("> ")
 
