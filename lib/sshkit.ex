@@ -70,6 +70,11 @@ defmodule SSHKit do
     end
   end
 
+  @spec send(Channel.t(), :eof) :: :ok | {:error, term()}
+  def send(chan, :eof) do
+    Channel.eof(chan)
+  end
+
   @spec send(Channel.t(), :stdout | :stderr, term(), timeout()) :: :ok | {:error, term()}
   def send(chan, type \\ :stdout, data, timeout \\ :infinity)
   def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
