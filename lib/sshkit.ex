@@ -42,12 +42,6 @@ defmodule SSHKit do
     Connection.close(conn)
   end
 
-  # TODO: Accept :stdout (default) and :stderr (1) for type parameter?
-  # TODO: Add `send(chan, :eof)`?
-  def send(chan, type \\ 0, data) do
-    Channel.send(chan, type, data)
-  end
-
   # TODO: Do we need to expose lower-level channel operations here?
   #
   # * Send `eof`?
@@ -75,6 +69,11 @@ defmodule SSHKit do
       end
     end
   end
+
+  @spec send(Channel.t(), :stdout | :stderr, any()) :: :ok | {:error, any()}
+  def send(chan, type \\ :stdout, data)
+  def send(chan, :stdout, data), do: Channel.send(chan, 0, data)
+  def send(chan, :stderr, data), do: Channel.send(chan, 1, data)
 
   def stream!(chan) do
     Stream.unfold(:cont, fn
