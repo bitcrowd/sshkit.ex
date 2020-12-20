@@ -27,7 +27,6 @@ defmodule SSHKit.Upload do
   end
 
   defp prepare(%__MODULE__{source: source, options: options} = upload) do
-    # TODO: Support globs, https://hexdocs.pm/elixir/Path.html#wildcard/2
     if !Keyword.get(options, :recursive, false) && File.dir?(source) do
       {:error, "Option :recursive not specified, but local file is a directory (#{source})"} # TODO: Better error
     else
