@@ -32,7 +32,7 @@ defmodule SSHKit do
   remote commands can be run. Accepts any form of host specification also
   accepted by `host/1` and `host/2`, i.e. binaries, maps and 2-tuples.
   """
-  @spec connect(binary(), keyword()) :: {:ok, Connection.t()} | {:error, any()}
+  @spec connect(binary(), keyword()) :: {:ok, Connection.t()} | {:error, term()}
   def connect(host, options \\ []) do
     Connection.open(host, options)
   end
@@ -52,7 +52,7 @@ defmodule SSHKit do
   # Seems like `send` and `eof` should be enough for the intended high-level use cases.
   # If more fine-grained control is needed, feel free to reach for the `SSHKit.Channel` module.
 
-  @spec exec(Connection.t(), binary(), keyword()) :: {:ok, Channel.t()} | {:error, any()}
+  @spec exec(Connection.t(), binary(), keyword()) :: {:ok, Channel.t()} | {:error, term()}
   def exec(conn, command, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
 
@@ -70,10 +70,10 @@ defmodule SSHKit do
     end
   end
 
-  @spec send(Channel.t(), :stdout | :stderr, any()) :: :ok | {:error, any()}
-  def send(chan, type \\ :stdout, data)
-  def send(chan, :stdout, data), do: Channel.send(chan, 0, data)
-  def send(chan, :stderr, data), do: Channel.send(chan, 1, data)
+  @spec send(Channel.t(), :stdout | :stderr, term(), timeout()) :: :ok | {:error, term()}
+  def send(chan, type \\ :stdout, data, timeout \\ :infinity)
+  def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
+  def send(chan, :stderr, data, timeout), do: Channel.send(chan, 1, data, timeout)
 
   def stream!(chan) do
     Stream.unfold(:cont, fn
