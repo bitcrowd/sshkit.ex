@@ -94,7 +94,7 @@ defmodule SSHKit.Upload do
 
   defp write(path, chan, handle) do
     path
-    |> File.stream!([], 16_384)
+    |> File.stream!([], 65_536)
     |> Stream.map(fn data -> Channel.write(chan, handle, data) end)
     |> Enum.find(:ok, &(&1 != :ok))
   end
