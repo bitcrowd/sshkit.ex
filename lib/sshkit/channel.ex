@@ -25,20 +25,20 @@ defmodule SSHKit.Channel do
   * `:initial_window_size` - defaults to 128 KiB
   * `:max_packet_size` - defaults to 32 KiB
   """
-  def open(connection, options \\ []) do
+  def open(conn, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
     ini_window_size = Keyword.get(options, :initial_window_size, 128 * 1024)
     max_packet_size = Keyword.get(options, :max_packet_size, 32 * 1024)
     impl = Keyword.get(options, :impl, :ssh_connection)
 
-    case impl.session_channel(connection.ref, ini_window_size, max_packet_size, timeout) do
-      {:ok, id} -> {:ok, new(connection, id, impl)}
+    case impl.session_channel(conn.ref, ini_window_size, max_packet_size, timeout) do
+      {:ok, id} -> {:ok, new(conn, id, impl)}
       err -> err
     end
   end
 
-  defp new(connection, id, impl) do
-    %__MODULE__{connection: connection, type: :session, id: id, impl: impl}
+  defp new(conn, id, impl) do
+    %__MODULE__{connection: conn, type: :session, id: id, impl: impl}
   end
 
   @doc """

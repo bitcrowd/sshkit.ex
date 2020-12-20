@@ -100,13 +100,13 @@ defmodule SSHKit.Connection do
 
   Returns `{:ok, conn}` or `{:error, reason}`.
   """
-  def reopen(connection, options \\ []) do
+  def reopen(conn, options \\ []) do
     options =
-      connection.options
-      |> Keyword.put(:port, connection.port)
-      |> Keyword.put(:impl, connection.impl)
+      conn.options
+      |> Keyword.put(:port, conn.port)
+      |> Keyword.put(:impl, conn.impl)
       |> Keyword.merge(options)
 
-    open(connection.host, options)
+    open(conn.host, options)
   end
 end
