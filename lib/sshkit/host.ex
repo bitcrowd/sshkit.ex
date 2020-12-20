@@ -12,4 +12,6 @@ defmodule SSHKit.Host do
   ```
   """
   defstruct [:name, :options]
+
+  @type t() :: %__MODULE__{}
 end

@@ -3,16 +3,26 @@ defmodule SSHKit.Upload do
   TODO
   """
 
+  alias SSHKit.SFTP.Channel
+
   defstruct [:source, :target, :options, :cwd, :stack, :channel]
+
+  @type t() :: %__MODULE__{}
 
   def init(source, target, options \\ []) do
     %__MODULE__{source: Path.expand(source), target: target, options: options}
   end
 
-  def start(%__MODULE__{} = upload, connection) do
-    with {:ok, upload} <- prepare(upload) do
-      {:ok, channel} = :ssh_sftp.start_channel(connection.ref) # accepts options like timeout… http://erlang.org/doc/man/ssh_sftp.html#start_channel-1
-      {:ok, %{upload | channel: channel}}
+  def start(%__MODULE__{options: options} = upload, conn) do
+    # accepts options like timeout… http://erlang.org/doc/man/ssh_sftp.html#start_channel-1
+    channel_options =
+      options
+      |> Keyword.get(:start, [])
+      |> Keyword.put_new(:timeout, Keyword.get(options, :timeout, :infinity))
+
+    with {:ok, upload} <- prepare(upload),
+         {:ok, chan} <- Channel.start(conn, channel_options) do
+      {:ok, %{upload | channel: chan}}
     end
   end
 
@@ -26,8 +36,8 @@ defmodule SSHKit.Upload do
   end
 
   def stop(%__MODULE__{channel: nil} = upload), do: {:ok, upload}
-  def stop(%__MODULE__{channel: channel} = upload) do
-    with :ok <- :ssh_sftp.stop_channel(channel) do
+  def stop(%__MODULE__{channel: chan} = upload) do
+    with :ok <- Channel.stop(chan) do
       {:ok, %{upload | channel: nil}}
     end
   end
@@ -44,7 +54,7 @@ defmodule SSHKit.Upload do
 
   def continue(%__MODULE__{stack: [[name | rest] | paths]} = upload) do
     path = Path.join(upload.cwd, name)
-    relpath = Path.relative_to(path, Path.expand(upload.source))
+    relpath = Path.relative_to(path, upload.source)
     relpath = if relpath == path, do: ".", else: relpath
 
     remote =
@@ -55,21 +65,21 @@ defmodule SSHKit.Upload do
     with {:ok, stat} <- File.stat(path, time: :posix) do
       # TODO: Set timestamps… if :preserve option is true, http://erlang.org/doc/man/ssh_sftp.html#write_file_info-3
 
-      channel = upload.channel
+      chan = upload.channel
 
       case stat.type do
         :directory ->
           # TODO: Timeouts
-          with :ok <- :ssh_sftp.make_dir(channel, remote),
+          with :ok <- Channel.mkdir(chan, remote),
                {:ok, names} <- File.ls(path) do
             {:ok, %{upload | cwd: path, stack: [names | [rest | paths]]}}
           end
 
         :regular ->
           # TODO: Timeouts
-          with {:ok, handle} <- :ssh_sftp.open(channel, remote, [:write, :binary]),
-               :ok <- write(path, channel, handle),
-               :ok = :ssh_sftp.close(channel, handle) do
+          with {:ok, handle} <- Channel.open(chan, remote, [:write, :binary]),
+               :ok <- write(path, chan, handle),
+               :ok = Channel.close(chan, handle) do
             {:ok, %{upload | stack: [rest | paths]}}
           end
 
@@ -83,10 +93,10 @@ defmodule SSHKit.Upload do
     end
   end
 
-  defp write(path, channel, handle) do
+  defp write(path, chan, handle) do
     path
     |> File.stream!([], 16_384)
-    |> Stream.map(fn data -> :ssh_sftp.write(channel, handle, data) end)
+    |> Stream.map(fn data -> Channel.write(chan, handle, data) end)
     |> Enum.find(:ok, &(&1 != :ok))
   end
 

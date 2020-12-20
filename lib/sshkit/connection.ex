@@ -12,9 +12,10 @@ defmodule SSHKit.Connection do
 
   alias SSHKit.Utils
 
+  # TODO: Add :tag allowing arbitrary data to be attached?
   defstruct [:host, :port, :options, :ref, impl: :ssh]
 
-  @type t :: __MODULE__
+  @type t() :: %__MODULE__{}
 
   @default_impl_options [user_interaction: false]
   @default_connect_options [port: 22, timeout: :infinity, impl: :ssh]

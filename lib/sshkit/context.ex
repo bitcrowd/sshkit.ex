@@ -16,6 +16,8 @@ defmodule SSHKit.Context do
 
   defstruct env: nil, path: nil, umask: nil, user: nil, group: nil
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Creates an execution context in which remote commands can be run.
 

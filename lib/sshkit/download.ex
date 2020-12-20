@@ -3,18 +3,22 @@ defmodule SSHKit.Download do
   TODO
   """
 
+  alias SSHKit.SFTP.Channel
+
   defstruct [:source, :target, :options, :cwd, :stack, :channel]
+
+  @type t() :: %__MODULE__{}
 
   def init(source, target, options \\ []) do
     %__MODULE__{source: source, target: Path.expand(target), options: options}
   end
 
-  def start(%__MODULE__{} = download, connection) do
+  def start(%__MODULE__{options: options} = download, conn) do
   end
 
   def stop(%__MODULE__{channel: nil} = download), do: {:ok, download}
-  def stop(%__MODULE__{channel: channel} = download) do
-    with :ok <- :ssh_sftp.stop_channel(channel) do
+  def stop(%__MODULE__{channel: chan} = download) do
+    with :ok <- Channel.stop(chan) do
       {:ok, %{download | channel: nil}}
     end
   end

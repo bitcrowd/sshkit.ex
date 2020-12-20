@@ -11,6 +11,8 @@ defmodule SSHKit.Channel do
 
   defstruct [:connection, :type, :id, impl: :ssh_connection]
 
+  @type t() :: %__MODULE__{}
+
   @doc """
   Opens a channel on an SSH connection.
 
@@ -31,9 +33,8 @@ defmodule SSHKit.Channel do
     max_packet_size = Keyword.get(options, :max_packet_size, 32 * 1024)
     impl = Keyword.get(options, :impl, :ssh_connection)
 
-    case impl.session_channel(conn.ref, ini_window_size, max_packet_size, timeout) do
-      {:ok, id} -> {:ok, new(conn, id, impl)}
-      err -> err
+    with {:ok, id} <- impl.session_channel(conn.ref, ini_window_size, max_packet_size, timeout) do
+      {:ok, new(conn, id, impl)}
     end
   end
 
@@ -52,9 +53,7 @@ defmodule SSHKit.Channel do
           :success | :failure | {:error, reason :: String.t()}
   def subsystem(channel, subsystem, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
-    impl = Keyword.get(options, :impl, :ssh_connection)
-
-    impl.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout)
+    channel.impl.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout)
   end
 
   @doc """
