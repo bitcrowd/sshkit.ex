@@ -112,6 +112,24 @@ defmodule SSHKit do
   def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
   def send(chan, :stderr, data, timeout), do: Channel.send(chan, 1, data, timeout)
 
+  @spec run!(Connection.t(), binary(), keyword()) :: [{:stdout, binary()} | {:stderr, binary()}]
+  def run!(conn, command, options \\ []) do
+    stream = exec!(conn, command, options)
+
+    {status, output} = Enum.reduce(stream, {nil, []}, fn
+      {:stdout, _, data}, {status, output} -> {status, [{:stdout, data} | output]}
+      {:stderr, _, data}, {status, output} -> {status, [{:stderr, data} | output]}
+      {:exit, _, status}, {_, output} -> {status, output}
+      _, acc -> acc
+    end)
+
+    output = Enum.reverse(output)
+
+    if status != 0, do: raise "Non-zero exit code: #{status}" # TODO: Proper file struct?
+
+    output
+  end
+
   @doc ~S"""
   Upload a file or files to the given context.
 
