@@ -20,9 +20,7 @@ defmodule SSHKit do
 
   alias SSHKit.Channel
   alias SSHKit.Connection
-  alias SSHKit.Context
   alias SSHKit.Download
-  alias SSHKit.Host
   alias SSHKit.Upload
 
   @doc """
