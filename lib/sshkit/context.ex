@@ -2,14 +2,14 @@ defmodule SSHKit.Context do
   @moduledoc """
   A context encapsulates the environment for the execution of a task. That is:
 
-  * working directory to start in, see `SSHKit.path/2`
-  * user to run as, see `SSHKit.user/2`
-  * group, see `SSHKit.group/2`
-  * file creation mode mask, see `SSHKit.umask/2`
-  * environment variables, see `SSHKit.env/2`
+  * working directory to start in, see `SSHKit.Context.path/2`
+  * user to run as, see `SSHKit.Context.user/2`
+  * group, see `SSHKit.Context.group/2`
+  * file creation mode mask, see `SSHKit.Context.umask/2`
+  * environment variables, see `SSHKit.Context.env/2`
 
   A context can then be used to run commands, upload or download files:
-  See `SSHKit.run/2`, `SSHKit.upload/3` and `SSHKit.download/3`.
+  See `SSHKit.exec!/3`, `SSHKit.upload/4` and `SSHKit.download/4`.
   """
 
   import SSHKit.Utils
@@ -38,9 +38,17 @@ defmodule SSHKit.Context do
   Create `/var/www/app/config.json`:
 
   ```
-  SSHKit.context()
-  |> SSHKit.path("/var/www/app")
-  |> SSHKit.run(conn, "touch config.json")
+  {:ok, conn} = SSHKit.connect("10.0.0.1")
+
+  ctx =
+    SSHKit.Context.new()
+    |> SSHKit.Context.path("/var/www/app")
+
+  conn
+  |> SSHKit.exec!("touch config.json", context: ctx)
+  |> Stream.run()
+
+  :ok = SSHKit.close(conn)
   ```
   """
   def path(context, path) do
@@ -58,10 +66,17 @@ defmodule SSHKit.Context do
   Create `precious.txt`, readable and writable only for the logged-in user:
 
   ```
-  "10.0.0.1"
-  |> SSHKit.context()
-  |> SSHKit.umask("077")
-  |> SSHKit.run("touch precious.txt")
+  {:ok, conn} = SSHKit.connect("10.0.0.1")
+
+  ctx =
+    SSHKit.Context.new()
+    |> SSHKit.Context.umask("077")
+
+  conn
+  |> SSHKit.exec!("touch precious.txt", context: ctx)
+  |> Stream.run()
+
+  :ok = SSHKit.close(conn)
   ```
   """
   def umask(context, mask) do
@@ -70,8 +85,8 @@ defmodule SSHKit.Context do
 
   @doc """
   Specifies the user under whose name commands are executed.
-  That user might be different than the user with which
-  ssh connects to the remote host.
+  That user might be different from the user with which
+  you connect to the remote host.
 
   Returns a new, derived context for easy chaining.
 
@@ -81,10 +96,19 @@ defmodule SSHKit.Context do
   although we use the `login_user` to log in to the remote host:
 
   ```
-  context =
-    {"10.0.0.1", port: 3000, user: "login_user", password: "secret"}
-    |> SSHKit.context()
-    |> SSHKit.user("deploy_user")
+  {:ok, conn} = SSHKit.connect("10.0.0.1", user: "login_user", password: "secret")
+
+  ctx =
+    SSHKit.Context.new()
+    |> SSHKit.Context.user("deploy_user")
+
+  conn
+  |> SSHKit.exec!("whoami", context: ctx)
+  |> Stream.filter(&(elem(&1) == :stdout))
+  |> Stream.each(&IO.puts/1)
+  |> Stream.run()
+
+  :ok = SSHKit.close(conn)
   ```
   """
   def user(context, name) do
@@ -101,10 +125,19 @@ defmodule SSHKit.Context do
   All commands executed in the created `context` will run in group `www`:
 
   ```
-  context =
-    "10.0.0.1"
-    |> SSHKit.context()
-    |> SSHKit.group("www")
+  {:ok, conn} = SSHKit.connect("10.0.0.1")
+
+  ctx =
+    SSHKit.Context.new()
+    |> SSHKit.Context.group("www")
+
+  conn
+  |> SSHKit.exec!("id -gn", context: ctx)
+  |> Stream.filter(&(elem(&1, 0) == :stdout))
+  |> Stream.each(&IO.write/1)
+  |> Stream.run()
+
+  :ok = SSHKit.close(conn)
   ```
   """
   def group(context, name) do
@@ -122,25 +155,31 @@ defmodule SSHKit.Context do
   Setting `NODE_ENV=production`:
 
   ```
-  context =
-    "10.0.0.1"
-    |> SSHKit.context()
-    |> SSHKit.env(%{"NODE_ENV" => "production"})
+  {:ok, conn} = SSHKit.connect("10.0.0.1")
+
+  ctx =
+    SSHKit.Context.new()
+    |> SSHKit.Context.env(%{"NODE_ENV" => "production"})
 
   # Run the npm start script with NODE_ENV=production
-  SSHKit.run(context, "npm start")
+  conn
+  |> SSHKit.exec!("npm start", context: ctx)
+  |> Stream.run()
+
+  :ok = SSHKit.close(conn)
   ```
 
   Modifying the `PATH`:
 
   ```
-  context =
-    "10.0.0.1"
-    |> SSHKit.context()
-    |> SSHKit.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH"})
+  ctx =
+    SSHKit.Context.new()
+    |> SSHKit.Context.env(%{"PATH" => "$HOME/.rbenv/shims:$PATH"})
 
   # Execute the rbenv-installed ruby to print its version
-  SSHKit.run(context, "ruby --version")
+  conn
+  |> SSHKit.exec!(conn, "ruby --version", context: ctx)
+  |> Stream.run()
   ```
   """
   def env(context, map) do
