@@ -1,28 +1,28 @@
 {:ok, conn} = SSHKit.connect("127.0.0.1", port: 2222, user: "deploy", password: "deploy", silently_accept_hosts: true)
 
-{:ok, chan} = SSHKit.exec(conn, ~S(echo "Who's there?"; read name; echo -n "Hello"; sleep 3; echo " $name"))
+stream = SSHKit.exec!(conn, ~S(echo "Who's there?"; read name; echo -n "Hello"; sleep 3; echo " $name."))
 
-IO.write("> ")
+:ok = IO.write("> ")
 
-chan
-|> SSHKit.stream!()
-|> Stream.map(fn {:stdout, ^chan, chunk} -> chunk end)
-|> Stream.each(&IO.write/1)
-|> Stream.take_while(fn chunk -> !String.ends_with?(chunk, "\n") end)
-|> Stream.run()
+code = Enum.reduce(stream, nil, fn
+  {:stdout, chan, chunk}, status ->
+    :ok = IO.write("#{chunk}")
 
-IO.write("< SSHKit\n")
+    if String.ends_with?(chunk, "?\n") do
+      :ok = SSHKit.send(chan, "SSHKit\n")
+      :ok = IO.write("< SSHKit\n")
+      :ok = IO.write("> ")
+    end
 
-:ok = SSHKit.send(chan, "SSHKit\n")
+    status
 
-IO.write("> ")
+  {:exit, _, status}, _ ->
+    status
 
-# TODO: Timeouts?
-chan
-|> SSHKit.stream!()
-|> Stream.filter(fn msg -> elem(msg, 0) == :stdout end)
-|> Stream.map(fn {:stdout, ^chan, chunk} -> chunk end)
-|> Stream.each(&IO.write/1)
-|> Stream.run()
+  _, status ->
+    status
+end)
+
+:ok = IO.puts("? #{code}")
 
 :ok = SSHKit.close(conn)

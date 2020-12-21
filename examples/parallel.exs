@@ -14,40 +14,32 @@ label = fn conn -> Enum.join([conn.host, conn.port], ":") end
 tasks =
   Enum.map(conns, fn conn ->
     Task.async(fn ->
-      {:ok, chan} = SSHKit.exec(conn, "uptime")
-
-      chan
-      |> SSHKit.stream!()
+      conn
+      |> SSHKit.exec!("uptime")
       |> Enum.reduce(nil, fn
-        {:stdout, chan, output}, acc ->
+        {:stdout, chan, output}, status ->
           IO.write("[#{label.(chan.connection)}] (stdout) #{output}")
-          acc
+          status
 
-        {:stderr, chan, output}, acc ->
+        {:stderr, chan, output}, status ->
           IO.write("[#{label.(chan.connection)}] (stderr) #{output}")
-          acc
+          status
 
         {:exit, _, status}, _ ->
           status
 
-        _, acc ->
-          acc
+        _, status ->
+          status
       end)
     end)
   end)
 
-okay? = fn status -> status == 0 end
-
-results = Enum.map(tasks, &Task.await/1)
-
-unless Enum.all?(results, okay?) do
-  results
-  |> Enum.with_index()
-  |> Enum.filter(fn {status, _} -> !okay?.(status) end)
-  |> Enum.each(fn {status, index} ->
-    conn = Enum.at(conns, index)
-    IO.puts("[#{label.(conn)}] exited with status #{status}")
-  end)
-end
+tasks
+|> Enum.map(&Task.await/1)
+|> Enum.filter(&(&1 != 0))
+|> Enum.zip(conns)
+|> Enum.each(fn {status, conn} ->
+  IO.puts("[#{label.(conn)}] exited with status #{status}")
+end)
 
 :ok = Enum.each(conns, &SSHKit.close/1)

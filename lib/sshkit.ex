@@ -52,37 +52,16 @@ defmodule SSHKit do
   # Seems like `send` and `eof` should be enough for the intended high-level use cases.
   # If more fine-grained control is needed, feel free to reach for the `SSHKit.Channel` module.
 
-  @spec exec(Connection.t(), binary(), keyword()) :: {:ok, Channel.t()} | {:error, term()}
-  def exec(conn, command, options \\ []) do
-    timeout = Keyword.get(options, :timeout, :infinity)
-
-    with {:ok, chan} <- Channel.open(conn, options) do
-      case Channel.exec(chan, command, timeout) do
-        :success ->
-          {:ok, chan}
-
-        :failure ->
-          {:error, :failure}
-
-        error ->
-          error
-      end
-    end
-  end
-
-  @spec send(Channel.t(), :eof) :: :ok | {:error, term()}
-  def send(chan, :eof) do
-    Channel.eof(chan)
-  end
-
-  @spec send(Channel.t(), :stdout | :stderr, term(), timeout()) :: :ok | {:error, term()}
-  def send(chan, type \\ :stdout, data, timeout \\ :infinity)
-  def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
-  def send(chan, :stderr, data, timeout), do: Channel.send(chan, 1, data, timeout)
-
-  def stream!(chan) do
-    Stream.unfold(:cont, fn
-      :cont ->
+  @spec exec!(Connection.t(), binary(), keyword()) :: Enumerable.t()
+  def exec!(conn, command, options \\ []) do
+    # TODO: Separate options for open/exec/recv
+    Stream.resource(
+      fn ->
+        {:ok, chan} = Channel.open(conn, options) # TODO: handle {:error, reason} and raise custom error struct?
+        :success = Channel.exec(chan, command) # TODO: timeout?, TODO: Handle :failure and {:error, reason} and raise custom error struct?
+        chan
+      end,
+      fn chan ->
         {:ok, msg} = Channel.recv(chan) # TODO: timeout?, TODO: handle {:error, reason} and raise custom error struct?
 
         # TODO: Adjust channel window size?
@@ -111,15 +90,27 @@ defmodule SSHKit do
         next =
           case value do
             {:closed, _} -> :halt
-            _ -> :cont
+            _ -> [value]
           end
 
-        {value, next}
-
-      :halt ->
-        nil
-    end)
+        {next, chan}
+      end,
+      fn chan ->
+        :ok = Channel.close(chan)
+        :ok = Channel.flush(chan)
+      end
+    )
   end
+
+  @spec send(Channel.t(), :eof) :: :ok | {:error, term()}
+  def send(chan, :eof) do
+    Channel.eof(chan)
+  end
+
+  @spec send(Channel.t(), :stdout | :stderr, term(), timeout()) :: :ok | {:error, term()}
+  def send(chan, type \\ :stdout, data, timeout \\ :infinity)
+  def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
+  def send(chan, :stderr, data, timeout), do: Channel.send(chan, 1, data, timeout)
 
   @doc ~S"""
   Upload a file or files to the given context.
