@@ -110,7 +110,7 @@ defmodule SSHKit do
   def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
   def send(chan, :stderr, data, timeout), do: Channel.send(chan, 1, data, timeout)
 
-  @spec run!(Connection.t(), binary(), keyword()) :: [{:stdout, binary()} | {:stderr, binary()}]
+  @spec run!(Connection.t(), binary(), keyword()) :: [{:stdout | :stderr, binary()}]
   def run!(conn, command, options \\ []) do
     stream = exec!(conn, command, options)
 
