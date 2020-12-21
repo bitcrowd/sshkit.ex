@@ -15,13 +15,13 @@ defmodule SSHKit.Upload do
 
   def start(%__MODULE__{options: options} = upload, conn) do
     # accepts options like timeout… http://erlang.org/doc/man/ssh_sftp.html#start_channel-1
-    channel_options =
+    start_options =
       options
       |> Keyword.get(:start, [])
       |> Keyword.put_new(:timeout, Keyword.get(options, :timeout, :infinity))
 
     with {:ok, upload} <- prepare(upload),
-         {:ok, chan} <- Channel.start(conn, channel_options) do
+         {:ok, chan} <- Channel.start(conn, start_options) do
       {:ok, %{upload | channel: chan}}
     end
   end
@@ -99,21 +99,6 @@ defmodule SSHKit.Upload do
     |> Enum.find(:ok, &(&1 != :ok))
   end
 
-  # TODO: Make `loop` return a stream? Possibly rename to "stream" then
-  def loop(%__MODULE__{stack: []} = upload) do
-    {:ok, upload}
-  end
-
-  def loop(%__MODULE__{} = upload) do
-    case continue(upload) do
-      {:ok, upload} ->
-        loop(upload)
-
-      error ->
-        error
-    end
-  end
-
-  def done?(%__MODULE__{stack: []}), do: true
-  def done?(%__MODULE__{}), do: false
+  def done?(%{stack: []}), do: true
+  def done?(%{}), do: false
 end

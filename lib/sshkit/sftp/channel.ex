@@ -41,7 +41,7 @@ defmodule SSHKit.SFTP.Channel do
     chan.impl.close(chan.id, handle, timeout)
   end
 
-  @spec write(t(), handle(), iodata(), timeout()) :: :ok, {:error, term()}
+  @spec write(t(), handle(), iodata(), timeout()) :: :ok | {:error, term()}
   def write(chan, handle, data, timeout \\ :infinity) do
     chan.impl.write(chan.id, handle, data, timeout)
   end

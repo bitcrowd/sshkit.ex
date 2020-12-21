@@ -21,6 +21,7 @@ defmodule SSHKit do
   alias SSHKit.Channel
   alias SSHKit.Connection
   alias SSHKit.Download
+  alias SSHKit.Transfer
   alias SSHKit.Upload
 
   @doc """
@@ -39,16 +40,6 @@ defmodule SSHKit do
   def close(conn) do
     Connection.close(conn)
   end
-
-  # TODO: Do we need to expose lower-level channel operations here?
-  #
-  # * Send `eof`?
-  # * Subsystem
-  # * ppty
-  # * …
-  #
-  # Seems like `send` and `eof` should be enough for the intended high-level use cases.
-  # If more fine-grained control is needed, feel free to reach for the `SSHKit.Channel` module.
 
   @spec exec!(Connection.t(), binary(), keyword()) :: Enumerable.t()
   def exec!(conn, command, options \\ []) do
@@ -99,6 +90,16 @@ defmodule SSHKit do
       end
     )
   end
+
+  # TODO: Do we need to expose lower-level channel operations here?
+  #
+  # * Send `eof`?
+  # * Subsystem
+  # * ppty
+  # * …
+  #
+  # Seems like `send` and `eof` should be enough for the intended high-level use cases.
+  # If more fine-grained control is needed, feel free to reach for the `SSHKit.Channel` module.
 
   @spec send(Channel.t(), :eof) :: :ok | {:error, term()}
   def send(chan, :eof) do
@@ -159,15 +160,8 @@ defmodule SSHKit do
     |> SSHKit.upload("local.txt", as: "remote.txt")
   ```
   """
-  def upload(conn, source, target, options \\ []) do
-    upload = Upload.init(source, target, options)
-
-    # TODO: Close SFTP channel (Upload.stop/1) if there is an error
-    with {:ok, upload} <- Upload.start(upload, conn),
-         {:ok, upload} <- Upload.loop(upload),
-         {:ok, _} <- Upload.stop(upload) do
-      :ok
-    end
+  def upload!(conn, source, target, options \\ []) do
+    Transfer.stream!(conn, Upload.init(source, target, options))
   end
 
   @doc ~S"""
@@ -201,7 +195,7 @@ defmodule SSHKit do
     |> SSHKit.download("remote.txt", as: "local.txt")
   ```
   """
-  def download(conn, source, options \\ []) do
+  def download!(conn, source, target, options \\ []) do
     # TODO
   end
 end
