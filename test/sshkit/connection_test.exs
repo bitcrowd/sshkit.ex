@@ -5,17 +5,14 @@ defmodule SSHKit.ConnectionTest do
   import SSHKit.Connection
 
   alias SSHKit.Connection
-  alias SSHKit.Connection.ImplMock
 
-  setup do
-    Mox.verify_on_exit!()
-    {:ok, impl: ImplMock}
-  end
+  @core MockErlangSsh
+
+  setup :verify_on_exit!
 
   describe "open/2" do
-    test "opens a connection", %{impl: impl} do
-      impl
-      |> expect(:connect, fn host, port, opts, timeout ->
+    test "opens a connection" do
+      expect(@core, :connect, fn host, port, opts, timeout ->
         assert host == 'test.io'
         assert port == 22
         assert opts == [user_interaction: false]
@@ -23,20 +20,18 @@ defmodule SSHKit.ConnectionTest do
         {:ok, :connection_ref}
       end)
 
-      {:ok, conn} = open("test.io", impl: impl)
+      {:ok, conn} = open("test.io")
 
       assert conn == %Connection{
                host: 'test.io',
                port: 22,
                options: [user_interaction: false],
-               ref: :connection_ref,
-               impl: impl
+               ref: :connection_ref
              }
     end
 
-    test "opens a connection on a different port with user and password", %{impl: impl} do
-      impl
-      |> expect(:connect, fn _, port, opts, _ ->
+    test "opens a connection on a different port with user and password" do
+      expect(@core, :connect, fn _, port, opts, _ ->
         assert port == 666
         assert opts[:user] == 'me'
         assert opts[:password] == 'secret'
@@ -44,27 +39,25 @@ defmodule SSHKit.ConnectionTest do
         {:ok, :ref_with_port_user_pass}
       end)
 
-      {:ok, conn} = open("test.io", port: 666, user: "me", password: "secret", impl: impl)
+      {:ok, conn} = open("test.io", port: 666, user: "me", password: "secret")
 
       assert conn == %Connection{
                host: 'test.io',
                port: 666,
                options: [user_interaction: false, user: 'me', password: 'secret'],
-               ref: :ref_with_port_user_pass,
-               impl: impl
+               ref: :ref_with_port_user_pass
              }
     end
 
-    test "opens a connection with user interaction option set to true", %{impl: impl} do
-      impl
-      |> expect(:connect, fn _, _, opts, _ ->
+    test "opens a connection with user interaction option set to true" do
+      expect(@core, :connect, fn _, _, opts, _ ->
         assert opts[:user] == 'me'
         assert opts[:password] == 'secret'
         assert opts[:user_interaction] == true
         {:ok, :ref_with_user_interaction}
       end)
 
-      options = [user: "me", password: "secret", user_interaction: true, impl: impl]
+      options = [user: "me", password: "secret", user_interaction: true]
 
       {:ok, conn} = open("test.io", options)
 
@@ -72,66 +65,59 @@ defmodule SSHKit.ConnectionTest do
                host: 'test.io',
                options: [user: 'me', password: 'secret', user_interaction: true],
                port: 22,
-               ref: :ref_with_user_interaction,
-               impl: impl
+               ref: :ref_with_user_interaction
              }
     end
 
-    test "opens a connection with a specific timeout", %{impl: impl} do
-      impl
-      |> expect(:connect, fn _, _, _, timeout ->
+    test "opens a connection with a specific timeout" do
+      expect(@core, :connect, fn _, _, _, timeout ->
         assert timeout == 3000
         {:ok, :ref}
       end)
 
-      {:ok, _} = open("test.io", timeout: 3000, impl: impl)
+      {:ok, _} = open("test.io", timeout: 3000)
     end
 
-    test "removes options irrelevant for connect/4", %{impl: impl} do
-      impl
-      |> expect(:connect, fn _, _, opts, _ ->
+    test "removes options irrelevant for connect/4" do
+      expect(@core, :connect, fn _, _, opts, _ ->
         option_keys = Keyword.keys(opts)
 
         refute :port in option_keys
         refute :timeout in option_keys
-        refute :impl in option_keys
 
         {:ok, :ref}
       end)
 
-      options = [port: 666, timeout: 1000, user: "me", password: "secret", impl: impl]
+      options = [port: 666, timeout: 1000, user: "me", password: "secret"]
 
       {:ok, _} = open("test.io", options)
     end
 
-    test "converts host to charlist", %{impl: impl} do
-      impl
-      |> expect(:connect, fn host, _, _, _ ->
+    test "converts host to charlist" do
+      expect(@core, :connect, fn host, _, _, _ ->
         assert host == 'test.io'
         {:ok, :ref}
       end)
 
-      {:ok, _} = open("test.io", impl: impl)
+      {:ok, _} = open("test.io")
     end
 
-    test "converts option values to charlists", %{impl: impl} do
-      impl
-      |> expect(:connect, fn _, _, opts, _ ->
+    test "converts option values to charlists" do
+      expect(@core, :connect, fn _, _, opts, _ ->
         assert {:user, 'me'} in opts
         assert {:password, 'secret'} in opts
         {:ok, :ref}
       end)
 
-      {:ok, _} = open("test.io", user: "me", password: "secret", impl: impl)
+      {:ok, _} = open("test.io", user: "me", password: "secret")
     end
 
-    test "returns an error when connection cannot be opened", %{impl: impl} do
-      impl
-      |> expect(:connect, fn _, _, _, _ ->
+    test "returns an error when connection cannot be opened" do
+      expect(@core, :connect, fn _, _, _, _ ->
         {:error, :failed}
       end)
 
-      assert open("test.io", impl: impl) == {:error, :failed}
+      assert open("test.io") == {:error, :failed}
     end
 
     test "returns an error if no host is given" do
@@ -140,9 +126,8 @@ defmodule SSHKit.ConnectionTest do
   end
 
   describe "close/1" do
-    test "closes a connection", %{impl: impl} do
-      impl
-      |> expect(:close, fn ref ->
+    test "closes a connection" do
+      expect(@core, :close, fn ref ->
         assert ref == :connection_ref
         :ok
       end)
@@ -151,8 +136,7 @@ defmodule SSHKit.ConnectionTest do
         host: 'foo.io',
         port: 22,
         options: [user_interaction: false],
-        ref: :connection_ref,
-        impl: impl
+        ref: :connection_ref
       }
 
       assert close(conn) == :ok
@@ -160,17 +144,15 @@ defmodule SSHKit.ConnectionTest do
   end
 
   describe "reopen/2" do
-    test "opens a new connection with the same options as the existing connection", %{impl: impl} do
+    test "opens a new connection with the same options as the existing connection" do
       conn = %Connection{
         host: 'test.io',
         port: 22,
         options: [user_interaction: false, user: 'me'],
-        ref: :connection_ref,
-        impl: impl
+        ref: :connection_ref
       }
 
-      impl
-      |> expect(:connect, fn host, port, opts, _ ->
+      expect(@core, :connect, fn host, port, opts, _ ->
         assert host == conn.host
         assert port == conn.port
         assert opts == conn.options
@@ -182,17 +164,15 @@ defmodule SSHKit.ConnectionTest do
       assert reopen(conn) == {:ok, new_conn}
     end
 
-    test "reopens a connection on new port", %{impl: impl} do
+    test "reopens a connection on new port" do
       conn = %Connection{
         host: 'test.io',
         port: 22,
         options: [user_interaction: false, user: 'me'],
-        ref: :connection_ref,
-        impl: impl
+        ref: :connection_ref
       }
 
-      impl
-      |> expect(:connect, fn _, port, _, _ ->
+      expect(@core, :connect, fn _, port, _, _ ->
         assert port == 666
         {:ok, :new_connection_ref}
       end)
@@ -202,17 +182,15 @@ defmodule SSHKit.ConnectionTest do
       assert reopen(conn, port: 666) == {:ok, new_conn}
     end
 
-    test "errors when unable to open connection", %{impl: impl} do
+    test "errors when unable to open connection" do
       conn = %Connection{
         host: 'test.io',
         port: 22,
         options: [user_interaction: false],
-        ref: :sandbox,
-        impl: impl
+        ref: :sandbox
       }
 
-      impl
-      |> expect(:connect, fn _, _, _, _ ->
+      expect(@core, :connect, fn _, _, _, _ ->
         {:error, :failed}
       end)
 

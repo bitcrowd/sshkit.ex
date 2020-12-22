@@ -15,6 +15,14 @@ defmodule SSHKit.FunctionalCase do
       import SSHKit.FunctionalAssertionHelpers
 
       @moduletag :functional
+
+      setup do
+        # Stub mocks with implementations delegating to the proper Erlang modules
+        Mox.stub_with(MockErlangSsh, ErlangSsh)
+        Mox.stub_with(MockErlangSshConnection, ErlangSshConnection)
+        Mox.stub_with(MockErlangSshSftp, ErlangSshSftp)
+        :ok
+      end
     end
   end
 

@@ -14,7 +14,7 @@ defmodule SSHKit.Context do
 
   import SSHKit.Utils
 
-  defstruct env: nil, path: nil, umask: nil, user: nil, group: nil
+  defstruct [:env, :path, :umask, :user, :group]
 
   @type t() :: %__MODULE__{}
 

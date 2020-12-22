@@ -13,12 +13,15 @@ defmodule SSHKit.Connection do
   alias SSHKit.Utils
 
   # TODO: Add :tag allowing arbitrary data to be attached?
-  defstruct [:host, :port, :options, :ref, impl: :ssh]
+  defstruct [:host, :port, :options, :ref]
 
   @type t() :: %__MODULE__{}
 
-  @default_impl_options [user_interaction: false]
-  @default_connect_options [port: 22, timeout: :infinity, impl: :ssh]
+  # credo:disable-for-next-line
+  @core Application.get_env(:sshkit, :ssh, :ssh)
+
+  @default_ssh_options [user_interaction: false]
+  @default_connect_options [port: 22, timeout: :infinity]
 
   @doc """
   Opens a connection to an SSH server.
@@ -52,32 +55,31 @@ defmodule SSHKit.Connection do
 
     port = details[:port]
     timeout = details[:timeout]
-    impl = details[:impl]
 
-    case impl.connect(host, port, opts, timeout) do
-      {:ok, ref} -> {:ok, new(host, port, opts, ref, impl)}
+    case @core.connect(host, port, opts, timeout) do
+      {:ok, ref} -> {:ok, new(host, port, opts, ref)}
       err -> err
     end
   end
 
   defp extract(options) do
     connect_option_keys = Keyword.keys(@default_connect_options)
-    {connect_options, impl_options} = Keyword.split(options, connect_option_keys)
+    {connect_options, ssh_options} = Keyword.split(options, connect_option_keys)
 
     connect_options =
       @default_connect_options
       |> Keyword.merge(connect_options)
 
-    impl_options =
-      @default_impl_options
-      |> Keyword.merge(impl_options)
+    ssh_options =
+      @default_ssh_options
+      |> Keyword.merge(ssh_options)
       |> Utils.charlistify()
 
-    {connect_options, impl_options}
+    {connect_options, ssh_options}
   end
 
-  defp new(host, port, options, ref, impl) do
-    %__MODULE__{host: host, port: port, options: options, ref: ref, impl: impl}
+  defp new(host, port, options, ref) do
+    %__MODULE__{host: host, port: port, options: options, ref: ref}
   end
 
   @doc """
@@ -88,7 +90,7 @@ defmodule SSHKit.Connection do
   For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
   def close(conn) do
-    conn.impl.close(conn.ref)
+    @core.close(conn.ref)
   end
 
   @doc """
@@ -105,7 +107,6 @@ defmodule SSHKit.Connection do
     options =
       conn.options
       |> Keyword.put(:port, conn.port)
-      |> Keyword.put(:impl, conn.impl)
       |> Keyword.merge(options)
 
     open(conn.host, options)

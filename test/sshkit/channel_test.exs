@@ -7,19 +7,23 @@ defmodule SSHKit.ChannelTest do
   alias SSHKit.Channel
   alias SSHKit.Connection
 
+  @core MockErlangSshConnection
+
+  setup :verify_on_exit!
+
   setup do
-    Mox.verify_on_exit!()
+    conn = %Connection{ref: :test_connection}
+    chan = %Channel{connection: conn, type: :session, id: 1}
 
-    conn = %Connection{ref: :test_connection, impl: Connection.ImplMock}
-    chan = %Channel{connection: conn, type: :session, id: 1, impl: Channel.ImplMock}
-
-    {:ok, conn: conn, chan: chan, impl: Channel.ImplMock}
+    {:ok, conn: conn, chan: chan}
   end
 
   describe "open/2" do
-    test "opens a channel on a connection", %{conn: conn, impl: impl} do
-      impl
-      |> expect(:session_channel, fn connection_ref, ini_window_size, max_packet_size, timeout ->
+    test "opens a channel on a connection", %{conn: conn} do
+      expect(@core, :session_channel, fn connection_ref,
+                                         ini_window_size,
+                                         max_packet_size,
+                                         timeout ->
         assert connection_ref == conn.ref
         assert ini_window_size == 128 * 1024
         assert max_packet_size == 32 * 1024
@@ -27,36 +31,29 @@ defmodule SSHKit.ChannelTest do
         {:ok, 0}
       end)
 
-      {:ok, chan} = open(conn, impl: impl)
+      {:ok, chan} = open(conn)
 
-      assert chan == %Channel{
-               connection: conn,
-               type: :session,
-               id: 0,
-               impl: impl
-             }
+      assert chan == %Channel{connection: conn, type: :session, id: 0}
     end
 
-    test "opens a channel with a specific timeout", %{conn: conn, impl: impl} do
-      impl
-      |> expect(:session_channel, fn _, _, _, timeout ->
+    test "opens a channel with a specific timeout", %{conn: conn} do
+      expect(@core, :session_channel, fn _, _, _, timeout ->
         assert timeout == 3000
         {:ok, 0}
       end)
 
-      {:ok, _} = open(conn, timeout: 3000, impl: impl)
+      {:ok, _} = open(conn, timeout: 3000)
     end
 
-    test "returns an error if channel cannot be opened", %{conn: conn, impl: impl} do
-      impl |> expect(:session_channel, fn _, _, _, _ -> {:error, :timeout} end)
-      assert open(conn, impl: impl) == {:error, :timeout}
+    test "returns an error if channel cannot be opened", %{conn: conn} do
+      expect(@core, :session_channel, fn _, _, _, _ -> {:error, :timeout} end)
+      assert open(conn) == {:error, :timeout}
     end
   end
 
   describe "subsystem/3" do
-    test "requests a subsystem", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:subsystem, fn connection_ref, channel_id, subsystem, timeout ->
+    test "requests a subsystem", %{chan: chan} do
+      expect(@core, :subsystem, fn connection_ref, channel_id, subsystem, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         assert subsystem == 'example-subsystem'
@@ -64,42 +61,32 @@ defmodule SSHKit.ChannelTest do
         :success
       end)
 
-      :success = subsystem(chan, "example-subsystem", impl: impl)
+      assert :success == subsystem(chan, "example-subsystem")
     end
 
-    test "requests a subsystem with a specific timeout", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:subsystem, fn _, _, _, timeout ->
+    test "requests a subsystem with a specific timeout", %{chan: chan} do
+      expect(@core, :subsystem, fn _, _, _, timeout ->
         assert timeout == 3000
         :success
       end)
 
-      :success = subsystem(chan, "example-subsystem", timeout: 3000, impl: impl)
+      assert :success == subsystem(chan, "example-subsystem", timeout: 3000)
     end
 
-    test "returns a failure if the subsystem could not be initialized", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:subsystem, fn _, _, _, _ ->
-        :failure
-      end)
-
-      :failure = subsystem(chan, "example-subsystem", impl: impl)
+    test "returns a failure if the subsystem could not be initialized", %{chan: chan} do
+      expect(@core, :subsystem, fn _, _, _, _ -> :failure end)
+      assert :failure = subsystem(chan, "example-subsystem")
     end
 
-    test "returns an error if the initialization times out", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:subsystem, fn _, _, _, _ ->
-        {:error, :timeout}
-      end)
-
-      {:error, :timeout} = subsystem(chan, "example-subsystem", impl: impl)
+    test "returns an error if the initialization times out", %{chan: chan} do
+      expect(@core, :subsystem, fn _, _, _, _ -> {:error, :timeout} end)
+      assert {:error, :timeout} == subsystem(chan, "example-subsystem")
     end
   end
 
   describe "close/1" do
-    test "closes the channel", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:close, fn connection_ref, channel_id ->
+    test "closes the channel", %{chan: chan} do
+      expect(@core, :close, fn connection_ref, channel_id ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         :ok
@@ -110,9 +97,8 @@ defmodule SSHKit.ChannelTest do
   end
 
   describe "exec/3" do
-    test "executes a command (binary) over a channel", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:exec, fn connection_ref, channel_id, command, timeout ->
+    test "executes a command (binary) over a channel", %{chan: chan} do
+      expect(@core, :exec, fn connection_ref, channel_id, command, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         assert command == 'cmd arg1 arg2'
@@ -123,9 +109,8 @@ defmodule SSHKit.ChannelTest do
       assert exec(chan, "cmd arg1 arg2") == :success
     end
 
-    test "executes a command (charlist) over a channel", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:exec, fn connection_ref, channel_id, command, timeout ->
+    test "executes a command (charlist) over a channel", %{chan: chan} do
+      expect(@core, :exec, fn connection_ref, channel_id, command, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         assert command == 'cmd arg1 arg2'
@@ -136,9 +121,8 @@ defmodule SSHKit.ChannelTest do
       assert exec(chan, 'cmd arg1 arg2') == :success
     end
 
-    test "executes a command with a specific timeout", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:exec, fn _, _, _, timeout ->
+    test "executes a command with a specific timeout", %{chan: chan} do
+      expect(@core, :exec, fn _, _, _, timeout ->
         assert timeout == 4000
         {:ok, 0}
       end)
@@ -146,21 +130,20 @@ defmodule SSHKit.ChannelTest do
       {:ok, _} = exec(chan, "cmd", 4000)
     end
 
-    test "executes a failing command", %{chan: chan, impl: impl} do
-      impl |> expect(:exec, fn _, _, _, _ -> :failure end)
+    test "executes a failing command", %{chan: chan} do
+      expect(@core, :exec, fn _, _, _, _ -> :failure end)
       assert exec(chan, "cmd") == :failure
     end
 
-    test "returns an error if command cannot be executed", %{chan: chan, impl: impl} do
-      impl |> expect(:exec, fn _, _, _, _ -> {:error, :closed} end)
+    test "returns an error if command cannot be executed", %{chan: chan} do
+      expect(@core, :exec, fn _, _, _, _ -> {:error, :closed} end)
       assert exec(chan, "cmd") == {:error, :closed}
     end
   end
 
   describe "ptty/4" do
-    test "allocates ptty", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:ptty_alloc, fn connection_ref, channel_id, options, timeout ->
+    test "allocates ptty", %{chan: chan} do
+      expect(@core, :ptty_alloc, fn connection_ref, channel_id, options, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         assert options == []
@@ -173,20 +156,20 @@ defmodule SSHKit.ChannelTest do
   end
 
   describe "send/4" do
-    test "send binary data across channel", %{chan: chan, impl: impl} do
-      impl |> expect(:send, sends(chan, 0, "binary data", :infinity, :ok))
+    test "send binary data across channel", %{chan: chan} do
+      expect(@core, :send, sends(chan, 0, "binary data", :infinity, :ok))
       assert Channel.send(chan, "binary data") == :ok
     end
 
-    test "sends charlist data across channel", %{chan: chan, impl: impl} do
-      impl |> expect(:send, sends(chan, 0, 'charlist data', :infinity, :ok))
+    test "sends charlist data across channel", %{chan: chan} do
+      expect(@core, :send, sends(chan, 0, 'charlist data', :infinity, :ok))
       assert Channel.send(chan, 'charlist data') == :ok
     end
 
-    test "sends stream data across channel", %{chan: chan, impl: impl} do
+    test "sends stream data across channel", %{chan: chan} do
       data = 0..2 |> Stream.map(&Integer.to_string/1)
 
-      impl
+      @core
       |> expect(:send, sends(chan, 0, "0", :infinity, :ok))
       |> expect(:send, sends(chan, 0, "1", :infinity, :ok))
       |> expect(:send, sends(chan, 0, "2", :infinity, :ok))
@@ -194,31 +177,30 @@ defmodule SSHKit.ChannelTest do
       assert Channel.send(chan, data) == :ok
     end
 
-    test "returns an error streaming data fails", %{chan: chan, impl: impl} do
+    test "returns an error streaming data fails", %{chan: chan} do
       data = 0..2 |> Stream.map(&Integer.to_string/1)
 
-      impl
+      @core
       |> expect(:send, sends(chan, 0, "0", :infinity, :ok))
       |> expect(:send, sends(chan, 0, "1", :infinity, {:error, :timeout}))
 
       assert Channel.send(chan, data) == {:error, :timeout}
     end
 
-    test "returns an error when channel not open", %{chan: chan, impl: impl} do
-      impl |> expect(:send, fn _, _, _, _, _ -> {:error, :closed} end)
+    test "returns an error when channel not open", %{chan: chan} do
+      expect(@core, :send, fn _, _, _, _, _ -> {:error, :closed} end)
       assert Channel.send(chan, "data") == {:error, :closed}
     end
 
-    test "returns an error when channel times out", %{chan: chan, impl: impl} do
-      impl |> expect(:send, fn _, _, _, _, _ -> {:error, :timeout} end)
+    test "returns an error when channel times out", %{chan: chan} do
+      expect(@core, :send, fn _, _, _, _, _ -> {:error, :timeout} end)
       assert Channel.send(chan, "data") == {:error, :timeout}
     end
   end
 
   describe "eof/1" do
-    test "sends EOF to open channel", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:send_eof, fn connection_ref, channel_id ->
+    test "sends EOF to open channel", %{chan: chan} do
+      expect(@core, :send_eof, fn connection_ref, channel_id ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         :ok
@@ -227,8 +209,8 @@ defmodule SSHKit.ChannelTest do
       assert eof(chan) == :ok
     end
 
-    test "returns an error when channel not open", %{chan: chan, impl: impl} do
-      impl |> expect(:send_eof, fn _, _ -> {:error, :closed} end)
+    test "returns an error when channel not open", %{chan: chan} do
+      expect(@core, :send_eof, fn _, _ -> {:error, :closed} end)
       assert eof(chan) == {:error, :closed}
     end
   end
@@ -277,9 +259,8 @@ defmodule SSHKit.ChannelTest do
       end
     end
 
-    test "adjusts the window size", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:adjust_window, fn connection_ref, channel_id, size ->
+    test "adjusts the window size", %{chan: chan} do
+      expect(@core, :adjust_window, fn connection_ref, channel_id, size ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
         assert size == 4096
