@@ -17,6 +17,7 @@ defmodule SSHKit.Download do
   end
 
   def stop(%__MODULE__{channel: nil} = download), do: {:ok, download}
+
   def stop(%__MODULE__{channel: chan} = download) do
     with :ok <- Channel.stop(chan) do
       {:ok, %{download | channel: nil}}

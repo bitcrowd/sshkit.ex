@@ -28,13 +28,15 @@ defmodule SSHKit.Upload do
 
   defp prepare(%__MODULE__{source: source, options: options} = upload) do
     if !Keyword.get(options, :recursive, false) && File.dir?(source) do
-      {:error, "Option :recursive not specified, but local file is a directory (#{source})"} # TODO: Better error
+      # TODO: Better error
+      {:error, "Option :recursive not specified, but local file is a directory (#{source})"}
     else
       {:ok, %{upload | cwd: Path.dirname(source), stack: [[Path.basename(source)]]}}
     end
   end
 
   def stop(%__MODULE__{channel: nil} = upload), do: {:ok, upload}
+
   def stop(%__MODULE__{channel: chan} = upload) do
     with :ok <- Channel.stop(chan) do
       {:ok, %{upload | channel: nil}}

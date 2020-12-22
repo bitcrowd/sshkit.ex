@@ -23,8 +23,9 @@ jobs:
       - name: Check mix format
         run: mix format --check-formatted
 
-      - name: Compile with warnings as errors
-        run: mix compile --warnings-as-errors
+      # TODO: Enable check before finalizing release
+      # - name: Compile with warnings as errors
+      #   run: mix compile --warnings-as-errors
 
   analysis:
     name: Run static code analysis

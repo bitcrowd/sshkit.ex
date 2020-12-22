@@ -46,12 +46,16 @@ defmodule SSHKit do
     # TODO: Separate options for open/exec/recv
     Stream.resource(
       fn ->
-        {:ok, chan} = Channel.open(conn, options) # TODO: handle {:error, reason} and raise custom error struct?
-        :success = Channel.exec(chan, command) # TODO: timeout?, TODO: Handle :failure and {:error, reason} and raise custom error struct?
+        # TODO: handle {:error, reason} and raise custom error struct?
+        {:ok, chan} = Channel.open(conn, options)
+
+        # TODO: timeout?, TODO: Handle :failure and {:error, reason} and raise custom error struct?
+        :success = Channel.exec(chan, command)
         chan
       end,
       fn chan ->
-        {:ok, msg} = Channel.recv(chan) # TODO: timeout?, TODO: handle {:error, reason} and raise custom error struct?
+        # TODO: timeout?, TODO: handle {:error, reason} and raise custom error struct?
+        {:ok, msg} = Channel.recv(chan)
 
         # TODO: Adjust channel window size?
 
@@ -115,16 +119,18 @@ defmodule SSHKit do
   def run!(conn, command, options \\ []) do
     stream = exec!(conn, command, options)
 
-    {status, output} = Enum.reduce(stream, {nil, []}, fn
-      {:stdout, _, data}, {status, output} -> {status, [{:stdout, data} | output]}
-      {:stderr, _, data}, {status, output} -> {status, [{:stderr, data} | output]}
-      {:exit, _, status}, {_, output} -> {status, output}
-      _, acc -> acc
-    end)
+    {status, output} =
+      Enum.reduce(stream, {nil, []}, fn
+        {:stdout, _, data}, {status, output} -> {status, [{:stdout, data} | output]}
+        {:stderr, _, data}, {status, output} -> {status, [{:stderr, data} | output]}
+        {:exit, _, status}, {_, output} -> {status, output}
+        _, acc -> acc
+      end)
 
     output = Enum.reverse(output)
 
-    if status != 0, do: raise "Non-zero exit code: #{status}" # TODO: Proper file struct?
+    # TODO: Proper file struct?
+    if status != 0, do: raise("Non-zero exit code: #{status}")
 
     output
   end
