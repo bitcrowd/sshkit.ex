@@ -52,6 +52,8 @@ jobs:
       matrix:
         include:
           - erlang: "23.0"
+            elixir: "1.11.2"
+          - erlang: "23.0"
             elixir: "1.10.3"
           - erlang: "22.3"
             elixir: "1.9.4"
