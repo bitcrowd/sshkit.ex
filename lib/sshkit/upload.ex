@@ -78,7 +78,7 @@ defmodule SSHKit.Upload do
           # TODO: Timeouts
           with {:ok, handle} <- Channel.open(chan, remote, [:write, :binary]),
                :ok <- write(path, chan, handle),
-               :ok = Channel.close(chan, handle) do
+               :ok <- Channel.close(chan, handle) do
             {:ok, %{upload | stack: [rest | paths]}}
           end
 

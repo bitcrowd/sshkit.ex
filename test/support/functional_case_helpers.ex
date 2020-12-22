@@ -1,7 +1,7 @@
 defmodule SSHKit.FunctionalCaseHelpers do
   @moduledoc false
 
-  def exec!(_host = %{id: id}, command, args \\ []) do
+  def exec!(%{id: id} = _host, command, args \\ []) do
     Docker.exec!([], id, command, args)
   end
 

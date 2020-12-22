@@ -31,7 +31,8 @@ defmodule SSHKit.SFTP.Channel do
     chan.impl.make_dir(chan.id, name, timeout)
   end
 
-  @spec open(t(), binary(), [:read | :write | :append | :binary | :raw], timeout()) :: {:ok, handle()} | {:error, term()}
+  @spec open(t(), binary(), [:read | :write | :append | :binary | :raw], timeout()) ::
+          {:ok, handle()} | {:error, term()}
   def open(chan, name, mode, timeout \\ :infinity) do
     chan.impl.open(chan.id, name, mode, timeout)
   end
