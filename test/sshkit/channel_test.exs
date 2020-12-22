@@ -1,11 +1,11 @@
-defmodule SSHKit.SSH.ChannelTest do
+defmodule SSHKit.ChannelTest do
   use ExUnit.Case, async: true
+
   import Mox
+  import SSHKit.Channel
 
-  import SSHKit.SSH.Channel
-
-  alias SSHKit.SSH.Channel
-  alias SSHKit.SSH.Connection
+  alias SSHKit.Channel
+  alias SSHKit.Connection
 
   setup do
     Mox.verify_on_exit!()
@@ -287,103 +287,6 @@ defmodule SSHKit.SSH.ChannelTest do
       end)
 
       assert adjust(chan, 4096) == :ok
-    end
-  end
-
-  describe "shell/2" do
-    test "set shell to server side", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:shell, fn connection_ref, channel_id ->
-        assert connection_ref == chan.connection.ref
-        assert channel_id == chan.id
-        :ok
-      end)
-
-      assert shell(chan) == :ok
-    end
-  end
-
-  describe "loop/4" do
-    test "loops over channel messages until channel is closed", %{conn: conn, chan: chan} do
-      Enum.each(0..2, &Kernel.send(self(), {:ssh_cm, conn.ref, {:msg, chan.id, &1}}))
-      Kernel.send(self(), {:ssh_cm, conn.ref, {:closed, chan.id}})
-      assert Enum.count(messages(self())) == 4
-
-      fun = fn
-        {:msg, _, index}, _ -> {:cont, index}
-        {:closed, _}, acc -> {:cont, acc}
-      end
-
-      assert loop(chan, 0, {:cont, -1}, fun) == {:done, 2}
-      assert messages(self()) == []
-    end
-
-    test "allows sending messages to the remote", %{conn: conn, chan: chan, impl: impl} do
-      impl
-      |> expect(:send_eof, fn _, _ -> :ok end)
-      |> expect(:send, sends(chan, 0, "plain", 200, :ok))
-      |> expect(:send, sends(chan, 0, "normal", 200, :ok))
-      |> expect(:send, sends(chan, 1, "error", 200, :ok))
-
-      Enum.each(0..4, &Kernel.send(self(), {:ssh_cm, conn.ref, {:msg, chan.id, &1}}))
-      Kernel.send(self(), {:ssh_cm, conn.ref, {:closed, chan.id}})
-
-      msgs = [nil, :eof, "plain", {0, "normal"}, {1, "error"}]
-
-      fun = fn
-        {:msg, _, index}, _ -> {:cont, Enum.at(msgs, index), index}
-        {:closed, _}, acc -> {:cont, acc}
-      end
-
-      assert loop(chan, 200, {:cont, -1}, fun) == {:done, 4}
-      assert messages(self()) == []
-    end
-
-    test "allows suspending the loop", %{conn: conn, chan: chan} do
-      Enum.each(0..1, &Kernel.send(self(), {:ssh_cm, conn.ref, {:msg, chan.id, &1}}))
-      Kernel.send(self(), {:ssh_cm, conn.ref, {:closed, chan.id}})
-
-      fun = fn
-        {:msg, _, _}, acc when acc < 5 -> {:suspend, acc + 1}
-        {:msg, _, _}, acc -> {:cont, acc * 3}
-        {:closed, _}, acc -> {:cont, acc}
-      end
-
-      {:suspended, 1, continue} = loop(chan, 0, {:cont, 0}, fun)
-
-      assert continue.({:cont, 5}) == {:done, 15}
-      assert messages(self()) == []
-    end
-
-    test "allows halting the loop", %{conn: conn, chan: chan, impl: impl} do
-      impl |> expect(:close, fn _, _ -> :ok end)
-
-      Enum.each(0..5, &Kernel.send(self(), {:ssh_cm, conn.ref, {:msg, chan.id, &1}}))
-
-      fun = fn
-        _, acc when acc < 2 -> {:cont, acc + 1}
-        _, acc -> {:halt, acc}
-      end
-
-      assert loop(chan, 0, {:cont, 0}, fun) == {:halted, 2}
-      # remaining messages flushed
-      assert messages(self()) == []
-    end
-
-    test "returns an error if next message is not received in time", %{chan: chan, impl: impl} do
-      impl |> expect(:close, fn _, _ -> :ok end)
-      res = loop(chan, 0, {:cont, []}, &[&1 | &2])
-      assert res == {:halted, {:error, :timeout}}
-    end
-
-    test "returns an error if message sending fails", %{chan: chan, impl: impl} do
-      impl
-      |> expect(:send, sends(chan, 0, "data", 100, {:error, :timeout}))
-      |> expect(:close, fn _, _ -> :ok end)
-
-      res = loop(chan, 100, {:cont, "data", []}, &[&1 | &2])
-
-      assert res == {:halted, {:error, :timeout}}
     end
   end
 

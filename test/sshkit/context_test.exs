@@ -3,9 +3,53 @@ defmodule SSHKit.ContextTest do
 
   alias SSHKit.Context
 
-  @empty %Context{hosts: []}
+  @empty %Context{}
 
-  doctest Context
+  describe "new/0" do
+    test "returns a new context" do
+      context = Context.new()
+      assert context == @empty
+    end
+  end
+
+  describe "path/2" do
+    test "sets the path for the context" do
+      context = Context.path(@empty, "/var/www/app")
+      assert context.path == "/var/www/app"
+    end
+  end
+
+  describe "umask/2" do
+    test "sets the file permission mask for the context" do
+      context = Context.umask(@empty, "077")
+      assert context.umask == "077"
+    end
+  end
+
+  describe "user/2" do
+    test "sets the user for the context" do
+      context = Context.user(@empty, "meg")
+      assert context.user == "meg"
+    end
+  end
+
+  describe "group/2" do
+    test "sets the group for the context" do
+      context = Context.group(@empty, "stripes")
+      assert context.group == "stripes"
+    end
+  end
+
+  describe "env/2" do
+    test "overwrites existing env" do
+      context =
+        @empty
+        |> Context.env(%{"NODE_ENV" => "production"})
+        |> Context.env(%{"CI" => "true"})
+
+      assert context.env == %{"CI" => "true"}
+    end
+  end
 
   describe "build/2" do
     test "with user" do

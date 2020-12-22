@@ -1,11 +1,11 @@
-defmodule SSHKit.SSH.ConnectionTest do
+defmodule SSHKit.ConnectionTest do
   use ExUnit.Case, async: true
+
   import Mox
+  import SSHKit.Connection
 
-  import SSHKit.SSH.Connection
-
-  alias SSHKit.SSH.Connection
-  alias SSHKit.SSH.Connection.ImplMock
+  alias SSHKit.Connection
+  alias SSHKit.Connection.ImplMock
 
   setup do
     Mox.verify_on_exit!()

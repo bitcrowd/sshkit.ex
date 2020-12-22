@@ -1,16 +1,16 @@
-defmodule SSHKit.SSH.ChannelFunctionalTest do
+defmodule SSHKit.ChannelFunctionalTest do
   @moduledoc false
 
   use SSHKit.FunctionalCase, async: true
 
-  alias SSHKit.SSH.Channel
+  alias SSHKit.Channel
 
   @bootconf [user: "me", password: "pass"]
 
   describe "Channel.subsystem/3" do
     @tag boot: [@bootconf]
     test "with user", %{hosts: [host]} do
-      {:ok, conn} = SSHKit.SSH.connect(host.name, host.options)
+      {:ok, conn} = SSHKit.connect(host.name, host.options)
       {:ok, channel} = Channel.open(conn)
       :success = Channel.subsystem(channel, "greeting-subsystem")
 

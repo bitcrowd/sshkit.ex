@@ -1,4 +1,4 @@
-defmodule SSHKit.SSH.Connection.Impl do
+defmodule SSHKit.Connection.Impl do
   @moduledoc false
 
   @type conn :: any()
@@ -7,9 +7,9 @@ defmodule SSHKit.SSH.Connection.Impl do
   @callback close(conn) :: :ok
 end
 
-Mox.defmock(SSHKit.SSH.Connection.ImplMock, for: SSHKit.SSH.Connection.Impl)
+Mox.defmock(SSHKit.Connection.ImplMock, for: SSHKit.Connection.Impl)
 
-defmodule SSHKit.SSH.Channel.Impl do
+defmodule SSHKit.Channel.Impl do
   @moduledoc false
 
   @type conn :: any()
@@ -31,6 +31,4 @@ defmodule SSHKit.SSH.Channel.Impl do
   @callback shell(conn, chan) :: :ok | {:error, :closed}
 end
 
-Mox.defmock(SSHKit.SSH.Channel.ImplMock, for: SSHKit.SSH.Channel.Impl)
-
-Mox.defmock(SSHKit.SSHMock, for: SSHKit.SSH)
+Mox.defmock(SSHKit.Channel.ImplMock, for: SSHKit.Channel.Impl)
