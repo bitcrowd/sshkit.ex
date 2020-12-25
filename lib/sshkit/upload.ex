@@ -3,16 +3,19 @@ defmodule SSHKit.Upload do
   TODO
   """
 
+  alias SSHKit.Connection
   alias SSHKit.SFTP.Channel
 
   defstruct [:source, :target, :options, :cwd, :stack, :channel]
 
   @type t() :: %__MODULE__{}
 
+  @spec init(binary(), binary(), keyword()) :: t()
   def init(source, target, options \\ []) do
     %__MODULE__{source: Path.expand(source), target: target, options: options}
   end
 
+  @spec start(t(), Connection.t()) :: {:ok, t()} | {:error, term()}
   def start(%__MODULE__{options: options} = upload, conn) do
     # accepts options like timeout… http://erlang.org/doc/man/ssh_sftp.html#start_channel-1
     start_options =
@@ -20,20 +23,22 @@ defmodule SSHKit.Upload do
       |> Keyword.get(:start, [])
       |> Keyword.put_new(:timeout, Keyword.get(options, :timeout, :infinity))
 
-    with {:ok, upload} <- prepare(upload),
+    with {:ok, upload} <- preflight(upload),
          {:ok, chan} <- Channel.start(conn, start_options) do
       {:ok, %{upload | channel: chan}}
     end
   end
 
-  defp prepare(%__MODULE__{source: source, options: options} = upload) do
-    if !Keyword.get(options, :recursive, false) && File.dir?(source) do
-      # TODO: Better error
-      {:error, "Option :recursive not specified, but local file is a directory (#{source})"}
-    else
+  defp preflight(%__MODULE__{source: source, options: options} = upload) do
+    if File.exists?(source) do
       {:ok, %{upload | cwd: Path.dirname(source), stack: [[Path.basename(source)]]}}
+    else
+      {:error, :enoent}
     end
   end
+
+  @spec stop(t()) :: {:ok, t()} | {:error, term()}
+  def stop(upload)
 
   def stop(%__MODULE__{channel: nil} = upload), do: {:ok, upload}
 
@@ -45,15 +50,18 @@ defmodule SSHKit.Upload do
 
   # TODO: Handle unstarted uploads w/o channel, cwd, stack… and provide helpful error?
 
-  def continue(%__MODULE__{stack: []} = upload) do
+  @spec step(t()) :: {:ok, t()} | {:error, term()}
+  def step(upload)
+
+  def step(%__MODULE__{stack: []} = upload) do
     {:ok, upload}
   end
 
-  def continue(%__MODULE__{stack: [[] | paths]} = upload) do
+  def step(%__MODULE__{stack: [[] | paths]} = upload) do
     {:ok, %{upload | cwd: Path.dirname(upload.cwd), stack: paths}}
   end
 
-  def continue(%__MODULE__{stack: [[name | rest] | paths]} = upload) do
+  def step(%__MODULE__{stack: [[name | rest] | paths]} = upload) do
     path = Path.join(upload.cwd, name)
     relpath = Path.relative_to(path, upload.source)
     relpath = if relpath == path, do: ".", else: relpath
@@ -101,6 +109,8 @@ defmodule SSHKit.Upload do
     |> Enum.find(:ok, &(&1 != :ok))
   end
 
-  def done?(%{stack: []}), do: true
-  def done?(%{}), do: false
+  @spec done?(t()) :: boolean()
+  def done?(upload)
+  def done?(%__MODULE__{stack: []}), do: true
+  def done?(%__MODULE__{}), do: false
 end

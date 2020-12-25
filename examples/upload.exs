@@ -2,7 +2,7 @@
 
 :ok =
   conn
-  |> SSHKit.upload!("test/fixtures", "/tmp/fixtures", recursive: true)
+  |> SSHKit.upload!("test/fixtures", "/tmp/fixtures")
   |> Stream.run()
 
 :ok = SSHKit.close(conn)

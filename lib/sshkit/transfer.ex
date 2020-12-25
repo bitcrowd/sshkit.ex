@@ -16,7 +16,7 @@ defmodule SSHKit.Transfer do
         if module.done?(transfer) do
           {:halt, transfer}
         else
-          {:ok, transfer} = module.continue(transfer)
+          {:ok, transfer} = module.step(transfer)
           {[transfer], transfer}
         end
       end,
