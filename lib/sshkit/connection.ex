@@ -5,7 +5,7 @@ defmodule SSHKit.Connection do
   A connection struct has the following fields:
 
   * `host` - the name or IP of the remote host
-  * `port` - the port to connect to
+  * `port` - the port connected to
   * `options` - additional connection options
   * `ref` - the underlying `:ssh` connection ref
   """

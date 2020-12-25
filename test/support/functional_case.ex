@@ -17,7 +17,9 @@ defmodule SSHKit.FunctionalCase do
       @moduletag :functional
 
       setup do
-        # Stub mocks with implementations delegating to the proper Erlang modules
+        # Stub mocks with implementations delegating to the original Erlang
+        # modules, essentially "unmocking" them unless explicit expectations
+        # are set up.
         Mox.stub_with(MockErlangSsh, ErlangSsh)
         Mox.stub_with(MockErlangSshConnection, ErlangSshConnection)
         Mox.stub_with(MockErlangSshSftp, ErlangSshSftp)
