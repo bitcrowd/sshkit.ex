@@ -13,28 +13,28 @@ defmodule SSHKit.ContextTest do
   end
 
   describe "path/2" do
-    test "sets the path for the context" do
+    test "sets the path" do
       context = Context.path(@empty, "/var/www/app")
       assert context.path == "/var/www/app"
     end
   end
 
   describe "umask/2" do
-    test "sets the file permission mask for the context" do
+    test "sets the file permission mask" do
       context = Context.umask(@empty, "077")
       assert context.umask == "077"
     end
   end
 
   describe "user/2" do
-    test "sets the user for the context" do
+    test "sets the user" do
       context = Context.user(@empty, "meg")
       assert context.user == "meg"
     end
   end
 
   describe "group/2" do
-    test "sets the group for the context" do
+    test "sets the group" do
       context = Context.group(@empty, "stripes")
       assert context.group == "stripes"
     end
@@ -124,6 +124,11 @@ defmodule SSHKit.ContextTest do
         |> Context.build("ls -l")
 
       assert command == "cd /var/www && /usr/bin/env ls -l"
+    end
+
+    test "without any options" do
+      command = @empty |> Context.build("uptime")
+      assert command == "/usr/bin/env uptime"
     end
 
     test "with all options" do
