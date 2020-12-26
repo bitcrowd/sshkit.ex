@@ -20,6 +20,7 @@ defmodule SSHKit do
 
   alias SSHKit.Channel
   alias SSHKit.Connection
+  alias SSHKit.Context
   alias SSHKit.Download
   alias SSHKit.Transfer
   alias SSHKit.Upload
@@ -43,6 +44,10 @@ defmodule SSHKit do
 
   @spec exec!(Connection.t(), binary(), keyword()) :: Enumerable.t()
   def exec!(conn, command, options \\ []) do
+    {context, options} = Keyword.pop(options, :context, Context.new())
+
+    command = Context.build(context, command)
+
     # TODO: Separate options for open/exec/recv
     Stream.resource(
       fn ->
@@ -115,6 +120,11 @@ defmodule SSHKit do
   def send(chan, :stdout, data, timeout), do: Channel.send(chan, 0, data, timeout)
   def send(chan, :stderr, data, timeout), do: Channel.send(chan, 1, data, timeout)
 
+  @doc """
+  TODO
+
+  Accepts the same options as `exec!/3`.
+  """
   @spec run!(Connection.t(), binary(), keyword()) :: [{:stdout | :stderr, binary()}]
   def run!(conn, command, options \\ []) do
     stream = exec!(conn, command, options)
