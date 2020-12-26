@@ -40,17 +40,14 @@ defmodule SSHKit.Connection do
 
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
   """
+  @spec open(binary() | charlist(), keyword()) :: {:ok, t()} | {:error, term()}
   def open(host, options \\ [])
-
-  def open(nil, _) do
-    {:error, "No host given."}
-  end
 
   def open(host, options) when is_binary(host) do
     open(to_charlist(host), options)
   end
 
-  def open(host, options) do
+  def open(host, options) when is_list(host) do
     {details, opts} = extract(options)
 
     port = details[:port]
@@ -89,6 +86,7 @@ defmodule SSHKit.Connection do
 
   For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
+  @spec close(t()) :: :ok
   def close(conn) do
     @core.close(conn.ref)
   end
@@ -103,6 +101,7 @@ defmodule SSHKit.Connection do
 
   Returns `{:ok, conn}` or `{:error, reason}`.
   """
+  @spec reopen(term(), keyword()) :: {:ok, t()} | {:error, term()}
   def reopen(conn, options \\ []) do
     options =
       conn.options

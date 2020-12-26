@@ -129,7 +129,7 @@ defmodule SSHKit do
 
     output = Enum.reverse(output)
 
-    # TODO: Proper file struct?
+    # TODO: Proper error struct?
     if status != 0, do: raise("Non-zero exit code: #{status}")
 
     output

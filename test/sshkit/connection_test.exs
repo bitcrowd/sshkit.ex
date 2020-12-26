@@ -119,10 +119,6 @@ defmodule SSHKit.ConnectionTest do
 
       assert open("test.io") == {:error, :failed}
     end
-
-    test "returns an error if no host is given" do
-      assert open(nil) == {:error, "No host given."}
-    end
   end
 
   describe "close/1" do

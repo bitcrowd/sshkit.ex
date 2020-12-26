@@ -9,6 +9,8 @@ defmodule SSHKit.Channel do
   * `id` - the unique channel id
   """
 
+  alias SSHKit.Connection
+
   defstruct [:connection, :type, :id]
 
   @type t() :: %__MODULE__{}
@@ -30,6 +32,7 @@ defmodule SSHKit.Channel do
   * `:initial_window_size` - defaults to 128 KiB
   * `:max_packet_size` - defaults to 32 KiB
   """
+  @spec open(Connection.t(), keyword()) :: {:ok, t()} | {:error, term()}
   def open(conn, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
     ini_window_size = Keyword.get(options, :initial_window_size, 128 * 1024)
@@ -51,8 +54,7 @@ defmodule SSHKit.Channel do
 
   For more details, see [`:ssh_connection.subsystem/4`](http://erlang.org/doc/man/ssh_connection.html#subsystem-4).
   """
-  @spec subsystem(channel :: struct(), subsystem :: String.t(), options :: list()) ::
-          :success | :failure | {:error, reason :: String.t()}
+  @spec subsystem(t(), binary(), keyword()) :: :success | :failure | {:error, term()}
   def subsystem(channel, subsystem, options \\ []) do
     timeout = Keyword.get(options, :timeout, :infinity)
     @core.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout)
@@ -65,6 +67,7 @@ defmodule SSHKit.Channel do
 
   For more details, see [`:ssh_connection.close/2`](http://erlang.org/doc/man/ssh_connection.html#close-2).
   """
+  @spec close(t()) :: :ok
   def close(channel) do
     @core.close(channel.connection.ref, channel.id)
   end
@@ -81,6 +84,7 @@ defmodule SSHKit.Channel do
   `loop/4` may be used to process any channel messages received as a result of
   executing `command` on the remote.
   """
+  @spec exec(t(), binary() | charlist(), timeout()) :: :success | :failure | {:error, term()}
   def exec(channel, command, timeout \\ :infinity)
 
   def exec(channel, command, timeout) when is_binary(command) do
@@ -94,10 +98,11 @@ defmodule SSHKit.Channel do
   @doc """
   Allocates PTTY.
 
-  Returns `:success`.
+  Returns `:success`, `:failure` or `{:error, reason}`.
 
   For more details, see [`:ssh_connection.ptty_alloc/4`](http://erlang.org/doc/man/ssh_connection.html#ptty_alloc-4).
   """
+  @spec ptty(t(), keyword(), timeout()) :: :success | :failure | {:error, term()}
   def ptty(channel, options \\ [], timeout \\ :infinity) do
     @core.ptty_alloc(channel.connection.ref, channel.id, options, timeout)
   end
@@ -111,6 +116,8 @@ defmodule SSHKit.Channel do
 
   For more details, see [`:ssh_connection.send/5`](http://erlang.org/doc/man/ssh_connection.html#send-5).
   """
+  @spec send(t(), non_neg_integer(), term(), timeout()) ::
+          :ok | {:error, :timeout} | {:error, :closed}
   def send(channel, type \\ 0, data, timeout \\ :infinity)
 
   def send(channel, type, data, timeout) when is_binary(data) or is_list(data) do
@@ -131,6 +138,7 @@ defmodule SSHKit.Channel do
 
   For more details, see [`:ssh_connection.send_eof/2`](http://erlang.org/doc/man/ssh_connection.html#send_eof-2).
   """
+  @spec eof(t()) :: :ok | {:error, term()}
   def eof(channel) do
     @core.send_eof(channel.connection.ref, channel.id)
   end
@@ -155,6 +163,7 @@ defmodule SSHKit.Channel do
 
   For more details, see [`:ssh_connection`](http://erlang.org/doc/man/ssh_connection.html).
   """
+  @spec recv(t(), timeout()) :: {:ok, tuple()} | {:error, term()}
   def recv(channel, timeout \\ :infinity) do
     ref = channel.connection.ref
     id = channel.id
@@ -173,6 +182,7 @@ defmodule SSHKit.Channel do
 
   Returns `:ok`.
   """
+  @spec flush(t(), timeout()) :: :ok
   def flush(channel, timeout \\ 0) do
     ref = channel.connection.ref
     id = channel.id
@@ -191,6 +201,7 @@ defmodule SSHKit.Channel do
 
   For more details, see [`:ssh_connection.adjust_window/3`](http://erlang.org/doc/man/ssh_connection.html#adjust_window-3).
   """
+  @spec adjust(t(), non_neg_integer()) :: :ok
   def adjust(channel, size) when is_integer(size) do
     @core.adjust_window(channel.connection.ref, channel.id, size)
   end
