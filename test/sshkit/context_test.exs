@@ -41,6 +41,11 @@ defmodule SSHKit.ContextTest do
   end
 
   describe "env/2" do
+    test "sets the env" do
+      context = Context.env(@empty, %{"NODE_ENV" => "production"})
+      assert context.env == %{"NODE_ENV" => "production"}
+    end
+
     test "overwrites existing env" do
       context =
         @empty
