@@ -48,19 +48,6 @@ defmodule SSHKit.Channel do
   end
 
   @doc """
-  Activates a subsystem on a channel.
-
-  Returns `:success`, `:failure` or `{:error, reason}`.
-
-  For more details, see [`:ssh_connection.subsystem/4`](http://erlang.org/doc/man/ssh_connection.html#subsystem-4).
-  """
-  @spec subsystem(t(), binary(), keyword()) :: :success | :failure | {:error, term()}
-  def subsystem(channel, subsystem, options \\ []) do
-    timeout = Keyword.get(options, :timeout, :infinity)
-    @core.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout)
-  end
-
-  @doc """
   Closes an SSH channel.
 
   Returns `:ok`.
@@ -93,6 +80,19 @@ defmodule SSHKit.Channel do
 
   def exec(channel, command, timeout) do
     @core.exec(channel.connection.ref, channel.id, command, timeout)
+  end
+
+  @doc """
+  Activates a subsystem on a channel.
+
+  Returns `:success`, `:failure` or `{:error, reason}`.
+
+  For more details, see [`:ssh_connection.subsystem/4`](http://erlang.org/doc/man/ssh_connection.html#subsystem-4).
+  """
+  @spec subsystem(t(), binary(), keyword()) :: :success | :failure | {:error, term()}
+  def subsystem(channel, subsystem, options \\ []) do
+    timeout = Keyword.get(options, :timeout, :infinity)
+    @core.subsystem(channel.connection.ref, channel.id, to_charlist(subsystem), timeout)
   end
 
   @doc """
@@ -178,6 +178,18 @@ defmodule SSHKit.Channel do
   end
 
   @doc """
+  Adjusts the flow control window.
+
+  Returns `:ok`.
+
+  For more details, see [`:ssh_connection.adjust_window/3`](http://erlang.org/doc/man/ssh_connection.html#adjust_window-3).
+  """
+  @spec adjust(t(), non_neg_integer()) :: :ok
+  def adjust(channel, size) when is_integer(size) do
+    @core.adjust_window(channel.connection.ref, channel.id, size)
+  end
+
+  @doc """
   Flushes any pending messages for the given channel.
 
   Returns `:ok`.
@@ -192,17 +204,5 @@ defmodule SSHKit.Channel do
     after
       timeout -> :ok
     end
-  end
-
-  @doc """
-  Adjusts the flow control window.
-
-  Returns `:ok`.
-
-  For more details, see [`:ssh_connection.adjust_window/3`](http://erlang.org/doc/man/ssh_connection.html#adjust_window-3).
-  """
-  @spec adjust(t(), non_neg_integer()) :: :ok
-  def adjust(channel, size) when is_integer(size) do
-    @core.adjust_window(channel.connection.ref, channel.id, size)
   end
 end
