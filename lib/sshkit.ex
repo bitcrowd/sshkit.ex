@@ -67,10 +67,10 @@ defmodule SSHKit do
         value =
           case msg do
             {:exit_signal, ^chan, signal, message, lang} ->
-              {:signal, chan, signal, message, lang}
+              {:exit_signal, chan, signal, message, lang}
 
             {:exit_status, ^chan, status} ->
-              {:exit, chan, status}
+              {:exit_status, chan, status}
 
             {:data, ^chan, 0, data} ->
               {:stdout, chan, data}
@@ -131,9 +131,9 @@ defmodule SSHKit do
 
     {status, output} =
       Enum.reduce(stream, {nil, []}, fn
+        {:exit_status, _, status}, {_, output} -> {status, output}
         {:stdout, _, data}, {status, output} -> {status, [{:stdout, data} | output]}
         {:stderr, _, data}, {status, output} -> {status, [{:stderr, data} | output]}
-        {:exit, _, status}, {_, output} -> {status, output}
         _, acc -> acc
       end)
 

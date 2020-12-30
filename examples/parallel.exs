@@ -25,7 +25,7 @@ tasks =
           IO.write("[#{label.(chan.connection)}] (stderr) #{output}")
           status
 
-        {:exit, _, status}, _ ->
+        {:exit_status, _, status}, _ ->
           status
 
         _, status ->

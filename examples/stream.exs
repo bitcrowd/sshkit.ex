@@ -16,7 +16,7 @@ code = Enum.reduce(stream, nil, fn
 
     status
 
-  {:exit, _, status}, _ ->
+  {:exit_status, _, status}, _ ->
     status
 
   _, status ->
