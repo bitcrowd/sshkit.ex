@@ -129,7 +129,7 @@ defmodule SSHKit.ConnectionTest do
       end)
 
       conn = %Connection{
-        host: 'foo.io',
+        host: 'test.io',
         port: 22,
         options: [user_interaction: false],
         ref: :connection_ref
@@ -140,7 +140,7 @@ defmodule SSHKit.ConnectionTest do
   end
 
   describe "reopen/2" do
-    test "opens a new connection with the same options as the existing connection" do
+    test "opens a new connection with the same options as an existing connection" do
       conn = %Connection{
         host: 'test.io',
         port: 22,
@@ -160,7 +160,7 @@ defmodule SSHKit.ConnectionTest do
       assert reopen(conn) == {:ok, new_conn}
     end
 
-    test "reopens a connection on new port" do
+    test "reopens a connection on a new port" do
       conn = %Connection{
         host: 'test.io',
         port: 22,
@@ -178,12 +178,12 @@ defmodule SSHKit.ConnectionTest do
       assert reopen(conn, port: 666) == {:ok, new_conn}
     end
 
-    test "errors when unable to open connection" do
+    test "errors when unable to open a connection" do
       conn = %Connection{
         host: 'test.io',
         port: 22,
-        options: [user_interaction: false],
-        ref: :sandbox
+        options: [],
+        ref: :connection_ref
       }
 
       expect(@core, :connect, fn _, _, _, _ ->
@@ -191,6 +191,32 @@ defmodule SSHKit.ConnectionTest do
       end)
 
       assert reopen(conn) == {:error, :failed}
+    end
+  end
+
+  describe "info/1" do
+    test "returns information about a connection" do
+      if function_exported?(@core, :connection_info, 1) do
+        expect(@core, :connection_info, fn ref ->
+          assert ref == :connection_ref
+          [info: :test]
+        end)
+      else
+        expect(@core, :connection_info, fn ref, keys ->
+          assert ref == :connection_ref
+          assert keys == [:client_version, :server_version, :user, :peer, :sockname]
+          [info: :test]
+        end)
+      end
+
+      conn = %Connection{
+        host: 'test.io',
+        port: 22,
+        options: [],
+        ref: :connection_ref
+      }
+
+      assert info(conn) == [info: :test]
     end
   end
 end

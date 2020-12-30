@@ -101,7 +101,7 @@ defmodule SSHKit.Connection do
 
   Returns `{:ok, conn}` or `{:error, reason}`.
   """
-  @spec reopen(term(), keyword()) :: {:ok, t()} | {:error, term()}
+  @spec reopen(t(), keyword()) :: {:ok, t()} | {:error, term()}
   def reopen(conn, options \\ []) do
     options =
       conn.options
@@ -109,5 +109,22 @@ defmodule SSHKit.Connection do
       |> Keyword.merge(options)
 
     open(conn.host, options)
+  end
+
+  @doc """
+  Returns information about a connection.
+
+  For OTP versions prior to 21.1, only `:client_version`, `:server_version`,
+  `:user`, `:peer` and `:sockname` are available.
+
+  For details, see [`:ssh.connection_info/1`](http://erlang.org/doc/man/ssh.html#connection_info-1).
+  """
+  @spec info(t()) :: keyword()
+  def info(conn) do
+    if function_exported?(@core, :connection_info, 1) do
+      @core.connection_info(conn.ref)
+    else
+      @core.connection_info(conn.ref, [:client_version, :server_version, :user, :peer, :sockname])
+    end
   end
 end
