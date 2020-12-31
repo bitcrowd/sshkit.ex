@@ -43,19 +43,8 @@ end
         end)
 
         source = "test/fixtures"
-        # :ok = :erl_tar.add(tar, to_charlist(source), to_charlist(source))
 
-        with {:ok, names} <- File.ls(source) do
-          Enum.each(names, fn name ->
-            path = Path.join(source, name)
-
-            with {:ok, stat} <- File.stat(path, time: :posix) do
-              IO.puts("#{stat.type}: #{path}")
-
-              :ok = :erl_tar.add(tar, to_charlist(path), to_charlist(path), atime: stat.atime, mtime: stat.mtime, ctime: stat.ctime)
-            end
-          end)
-        end
+        :ok = :erl_tar.add(tar, to_charlist(source), to_charlist(source))
 
         :ok = :erl_tar.close(tar)
 
