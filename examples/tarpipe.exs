@@ -5,6 +5,7 @@ ctx =
   |> SSHKit.Context.path("/tmp")
   |> SSHKit.Context.user("other")
   |> SSHKit.Context.group("other")
+  |> SSHKit.Context.umask("0077")
 
 defmodule Xfer do
   # https://github.com/erlang/otp/blob/OTP-23.2.1/lib/ssh/src/ssh.hrl
@@ -28,16 +29,16 @@ end
         # In case of failed upload, check command output:
         # IO.inspect(SSHKit.Channel.recv(chan))
 
-        {:ok, tar} = :erl_tar.init(self(), :write, fn
-          :position, {_, position} ->
+        {:ok, tar} = :erl_tar.init(chan, :write, fn
+          :position, {^chan, position} ->
             # IO.write("tar position: #{inspect(position)}")
             {:ok, 0}
 
-          :write, {_, data} ->
+          :write, {^chan, data} ->
             :ok = SSHKit.Channel.send(chan, Xfer.to_binary(data))
             :ok
 
-          :close, _ ->
+          :close, ^chan ->
             :ok = SSHKit.Channel.eof(chan)
             :ok
         end)
