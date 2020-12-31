@@ -20,6 +20,8 @@ defmodule Xfer do
   end
 end
 
+source = "test/fixtures"
+
 :ok =
   with {:ok, chan} <- SSHKit.Channel.open(conn, []) do
     command = SSHKit.Context.build(ctx, "tar -x")
@@ -35,6 +37,7 @@ end
             {:ok, 0}
 
           :write, {^chan, data} ->
+            # TODO: Send data in chunks based on channel window size?
             :ok = SSHKit.Channel.send(chan, Xfer.to_binary(data))
             :ok
 
@@ -43,9 +46,7 @@ end
             :ok
         end)
 
-        source = "test/fixtures"
-
-        :ok = :erl_tar.add(tar, to_charlist(source), to_charlist(source))
+        :ok = :erl_tar.add(tar, to_charlist(source), to_charlist(Path.basename(source)), [])
 
         :ok = :erl_tar.close(tar)
 
