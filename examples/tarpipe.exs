@@ -21,12 +21,13 @@ end
 
 :ok =
   with {:ok, chan} <- SSHKit.Channel.open(conn, []) do
-    # command = SSHKit.Context.build(ctx, "tar -x")
-    command = "tar -x -C #{ctx.path}"
-    IO.puts(command)
+    command = SSHKit.Context.build(ctx, "tar -x")
 
     case SSHKit.Channel.exec(chan, command) do
       :success ->
+        # In case of failed upload, check command output:
+        # IO.inspect(SSHKit.Channel.recv(chan))
+
         {:ok, tar} = :erl_tar.init(self(), :write, fn
           :position, {_, position} ->
             # IO.write("tar position: #{inspect(position)}")
