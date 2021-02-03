@@ -13,13 +13,16 @@ defmodule TP do
 
     Stream.resource(
       fn ->
-        {:ok, chan} = SSHKit.Channel.open(conn, [])
-        command = SSHKit.Context.build(ctx, "tar -x")
-        :success = SSHKit.Channel.exec(chan, command)
-
         owner = self()
 
         tarpipe = spawn(fn ->
+          {:ok, chan} = SSHKit.Channel.open(conn, [])
+          command = SSHKit.Context.build(ctx, "tar -x")
+          :success = SSHKit.Channel.exec(chan, command)
+
+          # TODO: What if command immediately exits or does not exist?
+          # IO.inspect(SSHKit.Channel.recv(chan, 1000))
+
           {:ok, tar} = :erl_tar.init(chan, :write, fn
             :position, {^chan, position} ->
               # IO.inspect(position, label: "position")
@@ -27,16 +30,18 @@ defmodule TP do
 
             :write, {^chan, data} ->
               # TODO: Send data in chunks based on channel window size?
-              # IO.inspect(data, label: "write")
+              IO.inspect(data, label: "write")
               # In case of failing upload, check command output:
               # IO.inspect(SSHKit.Channel.recv(chan, 0))
               chunk = to_binary(data)
 
               receive do
                 :cont ->
-                  :ok = SSHKit.Channel.send(chan, chunk)
+                  case SSHKit.Channel.send(chan, chunk) do
+                    :ok -> send(owner, {:write, chan, self(), chunk})
+                    other -> send(owner, {:error, chan, self(), other})
+                  end
               end
-              send(owner, {:write, chan, self(), chunk})
               :ok
 
             :close, ^chan ->
@@ -48,24 +53,34 @@ defmodule TP do
 
           :ok = :erl_tar.add(tar, to_charlist(source), to_charlist(Path.basename(source)), [])
           :ok = :erl_tar.close(tar)
+
+          :ok = SSHKit.Channel.close(chan)
         end)
 
-        {chan, tarpipe}
+        tarpipe
       end,
-      fn {chan, tarpipe} ->
+      fn tarpipe ->
         send(tarpipe, :cont)
 
         receive do
-          {:write, ^chan, ^tarpipe, data} ->
-            {[{:write, chan, data}], {chan, tarpipe}}
+          {:write, chan, ^tarpipe, data} ->
+            {[{:write, chan, data}], tarpipe}
 
-          {:close, ^chan, ^tarpipe} ->
-            {:halt, {chan, tarpipe}}
+          {:close, chan, ^tarpipe} ->
+            {:halt, tarpipe}
+
+          {:error, chan, ^tarpipe, error} ->
+            IO.inspect(error, label: "received error")
+            {:halt, tarpipe}
         end
+
+        # case Tarpipe.proceed(tarpipe) do
+        #   {:write, …} -> {[], tarpipe}
+        #   {:error, …} -> raise
+        # end
       end,
-      fn {chan, tarpipe} ->
-        :ok = SSHKit.Channel.close(chan)
-        :ok = SSHKit.Channel.flush(chan)
+      fn tarpipe ->
+        nil # :ok = Tarpipe.close(tarpipe)
       end
     )
   end
