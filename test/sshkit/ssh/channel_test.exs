@@ -277,6 +277,18 @@ defmodule SSHKit.SSH.ChannelTest do
     end
   end
 
+  describe "shell/2" do
+    test "set shell to server side", %{chan: chan, impl: impl} do
+      impl |> expect(:shell, fn (connection_ref, channel_id) ->
+        assert connection_ref == chan.connection.ref
+        assert channel_id == chan.id
+        :ok
+      end)
+
+      assert shell(chan) == :ok
+    end
+  end
+
   describe "loop/4" do
     test "loops over channel messages until channel is closed", %{conn: conn, chan: chan} do
       Enum.each(0..2, &(Kernel.send(self(), {:ssh_cm, conn.ref, {:msg, chan.id, &1}})))
