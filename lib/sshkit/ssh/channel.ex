@@ -197,6 +197,17 @@ defmodule SSHKit.SSH.Channel do
   end
 
   @doc """
+  Executes the user default shell at server side.
+
+  Returns `:ok`.
+
+  For more details, see [`:ssh_connection.shell/2`](http://erlang.org/doc/man/ssh_connection.html#shell-2).
+  """
+  def shell(channel) do
+    channel.impl.shell(channel.connection.ref, channel.id)
+  end
+
+  @doc """
   Loops over channel messages until the channel is closed, or looping is stopped
   explicitly.
 
