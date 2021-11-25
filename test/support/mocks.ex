@@ -23,6 +23,7 @@ defmodule SSHKit.SSH.Channel.Impl do
   @callback send(conn, chan, 0..1, binary(), timeout()) :: :ok | {:error, :timeout} | {:error, :closed}
   @callback send_eof(conn, chan) :: :ok | {:error, :closed}
   @callback adjust_window(conn, chan, integer()) :: :ok
+  @callback shell(conn, chan) :: :ok | {:error, :closed}
 end
 
 Mox.defmock(SSHKit.SSH.Channel.ImplMock, for: SSHKit.SSH.Channel.Impl)
