@@ -21,6 +21,7 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
 ### New features:
 
 <!-- Put new features here -->
+* Add support to enable the shell on the server end using `SSH.Channel.shell`.
 
 ### Fixes:
 
