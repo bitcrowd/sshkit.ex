@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 if Mix.env() == :test do
   config :sshkit, :ssh, MockErlangSsh
