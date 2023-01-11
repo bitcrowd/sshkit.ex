@@ -38,18 +38,21 @@ defmodule SSHKit.SSH.Connection do
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
   """
   def open(host, options \\ [])
+
   def open(nil, _) do
     {:error, "No host given."}
   end
+
   def open(host, options) when is_binary(host) do
     open(to_charlist(host), options)
   end
+
   def open(host, options) do
     {details, opts} = extract(options)
 
-    port    = details[:port]
+    port = details[:port]
     timeout = details[:timeout]
-    impl    = details[:impl]
+    impl = details[:impl]
 
     case impl.connect(host, port, opts, timeout) do
       {:ok, ref} -> {:ok, build(host, port, opts, ref, impl)}

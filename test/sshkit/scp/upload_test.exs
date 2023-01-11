@@ -40,9 +40,11 @@ defmodule SSHKit.SCP.UploadTest do
     end
 
     test "allows modifying the executed scp command", %{conn: conn} do
-      upload = Upload.init(@source, @target, map_cmd: &"(( #{&1} ))", ssh: SSHMock, recursive: true)
+      upload =
+        Upload.init(@source, @target, map_cmd: &"(( #{&1} ))", ssh: SSHMock, recursive: true)
 
-      SSHMock |> expect(:run, fn (_, command, _) ->
+      SSHMock
+      |> expect(:run, fn _, command, _ ->
         assert command == "(( #{Command.build(:upload, upload.target, recursive: true)} ))"
         {:ok, :success}
       end)
@@ -58,7 +60,8 @@ defmodule SSHKit.SCP.UploadTest do
     test "uses the provided timeout option", %{conn: conn} do
       upload = Upload.init(@source, @target, recursive: true, timeout: 55, ssh: SSHMock)
 
-      SSHMock |> expect(:run, fn (_, _, timeout: timeout, acc: {:cont, _}, fun: _) ->
+      SSHMock
+      |> expect(:run, fn _, _, timeout: timeout, acc: {:cont, _}, fun: _ ->
         assert timeout == 55
         {:ok, :success}
       end)
@@ -69,7 +72,12 @@ defmodule SSHKit.SCP.UploadTest do
     test "performs an upload", %{conn: conn} do
       upload = Upload.init(@source, @target, recursive: true, ssh: SSHMock)
 
-      SSHMock |> expect(:run, fn (connection, command, timeout: timeout, acc: {:cont, state}, fun: handler) ->
+      SSHMock
+      |> expect(:run, fn connection,
+                         command,
+                         timeout: timeout,
+                         acc: {:cont, state},
+                         fun: handler ->
         assert connection == conn
         assert command == SSHKit.SCP.Command.build(:upload, upload.target, upload.options)
         assert timeout == :infinity
@@ -93,13 +101,17 @@ defmodule SSHKit.SCP.UploadTest do
       %Upload{handler: handler, state: {:next, cwd, [["local_dir"]], []} = state} = upload
       next_path = Path.join(cwd, "local_dir")
 
-      assert {:cont, 'D0755 0 local_dir\n', {:next, ^next_path, [["other.txt"], []], []}} = handler.(ack, state)
+      assert {:cont, 'D0755 0 local_dir\n', {:next, ^next_path, [["other.txt"], []], []}} =
+               handler.(ack, state)
     end
 
     test "create files in the current directory", %{upload: %Upload{handler: handler}, ack: ack} do
       source_expanded = @source |> Path.expand()
       state = {:next, source_expanded, [["other.txt"], []], []}
-      assert {:cont, 'C0644 61 other.txt\n', {:write, "other.txt", %File.Stat{}, ^source_expanded, [[], []], []}} = handler.(ack, state)
+
+      assert {:cont, 'C0644 61 other.txt\n',
+              {:write, "other.txt", %File.Stat{}, ^source_expanded, [[], []], []}} =
+               handler.(ack, state)
     end
 
     test "writes files in the current directory", %{upload: %Upload{handler: handler}, ack: ack} do
@@ -138,7 +150,10 @@ defmodule SSHKit.SCP.UploadTest do
       assert {:cont, :ok} == handler.(closed_msg, eof_state)
     end
 
-    test "aggregates warnings in the state", %{upload: %Upload{handler: handler, state: state}, channel: channel} do
+    test "aggregates warnings in the state", %{
+      upload: %Upload{handler: handler, state: state},
+      channel: channel
+    } do
       error_msg = "error part 1 error part 2 error part 3"
       {name, cwd, stack, _errs} = state
 
@@ -154,7 +169,10 @@ defmodule SSHKit.SCP.UploadTest do
       assert {:cont, {name, cwd, stack, [error_msg]}} == handler.(msg3, state2)
     end
 
-    test "aggregates connection errors in the state and halts", %{upload: %Upload{handler: handler, state: state}, channel: channel} do
+    test "aggregates connection errors in the state and halts", %{
+      upload: %Upload{handler: handler, state: state},
+      channel: channel
+    } do
       error_msg = "error part 1 error part 2 error part 3"
 
       msg1 = {:data, channel, 0, <<2, "error part 1 ">>}

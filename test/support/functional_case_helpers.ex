@@ -23,7 +23,11 @@ defmodule SSHKit.FunctionalCaseHelpers do
   end
 
   def keygen!(host, username) do
-    exec!(host, "sh", ["-c", "ssh-keygen -b 1024 -f /tmp/#{username} -N '' -C \"#{username}@$(hostname)\""])
+    exec!(host, "sh", [
+      "-c",
+      "ssh-keygen -b 1024 -f /tmp/#{username} -N '' -C \"#{username}@$(hostname)\""
+    ])
+
     exec!(host, "sh", ["-c", "cat /tmp/#{username}.pub > /home/#{username}/.ssh/authorized_keys"])
   end
 end

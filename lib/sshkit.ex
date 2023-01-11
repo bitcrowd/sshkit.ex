@@ -357,9 +357,11 @@ defmodule SSHKit do
     target = Keyword.get(options, :as, Path.basename(source))
 
     run = fn host ->
-      {:ok, res} = SSH.connect host.name, host.options, fn conn ->
-        SCP.upload(conn, source, target, options)
-      end
+      {:ok, res} =
+        SSH.connect(host.name, host.options, fn conn ->
+          SCP.upload(conn, source, target, options)
+        end)
+
       res
     end
 
@@ -403,9 +405,11 @@ defmodule SSHKit do
     target = Keyword.get(options, :as, Path.basename(source))
 
     run = fn host ->
-      {:ok, res} = SSH.connect host.name, host.options, fn conn ->
-        SCP.download(conn, source, target, options)
-      end
+      {:ok, res} =
+        SSH.connect(host.name, host.options, fn conn ->
+          SCP.download(conn, source, target, options)
+        end)
+
       res
     end
 
