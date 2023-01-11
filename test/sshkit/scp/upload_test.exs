@@ -79,7 +79,7 @@ defmodule SSHKit.SCP.UploadTest do
                          acc: {:cont, state},
                          fun: handler ->
         assert connection == conn
-        assert command == SSHKit.SCP.Command.build(:upload, upload.target, upload.options)
+        assert command == Command.build(:upload, upload.target, upload.options)
         assert timeout == :infinity
         assert state == upload.state
         assert handler == upload.handler

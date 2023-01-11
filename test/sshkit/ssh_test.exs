@@ -4,8 +4,8 @@ defmodule SSHKit.SSHTest do
 
   import SSHKit.SSH
 
-  alias SSHKit.SSH.Connection
   alias SSHKit.SSH.Channel
+  alias SSHKit.SSH.Connection
 
   @host "test.io"
   @user "me"
