@@ -159,6 +159,34 @@ defmodule SSHKitFunctionalTest do
       assert verify_transfer(context, local, Path.basename(local))
     end
 
+    test "uploads a file to a directory that does not exist", %{hosts: hosts} do
+      local = "test/fixtures/local.txt"
+
+      context =
+        hosts
+        |> SSHKit.context()
+        |> SSHKit.path("/otp/releases")
+
+      assert [
+               error: "sh: cd: line 1: can't cd to /otp/releases",
+               error: "sh: cd: line 1: can't cd to /otp/releases"
+             ] = SSHKit.upload(context, local)
+    end
+
+    test "uploads a file to a directory we have no access to", %{hosts: hosts} do
+      local = "test/fixtures/local.txt"
+
+      context =
+        hosts
+        |> SSHKit.context()
+        |> SSHKit.path("/")
+
+      assert [
+               error: "SCP exited with non-zero exit code 1: scp: local.txt: Permission denied",
+               error: "SCP exited with non-zero exit code 1: scp: local.txt: Permission denied"
+             ] = SSHKit.upload(context, local)
+    end
+
     test "recursive: true", %{hosts: [host | _] = hosts} do
       local = "test/fixtures"
       remote = "/home/#{host.options[:user]}/fixtures"

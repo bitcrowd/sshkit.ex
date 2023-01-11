@@ -155,7 +155,6 @@ defmodule SSHKit.SCP.UploadTest do
       channel: channel
     } do
       error_msg = "error part 1 error part 2 error part 3"
-      {name, cwd, stack, _errs} = state
 
       msg1 = {:data, channel, 0, <<1, "error part 1 ">>}
       state1 = {:warning, state, "error part 1 "}
@@ -166,7 +165,33 @@ defmodule SSHKit.SCP.UploadTest do
       assert {:cont, state2} == handler.(msg2, state1)
 
       msg3 = {:data, channel, 0, <<"error part 3\n">>}
-      assert {:cont, {name, cwd, stack, [error_msg]}} == handler.(msg3, state2)
+      assert {:cont, _directive, {_name, _cwd, _stack, [^error_msg]}} = handler.(msg3, state2)
+    end
+
+    test "proceeds with next file in stack after warning", %{
+      upload: %Upload{handler: handler, state: state},
+      channel: channel
+    } do
+      {name, cwd, _stack, _errs} = state
+      msg = {:data, channel, 0, <<1, "error message\n">>}
+
+      assert {:cont, 'D0755 0 local_dir\n',
+              {name, cwd <> "/local_dir", [["other.txt"], []], ["error message"]}} ==
+               handler.(msg, state)
+    end
+
+    test "collects warning when in write state", %{
+      upload: %Upload{handler: handler, state: state},
+      channel: channel
+    } do
+      {name, cwd, stack, _errs} = state
+
+      state = {:write, "local.txt", %{}, cwd, stack, []}
+      msg = {:data, channel, 0, <<1, "error message\n">>}
+
+      assert {:cont, 'D0755 0 local_dir\n',
+              {name, cwd <> "/local_dir", [["other.txt"], []], ["error message"]}} ==
+               handler.(msg, state)
     end
 
     test "aggregates connection errors in the state and halts", %{
