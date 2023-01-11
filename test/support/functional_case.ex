@@ -19,6 +19,7 @@ defmodule SSHKit.FunctionalCase do
   end
 
   defmodule Host do
+    @moduledoc false
     defstruct [:id, :name, options: []]
   end
 
@@ -64,7 +65,7 @@ defmodule SSHKit.FunctionalCase do
   end
 
   def kill!(hosts) do
-    running = Enum.map(hosts, &(Map.get(&1, :id)))
+    running = Enum.map(hosts, &Map.get(&1, :id))
     killed = Docker.kill!(running)
     diff = running -- killed
     if Enum.empty?(diff), do: :ok, else: {:error, diff}

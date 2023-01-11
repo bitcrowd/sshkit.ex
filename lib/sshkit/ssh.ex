@@ -40,7 +40,7 @@ defmodule SSHKit.SSH do
   {:ok, conn} = SSHKit.SSH.connect("eg.io", port: 2222, user: "me", timeout: 1000)
   ```
   """
-  @callback connect(binary(), keyword() | fun()) :: {:ok, Connection.t} | {:error, any()}
+  @callback connect(binary(), keyword() | fun()) :: {:ok, Connection.t()} | {:error, any()}
   def connect(host, options_or_function \\ [])
   def connect(host, function) when is_function(function), do: connect(host, [], function)
   def connect(host, options) when is_list(options), do: Connection.open(host, options)
@@ -73,7 +73,9 @@ defmodule SSHKit.SSH do
         after
           :ok = close(conn)
         end
-      other -> other
+
+      other ->
+        other
     end
   end
 
@@ -88,7 +90,7 @@ defmodule SSHKit.SSH do
   :ok = SSHKit.SSH.close(conn)
   ```
   """
-  @callback close(Connection.t) :: :ok
+  @callback close(Connection.t()) :: :ok
   def close(connection) do
     Connection.close(connection)
   end
@@ -121,7 +123,7 @@ defmodule SSHKit.SSH do
   IO.inspect(output)
   ```
   """
-  @callback run(Connection.t, binary(), keyword()) :: any()
+  @callback run(Connection.t(), binary(), keyword()) :: any()
   def run(connection, command, options \\ []) do
     {acc, options} = Keyword.pop(options, :acc, {:cont, {[], nil}})
     {fun, options} = Keyword.pop(options, :fun, &capture/2)
@@ -134,8 +136,10 @@ defmodule SSHKit.SSH do
           channel
           |> Channel.loop(timeout, acc, fun)
           |> elem(1)
+
         :failure ->
           {:error, :failure}
+
         err ->
           err
       end
@@ -143,18 +147,23 @@ defmodule SSHKit.SSH do
   end
 
   defp capture(message, acc = {buffer, status}) do
-    next = case message do
-      {:data, _, 0, data} ->
-        {[{:stdout, data} | buffer], status}
-      {:data, _, 1, data} ->
-        {[{:stderr, data} | buffer], status}
-      {:exit_status, _, code} ->
-        {buffer, code}
-      {:closed, _} ->
-        {:ok, Enum.reverse(buffer), status}
-      _ ->
-        acc
-    end
+    next =
+      case message do
+        {:data, _, 0, data} ->
+          {[{:stdout, data} | buffer], status}
+
+        {:data, _, 1, data} ->
+          {[{:stderr, data} | buffer], status}
+
+        {:exit_status, _, code} ->
+          {buffer, code}
+
+        {:closed, _} ->
+          {:ok, Enum.reverse(buffer), status}
+
+        _ ->
+          acc
+      end
 
     {:cont, next}
   end

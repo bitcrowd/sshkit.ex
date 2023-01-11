@@ -92,7 +92,8 @@ defmodule SSHKit.ContextTest do
         |> Map.put(:env, %{"HOME" => "/home/me"})
         |> Context.build("cp $HOME/conf .")
 
-      assert command == ~S{cd /app && umask 007 && sudo -H -n -u me -g crew -- sh -c '(export HOME="/home/me" && /usr/bin/env cp $HOME/conf .)'}
+      assert command ==
+               ~S{cd /app && umask 007 && sudo -H -n -u me -g crew -- sh -c '(export HOME="/home/me" && /usr/bin/env cp $HOME/conf .)'}
     end
   end
 end
