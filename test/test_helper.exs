@@ -4,13 +4,15 @@ included = Application.get_env(:ex_unit, :include)
 unless :functional in excluded && !(:functional in included) do
   unless Docker.ready?() do
     IO.puts("""
-    It seems like Docker isn't running?
+    It seems like Docker isn't available?
 
     Please check:
 
     1. Docker is installed: `docker version`
-    2. On OS X and Windows: `docker-machine start`
-    3. Environment is set up: `eval $(docker-machine env)`
+    2. Docker is running: `docker info`
+
+    Learn more about Docker:
+    https://www.docker.com/
     """)
 
     exit({:shutdown, 1})

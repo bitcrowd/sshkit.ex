@@ -1,24 +1,27 @@
-defmodule SSHKit.SSH.Connection do
+defmodule SSHKit.Connection do
   @moduledoc """
-  Defines a `SSHKit.SSH.Connection` struct representing a host connection.
+  Defines a `SSHKit.Connection` struct representing a host connection.
 
   A connection struct has the following fields:
 
   * `host` - the name or IP of the remote host
-  * `port` - the port to connect to
+  * `port` - the port connected to
   * `options` - additional connection options
   * `ref` - the underlying `:ssh` connection ref
   """
 
-  alias SSHKit.SSH.Connection
   alias SSHKit.Utils
 
-  defstruct [:host, :port, :options, :ref, impl: :ssh]
+  # TODO: Add :tag allowing arbitrary data to be attached?
+  defstruct [:host, :port, :options, :ref]
 
-  @type t :: __MODULE__
+  @type t() :: %__MODULE__{}
 
-  @default_impl_options [user_interaction: false]
-  @default_connect_options [port: 22, timeout: :infinity, impl: :ssh]
+  # credo:disable-for-next-line
+  @core Application.get_env(:sshkit, :ssh, :ssh)
+
+  @default_ssh_options [user_interaction: false]
+  @default_connect_options [port: 22, timeout: :infinity]
 
   @doc """
   Opens a connection to an SSH server.
@@ -37,47 +40,43 @@ defmodule SSHKit.SSH.Connection do
 
   Returns `{:ok, conn}` on success, `{:error, reason}` otherwise.
   """
+  @spec open(binary() | charlist(), keyword()) :: {:ok, t()} | {:error, term()}
   def open(host, options \\ [])
-
-  def open(nil, _) do
-    {:error, "No host given."}
-  end
 
   def open(host, options) when is_binary(host) do
     open(to_charlist(host), options)
   end
 
-  def open(host, options) do
+  def open(host, options) when is_list(host) do
     {details, opts} = extract(options)
 
     port = details[:port]
     timeout = details[:timeout]
-    impl = details[:impl]
 
-    case impl.connect(host, port, opts, timeout) do
-      {:ok, ref} -> {:ok, build(host, port, opts, ref, impl)}
+    case @core.connect(host, port, opts, timeout) do
+      {:ok, ref} -> {:ok, new(host, port, opts, ref)}
       err -> err
     end
   end
 
   defp extract(options) do
     connect_option_keys = Keyword.keys(@default_connect_options)
-    {connect_options, impl_options} = Keyword.split(options, connect_option_keys)
+    {connect_options, ssh_options} = Keyword.split(options, connect_option_keys)
 
     connect_options =
       @default_connect_options
       |> Keyword.merge(connect_options)
 
-    impl_options =
-      @default_impl_options
-      |> Keyword.merge(impl_options)
+    ssh_options =
+      @default_ssh_options
+      |> Keyword.merge(ssh_options)
       |> Utils.charlistify()
 
-    {connect_options, impl_options}
+    {connect_options, ssh_options}
   end
 
-  defp build(host, port, options, ref, impl) do
-    %Connection{host: host, port: port, options: options, ref: ref, impl: impl}
+  defp new(host, port, options, ref) do
+    %__MODULE__{host: host, port: port, options: options, ref: ref}
   end
 
   @doc """
@@ -87,8 +86,9 @@ defmodule SSHKit.SSH.Connection do
 
   For details, see [`:ssh.close/1`](http://erlang.org/doc/man/ssh.html#close-1).
   """
+  @spec close(t()) :: :ok
   def close(conn) do
-    conn.impl.close(conn.ref)
+    @core.close(conn.ref)
   end
 
   @doc """
@@ -97,17 +97,34 @@ defmodule SSHKit.SSH.Connection do
   The timeout value of the original connection is discarded.
   Other connection options are reused and may be overridden.
 
-  Uses `open/2`.
+  Uses `SSHKit.Connection.open/2`.
 
   Returns `{:ok, conn}` or `{:error, reason}`.
   """
-  def reopen(connection, options \\ []) do
+  @spec reopen(t(), keyword()) :: {:ok, t()} | {:error, term()}
+  def reopen(conn, options \\ []) do
     options =
-      connection.options
-      |> Keyword.put(:port, connection.port)
-      |> Keyword.put(:impl, connection.impl)
+      conn.options
+      |> Keyword.put(:port, conn.port)
       |> Keyword.merge(options)
 
-    open(connection.host, options)
+    open(conn.host, options)
+  end
+
+  @doc """
+  Returns information about a connection.
+
+  For OTP versions prior to 21.1, only `:client_version`, `:server_version`,
+  `:user`, `:peer` and `:sockname` are available.
+
+  For details, see [`:ssh.connection_info/1`](http://erlang.org/doc/man/ssh.html#connection_info-1).
+  """
+  @spec info(t()) :: keyword()
+  def info(conn) do
+    if function_exported?(@core, :connection_info, 1) do
+      @core.connection_info(conn.ref)
+    else
+      @core.connection_info(conn.ref, [:client_version, :server_version, :user, :peer, :sockname])
+    end
   end
 end

@@ -3,9 +3,58 @@ defmodule SSHKit.ContextTest do
 
   alias SSHKit.Context
 
-  @empty %Context{hosts: []}
+  @empty %Context{}
 
-  doctest Context
+  describe "new/0" do
+    test "returns a new context" do
+      context = Context.new()
+      assert context == @empty
+    end
+  end
+
+  describe "path/2" do
+    test "sets the path" do
+      context = Context.path(@empty, "/var/www/app")
+      assert context.path == "/var/www/app"
+    end
+  end
+
+  describe "umask/2" do
+    test "sets the file permission mask" do
+      context = Context.umask(@empty, "077")
+      assert context.umask == "077"
+    end
+  end
+
+  describe "user/2" do
+    test "sets the user" do
+      context = Context.user(@empty, "meg")
+      assert context.user == "meg"
+    end
+  end
+
+  describe "group/2" do
+    test "sets the group" do
+      context = Context.group(@empty, "stripes")
+      assert context.group == "stripes"
+    end
+  end
+
+  describe "env/2" do
+    test "sets the env" do
+      context = Context.env(@empty, %{"NODE_ENV" => "production"})
+      assert context.env == %{"NODE_ENV" => "production"}
+    end
+
+    test "overwrites existing env" do
+      context =
+        @empty
+        |> Context.env(%{"NODE_ENV" => "production"})
+        |> Context.env(%{"CI" => "true"})
+
+      assert context.env == %{"CI" => "true"}
+    end
+  end
 
   describe "build/2" do
     test "with user" do
@@ -80,6 +129,11 @@ defmodule SSHKit.ContextTest do
         |> Context.build("ls -l")
 
       assert command == "cd /var/www && /usr/bin/env ls -l"
+    end
+
+    test "without any options" do
+      command = @empty |> Context.build("uptime")
+      assert command == "/usr/bin/env uptime"
     end
 
     test "with all options" do

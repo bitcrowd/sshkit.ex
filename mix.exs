@@ -1,13 +1,14 @@
 defmodule SSHKit.Mixfile do
   use Mix.Project
 
-  @version "0.3.0"
+  @name "sshkit"
+  @version "1.0.0"
   @source "https://github.com/bitcrowd/sshkit.ex"
 
   def project do
     [
       app: :sshkit,
-      name: "sshkit",
+      name: @name,
       version: @version,
       elixir: "~> 1.5",
       elixirc_paths: elixirc_paths(Mix.env()),

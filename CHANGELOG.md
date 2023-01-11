@@ -4,7 +4,7 @@ Presented in reverse chronological order.
 
 ## master
 
-https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
+https://github.com/bitcrowd/sshkit.ex/compare/v0.3.0...HEAD
 
 <!-- Put high-level summary here -->
 
@@ -26,6 +26,16 @@ https://github.com/bitcrowd/sshkit.ex/compare/v0.2.0...HEAD
 ### Fixes:
 
 <!-- Put fixes here -->
+
+## `1.0.0` (??)
+
+* Implement new top-level package API
+  * Explicitly establish, re-use and close connections
+  * Enable streaming data to and from a remote
+  * Make context optional
+* Replace SCP with an alternative file transfer implementation
+
+https://github.com/bitcrowd/sshkit.ex/compare/v0.3.0...v1.0.0
 
 ## `0.3.0` (2019-10-28)
 
