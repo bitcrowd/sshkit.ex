@@ -19,6 +19,7 @@ defmodule SSHKit.FunctionalCase do
   end
 
   defmodule Host do
+    @moduledoc false
     defstruct [:id, :name, options: []]
   end
 

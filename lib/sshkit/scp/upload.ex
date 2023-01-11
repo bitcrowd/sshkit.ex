@@ -1,5 +1,7 @@
 defmodule SSHKit.SCP.Upload do
-  @moduledoc false
+  @moduledoc """
+  Helper module used by SSHKit.SCP.upload/4.
+  """
 
   require Bitwise
 

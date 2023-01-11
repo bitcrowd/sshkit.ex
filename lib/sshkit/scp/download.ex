@@ -1,5 +1,7 @@
 defmodule SSHKit.SCP.Download do
-  @moduledoc false
+  @moduledoc """
+  Helper module used by SSHKit.SCP.download/4.
+  """
 
   require Bitwise
 

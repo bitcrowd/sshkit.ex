@@ -97,7 +97,7 @@ defmodule SSHKit.SSH.Connection do
   The timeout value of the original connection is discarded.
   Other connection options are reused and may be overridden.
 
-  Uses `SSHKit.SSH.open/2`.
+  Uses `open/2`.
 
   Returns `{:ok, conn}` or `{:error, reason}`.
   """
