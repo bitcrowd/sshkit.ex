@@ -101,7 +101,7 @@ defmodule SSHKit.SCP.UploadTest do
       %Upload{handler: handler, state: {:next, cwd, [["local_dir"]], []} = state} = upload
       next_path = Path.join(cwd, "local_dir")
 
-      assert {:cont, 'D0755 0 local_dir\n', {:next, ^next_path, [["other.txt"], []], []}} =
+      assert {:cont, ~c"D0755 0 local_dir\n", {:next, ^next_path, [["other.txt"], []], []}} =
                handler.(ack, state)
     end
 
@@ -109,7 +109,7 @@ defmodule SSHKit.SCP.UploadTest do
       source_expanded = @source |> Path.expand()
       state = {:next, source_expanded, [["other.txt"], []], []}
 
-      assert {:cont, 'C0644 61 other.txt\n',
+      assert {:cont, ~c"C0644 61 other.txt\n",
               {:write, "other.txt", %File.Stat{}, ^source_expanded, [[], []], []}} =
                handler.(ack, state)
     end
@@ -128,7 +128,7 @@ defmodule SSHKit.SCP.UploadTest do
       source_expanded = @source |> Path.expand()
       state = {:next, source_dir, [[], []], []}
 
-      assert {:cont, 'E\n', {:next, ^source_expanded, [[]], []}} = handler.(ack, state)
+      assert {:cont, ~c"E\n", {:next, ^source_expanded, [[]], []}} = handler.(ack, state)
     end
 
     test "finalizes the upload", %{upload: %Upload{handler: handler}, ack: ack, channel: channel} do
@@ -175,7 +175,7 @@ defmodule SSHKit.SCP.UploadTest do
       {name, cwd, _stack, _errs} = state
       msg = {:data, channel, 0, <<1, "error message\n">>}
 
-      assert {:cont, 'D0755 0 local_dir\n',
+      assert {:cont, ~c"D0755 0 local_dir\n",
               {name, cwd <> "/local_dir", [["other.txt"], []], ["error message"]}} ==
                handler.(msg, state)
     end
@@ -189,7 +189,7 @@ defmodule SSHKit.SCP.UploadTest do
       state = {:write, "local.txt", %{}, cwd, stack, []}
       msg = {:data, channel, 0, <<1, "error message\n">>}
 
-      assert {:cont, 'D0755 0 local_dir\n',
+      assert {:cont, ~c"D0755 0 local_dir\n",
               {name, cwd <> "/local_dir", [["other.txt"], []], ["error message"]}} ==
                handler.(msg, state)
     end

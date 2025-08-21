@@ -59,7 +59,7 @@ defmodule SSHKit.SSH.ChannelTest do
       |> expect(:subsystem, fn connection_ref, channel_id, subsystem, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
-        assert subsystem == 'example-subsystem'
+        assert subsystem == ~c"example-subsystem"
         assert timeout == :infinity
         :success
       end)
@@ -115,7 +115,7 @@ defmodule SSHKit.SSH.ChannelTest do
       |> expect(:exec, fn connection_ref, channel_id, command, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
-        assert command == 'cmd arg1 arg2'
+        assert command == ~c"cmd arg1 arg2"
         assert timeout == :infinity
         :success
       end)
@@ -128,12 +128,12 @@ defmodule SSHKit.SSH.ChannelTest do
       |> expect(:exec, fn connection_ref, channel_id, command, timeout ->
         assert connection_ref == chan.connection.ref
         assert channel_id == chan.id
-        assert command == 'cmd arg1 arg2'
+        assert command == ~c"cmd arg1 arg2"
         assert timeout == :infinity
         :success
       end)
 
-      assert exec(chan, 'cmd arg1 arg2') == :success
+      assert exec(chan, ~c"cmd arg1 arg2") == :success
     end
 
     test "executes a command with a specific timeout", %{chan: chan, impl: impl} do
@@ -179,8 +179,8 @@ defmodule SSHKit.SSH.ChannelTest do
     end
 
     test "sends charlist data across channel", %{chan: chan, impl: impl} do
-      impl |> expect(:send, sends(chan, 0, 'charlist data', :infinity, :ok))
-      assert Channel.send(chan, 'charlist data') == :ok
+      impl |> expect(:send, sends(chan, 0, ~c"charlist data", :infinity, :ok))
+      assert Channel.send(chan, ~c"charlist data") == :ok
     end
 
     test "sends stream data across channel", %{chan: chan, impl: impl} do

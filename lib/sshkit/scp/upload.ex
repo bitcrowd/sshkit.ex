@@ -150,7 +150,7 @@ defmodule SSHKit.SCP.Upload do
   end
 
   defp next(_, cwd, [[] | dirs], errs) do
-    {:cont, 'E\n', {:next, Path.dirname(cwd), dirs, errs}}
+    {:cont, ~c"E\n", {:next, Path.dirname(cwd), dirs, errs}}
   end
 
   defp next(options, cwd, [[name | rest] | dirs], errs) do
@@ -174,17 +174,17 @@ defmodule SSHKit.SCP.Upload do
   end
 
   defp time(_, type, name, stat, cwd, stack, errs) do
-    directive = 'T#{stat.mtime} 0 #{stat.atime} 0\n'
+    directive = ~c"T#{stat.mtime} 0 #{stat.atime} 0\n"
     {:cont, directive, {type, name, stat, cwd, stack, errs}}
   end
 
   defp directory(_, name, stat, cwd, stack, errs) do
-    directive = 'D#{modefmt(stat.mode)} 0 #{name}\n'
+    directive = ~c"D#{modefmt(stat.mode)} 0 #{name}\n"
     {:cont, directive, {:next, Path.join(cwd, name), stack, errs}}
   end
 
   defp regular(_, name, stat, cwd, stack, errs) do
-    directive = 'C#{modefmt(stat.mode)} #{stat.size} #{name}\n'
+    directive = ~c"C#{modefmt(stat.mode)} #{stat.size} #{name}\n"
     {:cont, directive, {:write, name, stat, cwd, stack, errs}}
   end
 

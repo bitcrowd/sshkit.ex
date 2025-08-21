@@ -5,24 +5,24 @@ defmodule SSHKit.UtilsTest do
 
   describe "charlistify/1" do
     test "converts binaries to char lists" do
-      assert Utils.charlistify("sshkit") == 'sshkit'
+      assert Utils.charlistify("sshkit") == ~c"sshkit"
     end
 
     test "converts binaries in tuples" do
-      assert Utils.charlistify({:user, "me"}) == {:user, 'me'}
+      assert Utils.charlistify({:user, "me"}) == {:user, ~c"me"}
     end
 
     test "converts binaries in lists" do
-      assert Utils.charlistify(["ssh-rsa", "ssh-dss"]) == ['ssh-rsa', 'ssh-dss']
+      assert Utils.charlistify(["ssh-rsa", "ssh-dss"]) == [~c"ssh-rsa", ~c"ssh-dss"]
     end
 
     test "converts binaries in keywords" do
-      assert Utils.charlistify(inet: :inet6, user: "me") == [inet: :inet6, user: 'me']
+      assert Utils.charlistify(inet: :inet6, user: "me") == [inet: :inet6, user: ~c"me"]
     end
 
     test "converts binaries in nested lists" do
       actual = Utils.charlistify(pref_public_key_algs: ["ssh-rsa", "ssh-dss"])
-      expected = [pref_public_key_algs: ['ssh-rsa', 'ssh-dss']]
+      expected = [pref_public_key_algs: [~c"ssh-rsa", ~c"ssh-dss"]]
       assert actual == expected
     end
 

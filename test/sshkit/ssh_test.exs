@@ -22,9 +22,9 @@ defmodule SSHKit.SSHTest do
     test "opens a connection with the given options and keeps it open", %{impl: impl} do
       impl
       |> expect(:connect, fn host, port, opts, timeout ->
-        assert host == 'test.io'
+        assert host == ~c"test.io"
         assert port == 2222
-        assert opts == [user_interaction: false, user: 'me']
+        assert opts == [user_interaction: false, user: ~c"me"]
         assert timeout == :infinity
         {:ok, :connection_ref}
       end)
@@ -32,8 +32,8 @@ defmodule SSHKit.SSHTest do
       {:ok, conn} = connect(@host, user: @user, port: 2222, impl: impl)
 
       assert conn == %Connection{
-               host: 'test.io',
-               options: [user_interaction: false, user: 'me'],
+               host: ~c"test.io",
+               options: [user_interaction: false, user: ~c"me"],
                port: 2222,
                ref: :connection_ref,
                impl: impl
@@ -99,7 +99,7 @@ defmodule SSHKit.SSHTest do
 
     test "closes the connection", %{impl: impl} do
       conn = %SSHKit.SSH.Connection{
-        host: 'test.io',
+        host: ~c"test.io",
         port: 22,
         options: [user_interaction: false],
         ref: :connection_ref,
@@ -125,7 +125,7 @@ defmodule SSHKit.SSHTest do
     test "captures output and exit status by default", %{conn: conn, impl: impl} do
       impl
       |> expect(:session_channel, fn :cref, _, _, :infinity -> {:ok, 11} end)
-      |> expect(:exec, fn :cref, 11, 'try', :infinity -> :success end)
+      |> expect(:exec, fn :cref, 11, ~c"try", :infinity -> :success end)
       |> expect(:adjust_window, 2, fn :cref, 11, _ -> :ok end)
 
       send(self(), {:ssh_cm, conn.ref, {:data, 11, 0, "out"}})
@@ -139,7 +139,7 @@ defmodule SSHKit.SSHTest do
     test "accepts a custom handler function and accumulator", %{conn: conn, impl: impl} do
       impl
       |> expect(:session_channel, fn :cref, _, _, _ -> {:ok, 31} end)
-      |> expect(:exec, fn :cref, 31, 'cmd', _ -> :success end)
+      |> expect(:exec, fn :cref, 31, ~c"cmd", _ -> :success end)
       |> expect(:send, fn :cref, 31, 0, "PING", _ -> :ok end)
       |> expect(:adjust_window, fn :cref, 31, _ -> :ok end)
       |> expect(:close, fn :cref, 31 -> :ok end)
