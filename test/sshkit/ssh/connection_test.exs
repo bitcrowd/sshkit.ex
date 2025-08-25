@@ -16,7 +16,7 @@ defmodule SSHKit.SSH.ConnectionTest do
     test "opens a connection", %{impl: impl} do
       impl
       |> expect(:connect, fn host, port, opts, timeout ->
-        assert host == 'test.io'
+        assert host == ~c"test.io"
         assert port == 22
         assert opts == [user_interaction: false]
         assert timeout == :infinity
@@ -26,7 +26,7 @@ defmodule SSHKit.SSH.ConnectionTest do
       {:ok, conn} = open("test.io", impl: impl)
 
       assert conn == %Connection{
-               host: 'test.io',
+               host: ~c"test.io",
                port: 22,
                options: [user_interaction: false],
                ref: :connection_ref,
@@ -38,8 +38,8 @@ defmodule SSHKit.SSH.ConnectionTest do
       impl
       |> expect(:connect, fn _, port, opts, _ ->
         assert port == 666
-        assert opts[:user] == 'me'
-        assert opts[:password] == 'secret'
+        assert opts[:user] == ~c"me"
+        assert opts[:password] == ~c"secret"
         assert opts[:user_interaction] == false
         {:ok, :ref_with_port_user_pass}
       end)
@@ -47,9 +47,9 @@ defmodule SSHKit.SSH.ConnectionTest do
       {:ok, conn} = open("test.io", port: 666, user: "me", password: "secret", impl: impl)
 
       assert conn == %Connection{
-               host: 'test.io',
+               host: ~c"test.io",
                port: 666,
-               options: [user_interaction: false, user: 'me', password: 'secret'],
+               options: [user_interaction: false, user: ~c"me", password: ~c"secret"],
                ref: :ref_with_port_user_pass,
                impl: impl
              }
@@ -58,8 +58,8 @@ defmodule SSHKit.SSH.ConnectionTest do
     test "opens a connection with user interaction option set to true", %{impl: impl} do
       impl
       |> expect(:connect, fn _, _, opts, _ ->
-        assert opts[:user] == 'me'
-        assert opts[:password] == 'secret'
+        assert opts[:user] == ~c"me"
+        assert opts[:password] == ~c"secret"
         assert opts[:user_interaction] == true
         {:ok, :ref_with_user_interaction}
       end)
@@ -69,8 +69,8 @@ defmodule SSHKit.SSH.ConnectionTest do
       {:ok, conn} = open("test.io", options)
 
       assert conn == %Connection{
-               host: 'test.io',
-               options: [user: 'me', password: 'secret', user_interaction: true],
+               host: ~c"test.io",
+               options: [user: ~c"me", password: ~c"secret", user_interaction: true],
                port: 22,
                ref: :ref_with_user_interaction,
                impl: impl
@@ -107,7 +107,7 @@ defmodule SSHKit.SSH.ConnectionTest do
     test "converts host to charlist", %{impl: impl} do
       impl
       |> expect(:connect, fn host, _, _, _ ->
-        assert host == 'test.io'
+        assert host == ~c"test.io"
         {:ok, :ref}
       end)
 
@@ -117,8 +117,8 @@ defmodule SSHKit.SSH.ConnectionTest do
     test "converts option values to charlists", %{impl: impl} do
       impl
       |> expect(:connect, fn _, _, opts, _ ->
-        assert {:user, 'me'} in opts
-        assert {:password, 'secret'} in opts
+        assert {:user, ~c"me"} in opts
+        assert {:password, ~c"secret"} in opts
         {:ok, :ref}
       end)
 
@@ -148,7 +148,7 @@ defmodule SSHKit.SSH.ConnectionTest do
       end)
 
       conn = %Connection{
-        host: 'foo.io',
+        host: ~c"foo.io",
         port: 22,
         options: [user_interaction: false],
         ref: :connection_ref,
@@ -162,9 +162,9 @@ defmodule SSHKit.SSH.ConnectionTest do
   describe "reopen/2" do
     test "opens a new connection with the same options as the existing connection", %{impl: impl} do
       conn = %Connection{
-        host: 'test.io',
+        host: ~c"test.io",
         port: 22,
-        options: [user_interaction: false, user: 'me'],
+        options: [user_interaction: false, user: ~c"me"],
         ref: :connection_ref,
         impl: impl
       }
@@ -184,9 +184,9 @@ defmodule SSHKit.SSH.ConnectionTest do
 
     test "reopens a connection on new port", %{impl: impl} do
       conn = %Connection{
-        host: 'test.io',
+        host: ~c"test.io",
         port: 22,
-        options: [user_interaction: false, user: 'me'],
+        options: [user_interaction: false, user: ~c"me"],
         ref: :connection_ref,
         impl: impl
       }
@@ -204,7 +204,7 @@ defmodule SSHKit.SSH.ConnectionTest do
 
     test "errors when unable to open connection", %{impl: impl} do
       conn = %Connection{
-        host: 'test.io',
+        host: ~c"test.io",
         port: 22,
         options: [user_interaction: false],
         ref: :sandbox,
