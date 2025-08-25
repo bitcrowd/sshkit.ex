@@ -1,6 +1,5 @@
 # SSHKit
 
-[![Build Status](https://travis-ci.org/bitcrowd/sshkit.ex.svg?branch=master)](https://travis-ci.org/bitcrowd/sshkit.ex)
 [![Inline docs](https://inch-ci.org/github/bitcrowd/sshkit.ex.svg?branch=master)](https://inch-ci.org/github/bitcrowd/sshkit.ex)
 
 SSHKit is an Elixir toolkit for performing tasks on one or more servers, built on top of Erlang’s SSH application.
