@@ -18,6 +18,22 @@ defmodule SSHKitFunctionalTest do
     end
 
     @tag boot: [@bootconf]
+    test "connects as the login user and runs commands in parallel", %{hosts: [host]} do
+      begin_time = Time.utc_now()
+      [{:ok, output1, 0},{:ok, output2, 0}] =
+        [host, host]
+        |> SSHKit.context()
+        |> SSHKit.run("sleep 2; id -un", :parallel)
+      end_time = Time.utc_now()
+      run_time = Time.diff(end_time, begin_time, :second)
+
+      assert run_time < 4
+      assert String.trim(stdout(output1)) == host.options[:user]
+      assert String.trim(stdout(output2)) == host.options[:user]
+
+    end
+    
+    @tag boot: [@bootconf]
     test "runs commands and returns their output and exit status", %{hosts: [host]} do
       context = SSHKit.context(host)
 
